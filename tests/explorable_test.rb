@@ -50,7 +50,7 @@ class ExplorableTest < Test::Unit::TestCase
     actual_result_set = test_set.pivot(relation_set)
     assert_equal(actual_result_set.elements, expected_elements_set)
     assert_equal(actual_result_set.original_set, @dataset)
-    assert_equal('Xset.find("test set").pivot(Xset.find("relation test set"))', actual_result_set.expression)
+    assert_equal('Xset.load("test set").pivot(Xset.load("relation test set"))', actual_result_set.expression)
     
   end
   
