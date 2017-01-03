@@ -23,9 +23,23 @@ class Xset
     if root?
       "Xset.load(\"#{id}\")"
     else
-      @intentino
+      @intention
     end
-  end 
+  end
+  
+  def view_expression
+    $CURRENT_SESSION
+  end
+  
+  def resuled_from=(resulted_set)
+    @resulted_from = resulted_set
+    resulted_set.generates << self
+  end
+  
+  def generates=(generated_set)
+    @generates << generated_set
+    generated_set.resulted_from = self
+  end
   
   
   def extension_copy

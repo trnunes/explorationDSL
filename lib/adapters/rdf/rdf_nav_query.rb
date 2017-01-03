@@ -82,6 +82,7 @@ module SPARQLQuery
     end
 
     def find_relations()
+      
       if @items.empty?
         @select_clauses << "distinct ?p"
         @where_clauses << "?s ?p ?o."
@@ -119,11 +120,6 @@ module SPARQLQuery
             end
 
             hash[Entity.new(solution[:s].to_s)][Entity.new(solution[:p].to_s)] << object
-          end
-        end
-        @items.each do |item|
-          if(!hash.has_key?(item))
-            hash[item] = {}
           end
         end
         hash

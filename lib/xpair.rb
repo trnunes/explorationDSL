@@ -32,4 +32,9 @@ require 'adapters/rdf/rdf_nav_query.rb'
 $PAGINATE = 10
 ##TODO BUGS TO CORRECT
 ## contains_one does not admit literals
+## TODO implement the generation of a view expression and the generation of a ruby expression in the DSL
+## TODO implement a session id for each set
+## TODO implement a session object
+##TODO IMPLEMENT THE PROJECTION
+## TODO relationship query between pairs
 ##

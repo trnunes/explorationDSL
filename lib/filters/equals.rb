@@ -17,13 +17,19 @@ module Filtering
     def eval(set)
       extension = set.extension_copy
       if(@relation.nil?)
-        set.each_image.select{|item| !(item.eql?(@value))}.each do |removed_item|
-          Filtering.remove_from_extension(extension, removed_item)         
-        end      
+        if set.empty_image?
+          set.each_domain.select{|item| !(item.eql?(@value))}.each do |removed_item|
+            Filtering.remove_from_domain(extension, removed_item)         
+          end
+        else
+          set.each_image.select{|item| !(item.eql?(@value))}.each do |removed_item|
+            Filtering.remove_from_image(extension, removed_item)         
+          end          
+        end
       else        
        build_query_filter(set).relation_equals(@relation, @value)        
       end
-      super(extension)
+      super(extension, set)
     end
     
     def expression

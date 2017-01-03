@@ -67,8 +67,6 @@ module Explorable
       
         relations.each do |relation|
           pair_by_subject = pairs_by_subject_by_relation[relation]
-          count = 0
-          pair_by_subject.each{|key, value| puts count.to_s + "  entry: " + key.inspect; puts; count+=1}
           result_set << pair_by_subject[item].map{|r| r.second_item}
         end
         visited << item

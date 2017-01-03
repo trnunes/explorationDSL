@@ -24,7 +24,7 @@ module Filtering
       
       
       
-      super(set.extension_copy)      
+      super(set.extension_copy, set)      
     end
     
     def expression

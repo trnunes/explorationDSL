@@ -6,20 +6,17 @@ module Xenumerable
   def each_pair
   end
 
-  def paginate(page, max_per_page)
-    @page = page
-    @max_per_page = max_per_page
+  def paginate(page_number, max_elements, image_paginate)
+    @paginate_image = image_paginate
+    @page = page_number
+    @max_per_page = max_elements
     if extension.empty? && root?
       server.each_item do |item| 
-        extension[item.id] = Set.new([item])
+        extension[item] = {}
       end
-    end
-
-    @paginated_domain ||= extension.keys.to_a 
-    @paginated_image ||= extension.values.map{|img_set| img_set.to_a}.flatten.uniq
-    
-    
+    end    
   end
+  
   def size
     if(root?)
       server.size
@@ -27,101 +24,131 @@ module Xenumerable
       extension.size
     end
   end
+  
   def page
+    @page ||= 1
     @page
-  end  
-   
+  end
+  
+  def paginate_image?
+    @paginate_image ||= false
+    @paginate_image
+  end
+  
+  def max_per_page
+    if paginate_image?
+      @max_per_page ||= image.size
+    else
+      @max_per_page ||= domain.size
+    end
+    @max_per_page 
+  end
+  
   def domain_number_of_pages
-    (@paginated_domain.size/@max_per_page.to_f).ceil
+    if max_per_page == 0
+      return 0
+    end    
+    (domain.size/max_per_page.to_f).ceil
   end
   
   def image_number_of_pages
-    (@paginated_image.size/@max_per_page.to_f).ceil    
+    if max_per_page == 0
+      return 0
+    end
+    (image.size/max_per_page.to_f).ceil    
   end
   
   def limit(total_size)
-    number_of_pages = (total_size.to_f/@max_per_page.to_f).ceil
-    if @page == number_of_pages
-      total_size - 1
+    if total_size == 0 || max_per_page == 0
+      return 0
+    end
+    
+    number_of_pages = (total_size.to_f/max_per_page.to_f).ceil
+    if page == number_of_pages
+      total_size
     else
-      (@max_per_page * @page) - 1
+      (max_per_page * page) - 1
     end    
   end
   
   def number_Of_pages
-    if(@page.nil?)
+    if max_per_page == 0
+      return 0
+    end
+    
+    if(page.nil?)
       1
     else
-      (@paginated_image.size.to_f/@max_per_page.to_f).ceil
+      (image.size.to_f/max_per_page.to_f).ceil
     end
   end
+  
   def offset
-    (@page - 1) * @max_per_page
+    (page - 1) * max_per_page
   end
   
+  def image
+    @image ||= extension.values.map{|relation| relation.values.map{|value| value.to_a}.flatten}.flatten.uniq
+    puts "IMAGE: " << @image.inspect
+    @image
+  end
   
-  def each_domain(set = nil, &block)
-    domain = Set.new
-    if extension.empty?
-      each{|f|}
-    end
-
-    if set.nil?
-      if(!@page.nil?)
-        return @paginated_domain[offset()..limit(@paginated_domain.size)]
-      else
-        return extension.keys
-      end      
-    else
-      set.each do |item|
-        if(!@page.nil?)
-          domain_keys = @paginated_domain[offset()..limit(@paginated_domain.size)]
-        else
-          domain_keys = extension.keys
-        end         
-        domain_keys.each do |key|
-          images = images_for(key, extension)
-          if images.include?(item)
-            if block_given?
-              yield(key)
-            end
-            domain << key
+  def domain
+    @domain ||= extension.keys
+    @domain
+  end
+  
+  def restricted_domain(set, &block)
+    restricted_domain_set = Set.new()
+    set.each do |item|
+      domain_keys = domain()
+      domain_keys.each do |key|
+        images = images_for(key, extension)
+        if images.include?(item)
+          if block_given?
+            yield(key)
           end
+          restricted_domain_set << key
         end
       end
-    end    
-    domain
+    end
+    restricted_domain_set
   end
   
-  def each_image(set = nil, &block)
+  def each_domain(&block)
+    domain[offset..limit(domain.size)].each &block if block_given?
+    Set.new(domain[offset..limit(domain.size)])
+  end
+  
+  def restricted_image(set, &block)
     image = Set.new
-    
-    if set.nil?
-      if @page.nil?
-        image += extension.values.map{|img_set| img_set.to_a}.flatten
-      else
-        image += @paginated_image[offset..limit(@paginated_image.size)]
+    set.each do |item|
+      if extension.has_key? item
+        image.merge(images_for(item, extension))
       end
-      
-    else
-      set.each do |item|
-        if extension.has_key? item
-          image.merge(images_for(item, extension))
-        end
-      end      
     end
-    
     image.each &block if block_given?
     image
   end
   
+  def each_image(&block)
+    image[offset..limit(image.size)].each &block if block_given?
+    Set.new(image[offset..limit(image.size)])
+  end
+  
   def each(&block)
-    if(extension.empty? && root?)
+    if root?
       server.each_item do |item| 
-        extension[item.id] = Set.new([item])
+        extension[item] = {}
       end
     end
-      each_image.each &block
+    
+    if empty_image?
+      domain.each &block
+    else
+      image.each &block          
+    end
+    
   end
 
   def all_items(&block)
@@ -130,7 +157,7 @@ module Xenumerable
   end
   
   def <<(entity)
-    @extension[entity.id] = Set.new([entity])
+    @extension[entity] = {}
   end
   
   def size
@@ -149,18 +176,24 @@ module Xenumerable
   end  
   
   def images_for(domain, extension)
-    imediate_img = extension[domain]
-    image = Set.new
-    if imediate_img.is_a? Hash
-      imediate_img.each_key do |key|
-        image.merge(images_for(key, imediate_img))
-      end
-      return image
-    elsif imediate_img.respond_to? :each
-      return imediate_img
-    else
-      return Set.new
+    imediate_relations = extension[domain]
+    image_set = Set.new
+    imediate_relations.each do |relation_key, relation_image|
+      if relation_image.is_a? Hash
+        relation_image.each do |nested_relation_key, nested_relation_image|
+          image_set.merge(images_for(nested_relation_key, nested_relation_image))
+        end
+      else
+        image_set.merge(relation_image)
+      end      
     end
-  end  
+    image_set
+  end
   
+  def empty_image?
+    relations = extension.values
+    relations.reject!{|v| v.empty?}
+    relations.empty?    
+  end
+    
 end

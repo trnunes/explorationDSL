@@ -114,35 +114,46 @@ class FunctionalTest < Test::Unit::TestCase
     s0.server = @papers_server
     
     #CALCULANDO o ano médio das referências
-    citations = s0.pivot_forward("_:cite")    
-    #
-    # expected_extension = {
-    #   Entity.new("_:paper1") => Set.new([Entity.new("_:p2"), Entity.new("_:p3"), Entity.new("_:p4")])
-    # }
-    # assert_equal citations.extension, expected_extension
+    citations = s0.pivot_forward(["_:cite"])
+    assert_equal "PivotForward(S1, _:cite)", citations.view_expression
+
+    expected_extension = {
+      Entity.new("_:paper1") => {
+        Entity.new("_:cite") => Set.new([Entity.new("_:p2"), Entity.new("_:p3"), Entity.new("_:p4")])
+      }
+    }
+    assert_equal citations.extension, expected_extension
     
-    publication_years = citations.pivot_forward("_:publicationYear")
-    # expected_extension = {
-    #   Entity.new("_:p2") => Set.new([2000]),
-    #   Entity.new("_:p3") => Set.new([1998]),
-    #   Entity.new("_:p4") => Set.new([2010])
-    # }
-    #
-    # assert_equal expected_extension, publication_years.extension
+    publication_years = citations.pivot_forward(["_:publicationYear"])
+    expected_extension = {
+      Entity.new("_:p2") => {
+        Entity.new("_:publicationYear")=>Set.new([2000])
+      },
+      Entity.new("_:p3") => {
+        Entity.new("_:publicationYear")=>Set.new([1998])
+      },
+      Entity.new("_:p4") => {
+        Entity.new("_:publicationYear")=>Set.new([2010])
+      }
+    }
+
+    assert_equal expected_extension, publication_years.extension
     
     meanYear = publication_years.map{|mf| mf.avg}
-    # expected_extension = {
-    #   2000 => Set.new([2002]),
-    #   1998 => Set.new([2002]),
-    #   2010 => Set.new([2002])
-    # }
-    # assert_equal expected_extension, meanYear.extension
+    expected_extension = {
+      2000 => {},
+      1998 => {},
+      2010 => {}
+    }
+    assert_equal expected_extension, meanYear.extension
     
     #Buscando papers possivelmente relacionados que não foram citados
-    keywords = s0.pivot_forward("_:keywords")
+    keywords = s0.pivot_forward(["_:keywords"])
     
     expected_extension = {
-      Entity.new("_:paper1") => Set.new([Entity.new("_:k1"), Entity.new("_:k2"), Entity.new("_:k3")])
+      Entity.new("_:paper1") => {
+        Entity.new("_:keywords")=> Set.new([Entity.new("_:k1"), Entity.new("_:k2"), Entity.new("_:k3")])
+      }
     }
     
     assert_equal expected_extension, keywords.extension
@@ -154,20 +165,26 @@ class FunctionalTest < Test::Unit::TestCase
     papers_with_keywords = papers_set.refine{|f| f.contains_one("_:keywords", keywords)}
     
     expected_extension = {
-      "_:paper1" => Set.new([Entity.new("_:paper1")]),
-      "_:p2" => Set.new([Entity.new("_:p2")]),
-      "_:p3" => Set.new([Entity.new("_:p3")]),
-      "_:p5" => Set.new([Entity.new("_:p5")])
+      Entity.new("_:paper1")=>{},
+      Entity.new("_:p2")    =>{},
+      Entity.new("_:p3")    =>{},
+      Entity.new("_:p5")    =>{}
     }
     
     assert_equal expected_extension, papers_with_keywords.extension
     
-    related_papers_citations = papers_with_keywords.pivot_backward("_:cite")
+    related_papers_citations = papers_with_keywords.pivot_backward(["_:cite"])
     
     expected_extension = {
-      Entity.new("_:p2") => Set.new([Entity.new("_:p6"),Entity.new("_:paper1") ]),
-      Entity.new("_:p3") => Set.new([Entity.new("_:p6"),Entity.new("_:p7"), Entity.new("_:p8"), Entity.new("_:paper1")]),
-      Entity.new("_:p5") => Set.new([Entity.new("_:p6"),Entity.new("_:p7"), Entity.new("_:p8"), Entity.new("_:p9"), Entity.new("_:p10")])
+      Entity.new("_:p2") => {
+        Entity.new("_:cite")=>Set.new([Entity.new("_:p6"),Entity.new("_:paper1")])
+      },
+      Entity.new("_:p3") => {
+        Entity.new("_:cite")=>Set.new([Entity.new("_:p6"),Entity.new("_:p7"), Entity.new("_:p8"), Entity.new("_:paper1")])
+      },
+      Entity.new("_:p5") => {
+        Entity.new("_:cite")=>Set.new([Entity.new("_:p6"),Entity.new("_:p7"), Entity.new("_:p8"), Entity.new("_:p9"), Entity.new("_:p10")])
+      }
     }
     
     assert_equal expected_extension, related_papers_citations.extension
@@ -185,19 +202,25 @@ class FunctionalTest < Test::Unit::TestCase
     assert_equal expected_extension, not_cited_relevant_papers.ranked_extension
 
     ##AVALIANDO AUTO REFERÊNCIAS
-    authors = s0.pivot_forward("_:author")
+    authors = s0.pivot_forward(["_:author"])
     
     expected_extension = {
-      Entity.new("_:paper1") => Set.new([Entity.new("_:a1"), Entity.new("_:a2")])
+      Entity.new("_:paper1") => {
+        Entity.new("_:author")=>Set.new([Entity.new("_:a1"), Entity.new("_:a2")])
+      }
     }
     
     assert_equal expected_extension, authors.extension
     
-    papers_of_authors = authors.pivot_backward("_:author")
+    papers_of_authors = authors.pivot_backward(["_:author"])
     
     expected_extension = {
-      Entity.new("_:a1") => Set.new([Entity.new("_:paper1"), Entity.new("_:p2"), Entity.new("_:p5")]),
-      Entity.new("_:a2") => Set.new([Entity.new("_:paper1"), Entity.new("_:p3"), Entity.new("_:p5")])
+      Entity.new("_:a1") => {
+        Entity.new("_:author")=>Set.new([Entity.new("_:paper1"), Entity.new("_:p2"), Entity.new("_:p5")])
+      },
+      Entity.new("_:a2") => {
+        Entity.new("_:author")=>Set.new([Entity.new("_:paper1"), Entity.new("_:p3"), Entity.new("_:p5")])
+      }
     }
     
     assert_equal expected_extension, papers_of_authors.extension
@@ -205,27 +228,35 @@ class FunctionalTest < Test::Unit::TestCase
     intersection = citations.intersect(papers_of_authors)
     
     expected_extension = {
-      Entity.new("_:paper1") => Set.new([Entity.new("_:p2"), Entity.new("_:p3")])
+      Entity.new("_:paper1") => {
+        Entity.new("author")=>Set.new([Entity.new("_:p2"), Entity.new("_:p3")])
+      }
     }
     assert_equal expected_extension, intersection.extension
     
     missing_papers_count = intersection.map{|m| m.count}
     
     expected_extension = {
-      Entity.new("_:paper1") => [2]
+      Entity.new("_:paper1") => {
+        Entity.new("count") => Set.new([2])
+      }
     }
     #Avaliando quantas citações foram também publicadas no mesmo journal
-    submitted_journal = s0.pivot_forward("_:submittedTo")
+    submitted_journal = s0.pivot_forward(["_:submittedTo"])
     
     expected_extension = {
-      Entity.new("_:paper1") => Set.new([Entity.new("_:journal1")])
+      Entity.new("_:paper1") => {
+        Entity.new("_:submittedTo")=>Set.new([Entity.new("_:journal1")])
+      }
     }
     assert_equal expected_extension, submitted_journal.extension
     
     citations_published_same_journal = citations.refine{|f| f.equals("_:publishedOn", submitted_journal.first)} 
     
     expected_extension = {
-      Entity.new("_:paper1") => Set.new([Entity.new("_:p2"), Entity.new("_:p4")])
+      Entity.new("_:paper1") => {
+        Entity.new("_:cite")=>Set.new([Entity.new("_:p2"), Entity.new("_:p4")])
+      }
     }
     
     assert_equal expected_extension, citations_published_same_journal.extension
@@ -307,16 +338,24 @@ class FunctionalTest < Test::Unit::TestCase
     
     papers_by_author_count = authors_set.map{|mf| mf.domain_count(papers_set.merge(authors_set))}    
     expected_extension = {
-      Entity.new("_:a1") => Set.new([3]),
-      Entity.new("_:a2") => Set.new([3])
+      Entity.new("_:a1") => {
+        Entity.new("domain_count")=>Set.new([3])
+      },
+      Entity.new("_:a2") => {
+        Entity.new("domain_count")=>Set.new([3])
+      }
     }    
     assert_equal expected_extension, papers_by_author_count.extension
     
     papers_author1 = papers_set.refine{|f| f.equals("_:author", "_:a1")}
     papers_by_author_count = authors_set.map{|mf| mf.domain_count(papers_author1.merge(authors_set))}
     expected_extension = {
-      Entity.new("_:a1") => Set.new([3]),
-      Entity.new("_:a2") => Set.new([2])
+      Entity.new("_:a1") => {
+        Entity.new("domain_count")=>Set.new([3])
+      },
+      Entity.new("_:a2") => {
+        Entity.new("domain_count")=>Set.new([2])
+      }
     }
     assert_equal expected_extension, papers_by_author_count.extension
   end
@@ -325,8 +364,8 @@ class FunctionalTest < Test::Unit::TestCase
     papers_set = Xset.new do |s|
       s.server = @papers_server
     end
-    published_journals = papers_set.pivot_forward("_:publishedOn")
-    journals_release_years = published_journals.pivot_forward("_:releaseYear")
+    published_journals = papers_set.pivot_forward(["_:publishedOn"])
+    journals_release_years = published_journals.pivot_forward(["_:releaseYear"])
     
     merged_sets = papers_set.merge(published_journals)
     merged_sets = merged_sets.merge(journals_release_years)
@@ -334,8 +373,12 @@ class FunctionalTest < Test::Unit::TestCase
 
     papers_whose_journal_released_2005_count = journals_release_years.map{|m| m.domain_count(merged_sets)}
     expected_extension = {
-      2005 => Set.new([2]),
-      2010 => Set.new([1])
+      2005 => {
+        Entity.new("domain_count")=>Set.new([2])
+      },
+      2010 => {
+        Entity.new("domain_count")=>Set.new([1])
+      },
     }
     assert_equal expected_extension, papers_whose_journal_released_2005_count.extension
   end
@@ -413,80 +456,126 @@ class FunctionalTest < Test::Unit::TestCase
     patents_dataset = Xset.new
     patents_dataset.server = server
 
-    ipcs = patents_dataset.pivot_forward("_:ipc")
+    ipcs = patents_dataset.pivot_forward(["_:ipc"])
     expected_extension = {
-      Entity.new("_:p1") => Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")]),
-      Entity.new("_:p2") => Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")]),
-      Entity.new("_:p3") => Set.new([Entity.new("_:IPC2"), Entity.new("_:IPC3"), Entity.new("_:IPC4")]),
-      Entity.new("_:p4") => Set.new([Entity.new("_:IPC2"), Entity.new("_:IPC5")])
+      Entity.new("_:p1") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")])
+      },
+      Entity.new("_:p2") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")])
+      },
+      Entity.new("_:p3") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC2"), Entity.new("_:IPC3"), Entity.new("_:IPC4")])
+      },
+      Entity.new("_:p4") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC2"), Entity.new("_:IPC5")])
+      }
     }
     
     assert_equal expected_extension, ipcs.extension
 
     semiconductor_ipcs = ipcs.refine{|f| f.keyword_match([["semiconductor",  "silicon", "led", "insulator","transistor"]])}
     expected_extension = {
-      Entity.new("_:p1") => Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")]),
-      Entity.new("_:p2") => Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")]),
-      Entity.new("_:p3") => Set.new([Entity.new("_:IPC2"), Entity.new("_:IPC3"), Entity.new("_:IPC4")]),
-      Entity.new("_:p4") => Set.new([Entity.new("_:IPC2")])
+      Entity.new("_:p1") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")])
+      },
+      Entity.new("_:p2") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")])
+      },
+      Entity.new("_:p3") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC2"), Entity.new("_:IPC3"), Entity.new("_:IPC4")])
+      },
+      Entity.new("_:p4") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC2")])
+      }
     }
     
     assert_equal expected_extension, semiconductor_ipcs.extension
 
-    semiconductor_patents = semiconductor_ipcs.pivot_backward("_:ipc")
+    semiconductor_patents = semiconductor_ipcs.pivot_backward(["_:ipc"])
     expected_extension = {
-      Entity.new("_:IPC1") => Set.new([Entity.new("_:p1"), Entity.new("_:p2")]),
-      Entity.new("_:IPC2") => Set.new([Entity.new("_:p1"), Entity.new("_:p2"), Entity.new("_:p3"), Entity.new("_:p4")]),
-      Entity.new("_:IPC3") => Set.new([Entity.new("_:p3")]),
-      Entity.new("_:IPC4") => Set.new([Entity.new("_:p3")])
+      Entity.new("_:IPC1") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
+      },
+      Entity.new("_:IPC2") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:p1"), Entity.new("_:p2"), Entity.new("_:p3"), Entity.new("_:p4")])
+      },
+      Entity.new("_:IPC3") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:p3")])
+      },
+      Entity.new("_:IPC4") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:p3")])
+      }
     }
     
     assert_equal expected_extension, semiconductor_patents.extension
     
     patents_2001_2002 = semiconductor_patents.refine{|f| f.in_range("_:publication_year", 2001, 2004)}
     expected_extension = {
-      Entity.new("_:IPC1") => Set.new([Entity.new("_:p1"), Entity.new("_:p2")]),
-      Entity.new("_:IPC2") => Set.new([Entity.new("_:p1"), Entity.new("_:p2")]),
+      Entity.new("_:IPC1") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
+      },
+      Entity.new("_:IPC2") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
+      }
     }
     
     assert_equal expected_extension, patents_2001_2002.extension
 
     patents_2003_2004 = semiconductor_patents.refine{|f| f.in_range("_:publication_year", 2005, 2007)}
     expected_extension = {
-      Entity.new("_:IPC2") => Set.new([Entity.new("_:p3"), Entity.new("_:p4")]),
-      Entity.new("_:IPC3") => Set.new([Entity.new("_:p3")]),
-      Entity.new("_:IPC4") => Set.new([Entity.new("_:p3")])
+      Entity.new("_:IPC2") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:p3"), Entity.new("_:p4")])
+      },
+      Entity.new("_:IPC3") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:p3")])
+      },
+      Entity.new("_:IPC4") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:p3")])
+      }
     }
     
     assert_equal expected_extension, patents_2003_2004.extension
 
-    ipcs_2001_2002 = patents_2001_2002.pivot_forward("_:ipc").intersect(semiconductor_ipcs)
+    ipcs_2001_2002 = patents_2001_2002.pivot_forward(["_:ipc"]).intersect(semiconductor_ipcs)
     expected_extension = {
-      Entity.new("_:p1") => Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")]),
-      Entity.new("_:p2") => Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")])
+      Entity.new("_:p1") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")])
+      },
+      Entity.new("_:p2") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")])
+      }
     }
     
     assert_equal expected_extension, ipcs_2001_2002.extension
 
-    ipcs_2003_2004 = patents_2003_2004.pivot_forward("_:ipc").intersect(semiconductor_ipcs)
+    ipcs_2003_2004 = patents_2003_2004.pivot_forward(["_:ipc"]).intersect(semiconductor_ipcs)
     expected_extension = {
-      Entity.new("_:p3") => Set.new([Entity.new("_:IPC2"), Entity.new("_:IPC3"), Entity.new("_:IPC4")]),
-      Entity.new("_:p4") => Set.new([Entity.new("_:IPC2")])
+      Entity.new("_:p3") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC2"), Entity.new("_:IPC3"), Entity.new("_:IPC4")])
+      },
+      Entity.new("_:p4") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC2")])
+      }
     }
     
     assert_equal expected_extension, ipcs_2003_2004.extension
 
     ipcs_not_addressed_anymore = ipcs_2001_2002.diff(ipcs_2003_2004)
     expected_extension = {
-      Entity.new("_:p1") => Set.new([Entity.new("_:IPC1")]),
-      Entity.new("_:p2") => Set.new([Entity.new("_:IPC1")])
+      Entity.new("_:p1") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1")])
+      },
+      Entity.new("_:p2") => {
+        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1")])
+      }
     }
     
     assert_equal expected_extension, ipcs_not_addressed_anymore.extension
 
     ipcs_started_to_be_addressed = ipcs_2003_2004.diff(ipcs_2001_2002)
     expected_extension = {
-      Entity.new("_:p3") => Set.new([Entity.new("_:IPC4"), Entity.new("_:IPC3")]),
+      Entity.new("_:p3") => {Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC4"), Entity.new("_:IPC3")])},
     }    
     
     assert_equal expected_extension, ipcs_started_to_be_addressed.extension

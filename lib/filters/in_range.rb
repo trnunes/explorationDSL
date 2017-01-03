@@ -15,7 +15,7 @@ module Filtering
     
     def eval(set)
       build_query_filter(set).filter_by_range(@relation, @min, @max)
-      super(set.extension_copy)
+      super(set.extension_copy, set)
     end
     
     def expression

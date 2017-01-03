@@ -16,9 +16,7 @@ module Filtering
       keep_item = false
       
       relations_query.execute.each_pair do |item, relations|
-        keep_item = false
-
-        
+        keep_item = false        
       
         relations.values.each do |related_item|
           @keyword_pattern.each do |pattern|
@@ -31,10 +29,13 @@ module Filtering
             end
           end
         end
-        
-        Filtering.remove_from_extension(extension, item) if !keep_item      
+        if set.empty_image?
+          Filtering.remove_from_domain(extension, item) if !keep_item
+        else
+          Filtering.remove_from_image(extension, item) if !keep_item      
+        end        
       end
-      super(extension)
+      super(extension, set)
     end
     
     def expression

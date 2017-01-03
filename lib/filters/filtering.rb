@@ -24,11 +24,22 @@ module Filtering
     filtered_extension
   end
   
-  def self.remove_from_extension(extension, item)
-    extension.each_key do |key|
-      extension[key].delete(item)
-      extension.delete(key) if extension[key].empty?
-    end    
+  def self.remove_from_domain(extension, item)
+    extension.delete(item)
+  end
+  
+  def self.remove_from_image(extension, item)
+    
+    extension.each do |ext_item, relations|
+      if relations.is_a? Hash
+        Filtering.remove_from_image(relations, item)
+      else
+        relations.delete(item)
+      end      
+      if relations.empty?
+        extension.delete(ext_item)
+      end
+    end
   end
   
   class Filter
@@ -43,9 +54,17 @@ module Filtering
         
         @filter = set.server.begin_filter
       else
+
+
         @filter = set.server.begin_filter do |f|
           f.union do |u|
-            set.each do |item|
+            items = []
+            if set.empty_image?
+              items = set.domain
+            else
+              items = set.image
+            end           
+            items.each do |item|
               u.equals(item)
             end
           end
@@ -69,24 +88,37 @@ module Filtering
       @nav_query
     end
     
-    def eval(extension)
-      
+    def eval(extension, set)
+
       if !@filter.nil?
         filtered_items = @filter.eval
+        filtered_items_hash = {}
+        filtered_items.each{|f| filtered_items_hash[f] = {}}
         if extension.empty?
           filtered_items.each do |item|
-            extension[item.to_s] = Set.new([item])
+            extension[item] = {}
           end
         else
-          extension.each_key do |key|
-            extension[key].each do |value|
-              extension[key].delete(value) if !filtered_items.include?(value)
+          if set.empty_image?
+            extension.each_key do |item|
+              extension.delete(item) if !filtered_items_hash.has_key?(item)
             end
-            extension.delete(key) if extension[key].empty?
-          end          
-        end
-      
+          else
+            extension.each_key do |key|
+              extension[key].each do |relation_id, values|
+                values.each do |value|                
+                  if !filtered_items_hash.has_key?(value)
+                    values.delete(value)                 
+                    extension[key].delete(relation_id) if values.empty?
+                    extension.delete(key) if extension[key].empty?            
+                  end                      
+                end
+              end
+            end            
+          end
+        end      
       end
+
       extension
     end
   end
