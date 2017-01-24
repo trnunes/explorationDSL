@@ -1,24 +1,30 @@
 
 class Entity < Item
-  attr_accessor :id
-  def initialize(id)
-    @id = id
+      
+  def relations
+    relations = {}
+    servers.each do |server|
+      query = server.begin_nav_query do |q|        
+        q.on(Entity.new(params[:id]))
+        q.find_relations
+      end    
+      results_hash = query.execute
+
+      results_hash.each do |relation, values|
+        if relations.has_key?(relation)
+          relations[relation] += values
+        else
+          relations[relation] = values
+        end
+      end
+    end
+    relations
   end
-  def to_s
-    @id.to_s
-  end
-  
+    
   def entity?
     true
   end
-  
-  def hash
-    @id.hash
-  end
-  
-  def eql?(entity)
-    self.class.equal?(entity.class) && @id == entity.id
-  end
+    
   
   def expression
     "Entity.new(\"" + id + "\")"
@@ -34,5 +40,5 @@ class Entity < Item
   def self.json_create(json_hash)
     new(json_hash["data"]["id"])
   end
-  alias == eql?
+
 end

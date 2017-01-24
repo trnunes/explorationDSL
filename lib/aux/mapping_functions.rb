@@ -19,8 +19,8 @@ module MappingFunctions
   class Average < Function
     
     TYPE = Types::AGGREGATOR
-    def initialize(name)
-      super(name)
+    def initialize()
+      super("avg")
       @sum = 0
       @count = 0
       @mapped_items = []
@@ -37,8 +37,9 @@ module MappingFunctions
     def mappings
       avg = @sum/@count
       mappings = {}
-      @mapped_items.each do |item|
-        mappings[item] = Set.new([avg])
+      mappings[avg] ||= {}
+      @mapped_items.each do |item|        
+        mappings[avg][item] = Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/operation/map{|mf|mf.avg}")
       end
       mappings
     end
@@ -46,8 +47,8 @@ module MappingFunctions
   
   class Count < Function    
     TYPE = Types::AGGREGATOR
-    def initialize(name)
-      super(name)
+    def initialize()
+      super("count")
       @count = 0
       @mapped_items = []
     end
@@ -60,9 +61,9 @@ module MappingFunctions
     end
     
     def mappings      
-      mappings = {}
-      @mapped_items.each do |item|
-        mappings[item] = Set.new([@count])
+      mappings = {@count => {}}
+      @mapped_items.each do |item|        
+        mappings[@count][item] = Entity.new("http://www.tecweb.inf.puc-rio.br/xpair/operation/map{|mf|mf.count}")
       end
       mappings
     end
@@ -72,8 +73,8 @@ module MappingFunctions
     
     TYPE = Types::AGGREGATOR
     attr_accessor :origin_set
-    def initialize(name, target_set)
-      super(name)
+    def initialize(target_set)
+      super("domain_count")
       @counts_by_image={}
       @target_set = target_set
     end
@@ -86,10 +87,9 @@ module MappingFunctions
         item_image = @target_set.each_domain([item])
         if !item_image.nil?
           image_set.merge(item_image)
-        end
-        
-        
-        @counts_by_image[item] = Set.new([image_set.size])
+        end        
+        @counts_by_image[image_set.size] ||={}
+        @counts_by_image[image_set.size][item] = Entity.new("http://www.tecweb.inf.puc-rio.br/xpair/operation/map{|mf|mf.domain_count}")
       end
     end
     
@@ -101,14 +101,14 @@ module MappingFunctions
   
   def self.count
     count = 0    
-    return Count.new("MappingFunctions.count")
+    return Count.new()
   end
   
   def self.avg
-    return Average.new("MappingFunctions.avg")
+    return Average.new()
   end
   
   def self.domain_count(target_set)
-    return DomainCount.new("MappingFunctions.each_image_count", target_set)
+    return DomainCount.new(target_set)
   end
 end

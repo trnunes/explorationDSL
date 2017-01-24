@@ -18,17 +18,10 @@ module Filtering
       extension = set.extension_copy
       
       if(@relation.nil?)
-        if set.empty_image?
-          set.each_domain.select{|item| item.to_s.match(/#{@pattern}/).nil?}.each do |removed_item|        
-            Filtering.remove_from_domain(extension, removed_item) 
-          end          
-        else
-          set.each_image.select{|item| item.to_s.match(/#{@pattern}/).nil?}.each do |removed_item|        
-            Filtering.remove_from_image(extension, removed_item) 
-          end          
-        end
-      else
-        
+        set.each.select{|item| item.to_s.match(/#{@pattern}/).nil?}.each do |removed_item|        
+          extension.delete(removed_item) 
+        end          
+      else        
         build_query_filter(set).relation_regex(@relation, @pattern)
       end
       super(extension, set)

@@ -1,6 +1,7 @@
 require "test/unit"
 require "rdf"
 
+require './mixins/auxiliary_operations'
 require './mixins/hash_explorable'
 require './mixins/enumerable'
 require './mixins/persistable'
@@ -13,6 +14,8 @@ require './filters/in_range'
 require './model/item'
 require './model/xset'
 require './model/entity'
+require './model/relation'
+require './model/type'
 require './model/ranked_set'
 
 require './aux/grouping_expression.rb'
@@ -115,25 +118,30 @@ class FunctionalTest < Test::Unit::TestCase
     
     #CALCULANDO o ano médio das referências
     citations = s0.pivot_forward(["_:cite"])
-    assert_equal "PivotForward(S1, _:cite)", citations.view_expression
 
     expected_extension = {
-      Entity.new("_:paper1") => {
-        Entity.new("_:cite") => Set.new([Entity.new("_:p2"), Entity.new("_:p3"), Entity.new("_:p4")])
+      Entity.new("_:p2") => {
+        Entity.new("_:paper1") => Relation.new("_:cite")
+      },
+      Entity.new("_:p3") => {
+        Entity.new("_:paper1") => Relation.new("_:cite")
+      },
+      Entity.new("_:p4") => {
+        Entity.new("_:paper1") => Relation.new("_:cite")
       }
     }
     assert_equal citations.extension, expected_extension
     
     publication_years = citations.pivot_forward(["_:publicationYear"])
     expected_extension = {
-      Entity.new("_:p2") => {
-        Entity.new("_:publicationYear")=>Set.new([2000])
+      2000 => {
+        Entity.new("_:p2") => Relation.new("_:publicationYear")
       },
-      Entity.new("_:p3") => {
-        Entity.new("_:publicationYear")=>Set.new([1998])
+      1998 => {
+        Entity.new("_:p3") => Relation.new("_:publicationYear")
       },
-      Entity.new("_:p4") => {
-        Entity.new("_:publicationYear")=>Set.new([2010])
+      2010 => {
+        Entity.new("_:p4") => Relation.new("_:publicationYear")
       }
     }
 
@@ -141,9 +149,11 @@ class FunctionalTest < Test::Unit::TestCase
     
     meanYear = publication_years.map{|mf| mf.avg}
     expected_extension = {
-      2000 => {},
-      1998 => {},
-      2010 => {}
+      2002 => {
+        2000 => Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/operation/map{|mf|mf.avg}"),
+        1998 => Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/operation/map{|mf|mf.avg}"),
+        2010 => Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/operation/map{|mf|mf.avg}")
+      }
     }
     assert_equal expected_extension, meanYear.extension
     
@@ -151,8 +161,14 @@ class FunctionalTest < Test::Unit::TestCase
     keywords = s0.pivot_forward(["_:keywords"])
     
     expected_extension = {
-      Entity.new("_:paper1") => {
-        Entity.new("_:keywords")=> Set.new([Entity.new("_:k1"), Entity.new("_:k2"), Entity.new("_:k3")])
+      Entity.new("_:k1") => {
+        Entity.new("_:paper1")=> Relation.new("_:keywords")
+      },
+      Entity.new("_:k2") => {
+        Entity.new("_:paper1")=> Relation.new("_:keywords")
+      },
+      Entity.new("_:k3") => {
+        Entity.new("_:paper1")=> Relation.new("_:keywords")
       }
     }
     
@@ -174,39 +190,62 @@ class FunctionalTest < Test::Unit::TestCase
     assert_equal expected_extension, papers_with_keywords.extension
     
     related_papers_citations = papers_with_keywords.pivot_backward(["_:cite"])
-    
     expected_extension = {
-      Entity.new("_:p2") => {
-        Entity.new("_:cite")=>Set.new([Entity.new("_:p6"),Entity.new("_:paper1")])
+      Entity.new("_:paper1") => {
+        Entity.new("_:p2") => Relation.new("_:cite"),
+        Entity.new("_:p3") => Relation.new("_:cite")
       },
-      Entity.new("_:p3") => {
-        Entity.new("_:cite")=>Set.new([Entity.new("_:p6"),Entity.new("_:p7"), Entity.new("_:p8"), Entity.new("_:paper1")])
+      Entity.new("_:p6") => {
+        Entity.new("_:p2") => Relation.new("_:cite"),
+        Entity.new("_:p3") => Relation.new("_:cite"),
+        Entity.new("_:p5") => Relation.new("_:cite")
       },
-      Entity.new("_:p5") => {
-        Entity.new("_:cite")=>Set.new([Entity.new("_:p6"),Entity.new("_:p7"), Entity.new("_:p8"), Entity.new("_:p9"), Entity.new("_:p10")])
-      }
+      Entity.new("_:p7") => {
+        Entity.new("_:p3") => Relation.new("_:cite"),
+        Entity.new("_:p5") => Relation.new("_:cite")
+      },
+      Entity.new("_:p8") => {
+        Entity.new("_:p3") => Relation.new("_:cite"),
+        Entity.new("_:p5") => Relation.new("_:cite")
+      },
+      Entity.new("_:p9") => {
+        Entity.new("_:p5") => Relation.new("_:cite")
+      },
+      Entity.new("_:p10") => {
+        Entity.new("_:p5") => Relation.new("_:cite"),
+      }     
     }
     
     assert_equal expected_extension, related_papers_citations.extension
     
     ranked_papers = papers_with_keywords.rank{|f| f.each_image_count(related_papers_citations)}
     
-    expected_extension = [Entity.new("_:p5"), Entity.new("_:p3"), Entity.new("_:p2"), Entity.new("_:paper1")]    
+    expected_extension = {
+      Entity.new("_:p5") => {}, 
+      Entity.new("_:p3") => {}, 
+      Entity.new("_:p2") => {}, 
+      Entity.new("_:paper1") => {}
+    }
     
-    assert_equal expected_extension, ranked_papers.ranked_extension
+    assert_equal expected_extension, ranked_papers.extension
     
     not_cited_relevant_papers = ranked_papers.diff(citations).diff(s0)
     
-    expected_extension = [Entity.new("_:p5")]    
+    expected_extension = {
+      Entity.new("_:p5") => {}
+    }
     
-    assert_equal expected_extension, not_cited_relevant_papers.ranked_extension
+    assert_equal expected_extension, not_cited_relevant_papers.extension
 
     ##AVALIANDO AUTO REFERÊNCIAS
     authors = s0.pivot_forward(["_:author"])
     
     expected_extension = {
-      Entity.new("_:paper1") => {
-        Entity.new("_:author")=>Set.new([Entity.new("_:a1"), Entity.new("_:a2")])
+      Entity.new("_:a1") => {
+        Entity.new("_:paper1") => Relation.new("_:author")
+      },
+      Entity.new("_:a2") => {
+        Entity.new("_:paper1") => Relation.new("_:author")
       }
     }
     
@@ -215,11 +254,19 @@ class FunctionalTest < Test::Unit::TestCase
     papers_of_authors = authors.pivot_backward(["_:author"])
     
     expected_extension = {
-      Entity.new("_:a1") => {
-        Entity.new("_:author")=>Set.new([Entity.new("_:paper1"), Entity.new("_:p2"), Entity.new("_:p5")])
+      Entity.new("_:paper1") => {
+        Entity.new("_:a1") => Relation.new("_:author"),
+        Entity.new("_:a2") => Relation.new("_:author")
       },
-      Entity.new("_:a2") => {
-        Entity.new("_:author")=>Set.new([Entity.new("_:paper1"), Entity.new("_:p3"), Entity.new("_:p5")])
+      Entity.new("_:p2") => {
+        Entity.new("_:a1") => Relation.new("_:author")
+      },
+      Entity.new("_:p3") => {
+        Entity.new("_:a2") => Relation.new("_:author")
+      },
+      Entity.new("_:p5") => {
+        Entity.new("_:a1") => Relation.new("_:author"),
+        Entity.new("_:a2") => Relation.new("_:author")
       }
     }
     
@@ -228,25 +275,29 @@ class FunctionalTest < Test::Unit::TestCase
     intersection = citations.intersect(papers_of_authors)
     
     expected_extension = {
-      Entity.new("_:paper1") => {
-        Entity.new("author")=>Set.new([Entity.new("_:p2"), Entity.new("_:p3")])
-      }
+      Entity.new("_:p2") => {
+        Entity.new("_:paper1") => Relation.new("_:cite")
+      },
+      Entity.new("_:p3") => {
+        Entity.new("_:paper1") => Relation.new("_:cite")
+      },
     }
     assert_equal expected_extension, intersection.extension
     
     missing_papers_count = intersection.map{|m| m.count}
     
     expected_extension = {
-      Entity.new("_:paper1") => {
-        Entity.new("count") => Set.new([2])
+      2 => {
+        Entity.new("_:paper1") => Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/operation/map{|mf|mf.count}")
       }
     }
+    
     #Avaliando quantas citações foram também publicadas no mesmo journal
     submitted_journal = s0.pivot_forward(["_:submittedTo"])
     
     expected_extension = {
-      Entity.new("_:paper1") => {
-        Entity.new("_:submittedTo")=>Set.new([Entity.new("_:journal1")])
+      Entity.new("_:journal1") => {
+        Entity.new("_:paper1")=>Relation.new("_:submittedTo")
       }
     }
     assert_equal expected_extension, submitted_journal.extension
@@ -254,8 +305,11 @@ class FunctionalTest < Test::Unit::TestCase
     citations_published_same_journal = citations.refine{|f| f.equals("_:publishedOn", submitted_journal.first)} 
     
     expected_extension = {
-      Entity.new("_:paper1") => {
-        Entity.new("_:cite")=>Set.new([Entity.new("_:p2"), Entity.new("_:p4")])
+      Entity.new("_:p2") => {
+        Entity.new("_:paper1") => Relation.new("_:cite")
+      },
+      Entity.new("_:p4") => {
+        Entity.new("_:paper1") => Relation.new("_:cite")
       }
     }
     
@@ -327,62 +381,7 @@ class FunctionalTest < Test::Unit::TestCase
     }
     
   end
-  
-  def test_task_faceted_search
-    papers_set = Xset.new do |s|
-      s.server = @papers_server
-    end
     
-
-    authors_set = papers_set.pivot_forward("_:author")
-    
-    papers_by_author_count = authors_set.map{|mf| mf.domain_count(papers_set.merge(authors_set))}    
-    expected_extension = {
-      Entity.new("_:a1") => {
-        Entity.new("domain_count")=>Set.new([3])
-      },
-      Entity.new("_:a2") => {
-        Entity.new("domain_count")=>Set.new([3])
-      }
-    }    
-    assert_equal expected_extension, papers_by_author_count.extension
-    
-    papers_author1 = papers_set.refine{|f| f.equals("_:author", "_:a1")}
-    papers_by_author_count = authors_set.map{|mf| mf.domain_count(papers_author1.merge(authors_set))}
-    expected_extension = {
-      Entity.new("_:a1") => {
-        Entity.new("domain_count")=>Set.new([3])
-      },
-      Entity.new("_:a2") => {
-        Entity.new("domain_count")=>Set.new([2])
-      }
-    }
-    assert_equal expected_extension, papers_by_author_count.extension
-  end
-  
-  def test_task_faceted_search_pivot_twice
-    papers_set = Xset.new do |s|
-      s.server = @papers_server
-    end
-    published_journals = papers_set.pivot_forward(["_:publishedOn"])
-    journals_release_years = published_journals.pivot_forward(["_:releaseYear"])
-    
-    merged_sets = papers_set.merge(published_journals)
-    merged_sets = merged_sets.merge(journals_release_years)
-    
-
-    papers_whose_journal_released_2005_count = journals_release_years.map{|m| m.domain_count(merged_sets)}
-    expected_extension = {
-      2005 => {
-        Entity.new("domain_count")=>Set.new([2])
-      },
-      2010 => {
-        Entity.new("domain_count")=>Set.new([1])
-      },
-    }
-    assert_equal expected_extension, papers_whose_journal_released_2005_count.extension
-  end
-  
   # def test_task_lobbying
   #
   #   bills_graph = RDF::Graph.new do |g|
@@ -458,35 +457,46 @@ class FunctionalTest < Test::Unit::TestCase
 
     ipcs = patents_dataset.pivot_forward(["_:ipc"])
     expected_extension = {
-      Entity.new("_:p1") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")])
+      Entity.new("_:IPC1") =>{
+        Entity.new("_:p1")=> Relation.new("_:ipc"),
+        Entity.new("_:p2")=> Relation.new("_:ipc")
       },
-      Entity.new("_:p2") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")])
+      Entity.new("_:IPC2") =>{
+        Entity.new("_:p1")=> Relation.new("_:ipc"),
+        Entity.new("_:p2")=> Relation.new("_:ipc"),
+        Entity.new("_:p3")=> Relation.new("_:ipc"),
+        Entity.new("_:p4")=> Relation.new("_:ipc")
       },
-      Entity.new("_:p3") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC2"), Entity.new("_:IPC3"), Entity.new("_:IPC4")])
+      Entity.new("_:IPC3") =>{
+        Entity.new("_:p3")=> Relation.new("_:ipc")
       },
-      Entity.new("_:p4") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC2"), Entity.new("_:IPC5")])
-      }
+      Entity.new("_:IPC4") =>{
+        Entity.new("_:p3")=> Relation.new("_:ipc")
+      },
+      Entity.new("_:IPC5") =>{
+        Entity.new("_:p4")=> Relation.new("_:ipc")
+      },
     }
     
     assert_equal expected_extension, ipcs.extension
 
     semiconductor_ipcs = ipcs.refine{|f| f.keyword_match([["semiconductor",  "silicon", "led", "insulator","transistor"]])}
     expected_extension = {
-      Entity.new("_:p1") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")])
+      Entity.new("_:IPC1") =>{
+        Entity.new("_:p1")=> Relation.new("_:ipc"),
+        Entity.new("_:p2")=> Relation.new("_:ipc")
       },
-      Entity.new("_:p2") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")])
+      Entity.new("_:IPC2") =>{
+        Entity.new("_:p1")=> Relation.new("_:ipc"),
+        Entity.new("_:p2")=> Relation.new("_:ipc"),
+        Entity.new("_:p3")=> Relation.new("_:ipc"),
+        Entity.new("_:p4")=> Relation.new("_:ipc")
       },
-      Entity.new("_:p3") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC2"), Entity.new("_:IPC3"), Entity.new("_:IPC4")])
+      Entity.new("_:IPC3") =>{
+        Entity.new("_:p3")=> Relation.new("_:ipc")
       },
-      Entity.new("_:p4") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC2")])
+      Entity.new("_:IPC4") =>{
+        Entity.new("_:p3")=> Relation.new("_:ipc")
       }
     }
     
@@ -494,29 +504,35 @@ class FunctionalTest < Test::Unit::TestCase
 
     semiconductor_patents = semiconductor_ipcs.pivot_backward(["_:ipc"])
     expected_extension = {
-      Entity.new("_:IPC1") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
+      Entity.new("_:p1") => {
+        Entity.new("_:IPC1") => Relation.new("_:ipc"),
+        Entity.new("_:IPC2") => Relation.new("_:ipc")
       },
-      Entity.new("_:IPC2") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:p1"), Entity.new("_:p2"), Entity.new("_:p3"), Entity.new("_:p4")])
+      Entity.new("_:p2") => {
+        Entity.new("_:IPC1") => Relation.new("_:ipc"),
+        Entity.new("_:IPC2") => Relation.new("_:ipc")        
       },
-      Entity.new("_:IPC3") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:p3")])
+      Entity.new("_:p3") => {
+        Entity.new("_:IPC3") => Relation.new("_:ipc"),
+        Entity.new("_:IPC4") => Relation.new("_:ipc"),
+        Entity.new("_:IPC2") => Relation.new("_:ipc")       
       },
-      Entity.new("_:IPC4") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:p3")])
-      }
+      Entity.new("_:p4") => {
+        Entity.new("_:IPC2") => Relation.new("_:ipc")
+      }      
     }
     
     assert_equal expected_extension, semiconductor_patents.extension
     
     patents_2001_2002 = semiconductor_patents.refine{|f| f.in_range("_:publication_year", 2001, 2004)}
     expected_extension = {
-      Entity.new("_:IPC1") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
+      Entity.new("_:p1") => {
+        Entity.new("_:IPC1") => Relation.new("_:ipc"),
+        Entity.new("_:IPC2") => Relation.new("_:ipc")
       },
-      Entity.new("_:IPC2") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
+      Entity.new("_:p2") => {
+        Entity.new("_:IPC1") => Relation.new("_:ipc"),
+        Entity.new("_:IPC2") => Relation.new("_:ipc")        
       }
     }
     
@@ -524,26 +540,27 @@ class FunctionalTest < Test::Unit::TestCase
 
     patents_2003_2004 = semiconductor_patents.refine{|f| f.in_range("_:publication_year", 2005, 2007)}
     expected_extension = {
-      Entity.new("_:IPC2") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:p3"), Entity.new("_:p4")])
+      Entity.new("_:p3") => {
+        Entity.new("_:IPC3") => Relation.new("_:ipc"),
+        Entity.new("_:IPC2") => Relation.new("_:ipc"),
+        Entity.new("_:IPC4") => Relation.new("_:ipc")       
       },
-      Entity.new("_:IPC3") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:p3")])
-      },
-      Entity.new("_:IPC4") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:p3")])
-      }
+      Entity.new("_:p4") => {
+        Entity.new("_:IPC2") => Relation.new("_:ipc")
+      }      
     }
     
     assert_equal expected_extension, patents_2003_2004.extension
 
     ipcs_2001_2002 = patents_2001_2002.pivot_forward(["_:ipc"]).intersect(semiconductor_ipcs)
     expected_extension = {
-      Entity.new("_:p1") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")])
+      Entity.new("_:IPC1") =>{
+        Entity.new("_:p1")=> Relation.new("_:ipc"),
+        Entity.new("_:p2")=> Relation.new("_:ipc")
       },
-      Entity.new("_:p2") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1"), Entity.new("_:IPC2")])
+      Entity.new("_:IPC2") =>{
+        Entity.new("_:p1")=> Relation.new("_:ipc"),
+        Entity.new("_:p2")=> Relation.new("_:ipc")
       }
     }
     
@@ -551,23 +568,25 @@ class FunctionalTest < Test::Unit::TestCase
 
     ipcs_2003_2004 = patents_2003_2004.pivot_forward(["_:ipc"]).intersect(semiconductor_ipcs)
     expected_extension = {
-      Entity.new("_:p3") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC2"), Entity.new("_:IPC3"), Entity.new("_:IPC4")])
+      Entity.new("_:IPC2") =>{
+        Entity.new("_:p3")=> Relation.new("_:ipc"),
+        Entity.new("_:p4")=> Relation.new("_:ipc")
       },
-      Entity.new("_:p4") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC2")])
-      }
+      Entity.new("_:IPC3") =>{
+        Entity.new("_:p3")=> Relation.new("_:ipc")
+      },
+      Entity.new("_:IPC4") =>{
+        Entity.new("_:p3")=> Relation.new("_:ipc")
+      }      
     }
     
     assert_equal expected_extension, ipcs_2003_2004.extension
 
     ipcs_not_addressed_anymore = ipcs_2001_2002.diff(ipcs_2003_2004)
     expected_extension = {
-      Entity.new("_:p1") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1")])
-      },
-      Entity.new("_:p2") => {
-        Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC1")])
+      Entity.new("_:IPC1") =>{
+        Entity.new("_:p1")=> Relation.new("_:ipc"),
+        Entity.new("_:p2")=> Relation.new("_:ipc")
       }
     }
     
@@ -575,7 +594,12 @@ class FunctionalTest < Test::Unit::TestCase
 
     ipcs_started_to_be_addressed = ipcs_2003_2004.diff(ipcs_2001_2002)
     expected_extension = {
-      Entity.new("_:p3") => {Entity.new("_:ipc")=>Set.new([Entity.new("_:IPC4"), Entity.new("_:IPC3")])},
+      Entity.new("_:IPC3") =>{
+        Entity.new("_:p3")=> Relation.new("_:ipc")
+      },
+      Entity.new("_:IPC4") =>{
+        Entity.new("_:p3")=> Relation.new("_:ipc")
+      }      
     }    
     
     assert_equal expected_extension, ipcs_started_to_be_addressed.extension

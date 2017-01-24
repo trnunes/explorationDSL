@@ -6,8 +6,8 @@ module Xenumerable
   def each_pair
   end
 
-  def paginate(page_number, max_elements, image_paginate)
-    @paginate_image = image_paginate
+  def paginate(page_number, max_elements)
+
     @page = page_number
     @max_per_page = max_elements
     if extension.empty? && root?
@@ -30,17 +30,12 @@ module Xenumerable
     @page
   end
   
-  def paginate_image?
-    @paginate_image ||= false
-    @paginate_image
+  def [](item)
+    self.extension[item]
   end
   
   def max_per_page
-    if paginate_image?
-      @max_per_page ||= image.size
-    else
-      @max_per_page ||= domain.size
-    end
+    @max_per_page ||= extension.keys.size
     @max_per_page 
   end
   
@@ -48,7 +43,7 @@ module Xenumerable
     if max_per_page == 0
       return 0
     end    
-    (domain.size/max_per_page.to_f).ceil
+    (size/max_per_page.to_f).ceil
   end
   
   def image_number_of_pages
@@ -58,20 +53,21 @@ module Xenumerable
     (image.size/max_per_page.to_f).ceil    
   end
   
-  def limit(total_size)
-    if total_size == 0 || max_per_page == 0
+  def limit
+
+    if size == 0 || max_per_page == 0
       return 0
     end
     
-    number_of_pages = (total_size.to_f/max_per_page.to_f).ceil
+    number_of_pages = (size.to_f/max_per_page.to_f).ceil
     if page == number_of_pages
-      total_size
+      size
     else
       (max_per_page * page) - 1
     end    
   end
   
-  def number_Of_pages
+  def number_of_pages
     if max_per_page == 0
       return 0
     end
@@ -79,7 +75,7 @@ module Xenumerable
     if(page.nil?)
       1
     else
-      (image.size.to_f/max_per_page.to_f).ceil
+      (size.to_f/max_per_page.to_f).ceil
     end
   end
   
@@ -87,21 +83,41 @@ module Xenumerable
     (page - 1) * max_per_page
   end
   
-  def image
-    @image ||= extension.values.map{|relation| relation.values.map{|value| value.to_a}.flatten}.flatten.uniq
-    puts "IMAGE: " << @image.inspect
+  def image    
+    @image ||= all_images(extension)
     @image
   end
   
-  def domain
-    @domain ||= extension.keys
-    @domain
+  def all_images(hash)
+    image = Set.new
+    hash.each do |item, relations_hash|
+      relations_hash.each do |relation, values|
+        if values.is_a? Hash
+          iamge += all_images(values)
+        else
+          values.each do |v|
+            image << v
+          end          
+        end        
+      end
+    end    
+    image
   end
+  
+  def domain(paginated)
+    @domain ||= extension.keys
+    if paginated
+      @domain[offset..limit]
+    else
+      @domain
+    end    
+  end
+  
   
   def restricted_domain(set, &block)
     restricted_domain_set = Set.new()
     set.each do |item|
-      domain_keys = domain()
+      domain_keys = domain(false)
       domain_keys.each do |key|
         images = images_for(key, extension)
         if images.include?(item)
@@ -115,9 +131,14 @@ module Xenumerable
     restricted_domain_set
   end
   
+  def each_domain_paginated(&block)
+    domain(true).each &block if block_given?
+    Set.new(domain(true))
+  end
+  
   def each_domain(&block)
-    domain[offset..limit(domain.size)].each &block if block_given?
-    Set.new(domain[offset..limit(domain.size)])
+    domain(false).each &block if block_given?
+    Set.new(domain(false))
   end
   
   def restricted_image(set, &block)
@@ -136,19 +157,34 @@ module Xenumerable
     Set.new(image[offset..limit(image.size)])
   end
   
+  def each_paginated(&block)
+    if root?
+      server.each_item do |item| 
+        extension[item] = {}
+      end
+    end
+    domain(true).each &block
+  end
+  
   def each(&block)
     if root?
       server.each_item do |item| 
         extension[item] = {}
       end
     end
-    
-    if empty_image?
-      domain.each &block
-    else
-      image.each &block          
+    domain(false).each &block   
+  end
+  
+  def each_item(&block)
+    items_hash = {}
+    each_domain_paginated do |item|
+      if block_given?
+        yield(item, extension[item])
+      else
+        items_hash[item] = extension[item]
+      end
     end
-    
+    items_hash.each &block
   end
 
   def all_items(&block)
@@ -161,11 +197,11 @@ module Xenumerable
   end
   
   def size
-    self.each_image.size
+    self.extension.keys.size
   end
   
   def first
-    self.each_image.to_a.first
+    self.extension.keys.first
   end 
   
   def remove(item)

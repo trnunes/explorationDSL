@@ -29,11 +29,8 @@ module Filtering
             end
           end
         end
-        if set.empty_image?
-          Filtering.remove_from_domain(extension, item) if !keep_item
-        else
-          Filtering.remove_from_image(extension, item) if !keep_item      
-        end        
+
+        extension.delete(item) if !keep_item        
       end
       super(extension, set)
     end

@@ -4,7 +4,7 @@ module SPARQLQuery
     def initialize(server)
       @items = []
       @server = server
-      @construct_clauses = "Construct{ "
+      @construct_clauses = []
       @where_clauses = []
       @select_clauses = []
       @filters = []
@@ -47,10 +47,10 @@ module SPARQLQuery
     
       @items.each do |entity|
         if relation_uri.nil?
-          @construct_clauses += "<#{entity.to_s}> ?p#{@predicate_index += 1} ?o#{@object_index += 1}."
+          @construct_clauses << "<#{entity.to_s}> ?p#{@predicate_index += 1} ?o#{@object_index += 1}."
           @where_clauses << "<#{entity.to_s}> ?p#{@predicate_index} ?o#{@object_index}. FILTER regex(str(?p#{@predicate_index}), \"#{relation.to_s}\", \"i\")."
         else
-          @construct_clauses += "<#{entity.to_s}> <#{relation_uri.to_s}> ?o#{@object_index += 1}."
+          @construct_clauses << "<#{entity.to_s}> <#{relation_uri.to_s}> ?o#{@object_index += 1}."
           @where_clauses << "<#{entity.to_s}> <#{relation_uri.to_s}> ?o#{@object_index}."
         end
       end
@@ -71,10 +71,10 @@ module SPARQLQuery
     
       @items.each do |entity|
         if relation_uri.nil?
-          @construct_clauses += "?s#{@object_index += 1} ?p#{@predicate_index+=1} <#{entity.to_s}>."
+          @construct_clauses << "?s#{@object_index += 1} ?p#{@predicate_index+=1} <#{entity.to_s}>."
           @where_clauses << "?s#{@object_index} ?p#{@predicate_index} <#{entity.to_s}>. FILTER regex(str(?p#{@predicate_index}), \"#{relation.to_s}\", \"i\")."
         else
-          @construct_clauses += "?s#{@object_index += 1} <#{relation_uri.to_s}> <#{entity.to_s}>."
+          @construct_clauses << "?s#{@object_index += 1} <#{relation_uri.to_s}> <#{entity.to_s}>."
           @where_clauses << "?s#{@object_index} <#{relation_uri.to_s}> <#{entity.to_s}>."
         end      
       end
@@ -83,15 +83,17 @@ module SPARQLQuery
 
     def find_relations()
       
-      if @items.empty?
-        @select_clauses << "distinct ?p"
-        @where_clauses << "?s ?p ?o."
-        
-      end
-      
       @items.each do |entity|
-        @construct_clauses += "<#{entity.to_s}> ?p#{@predicate_index+=1} ?o."
+        @construct_clauses << "<#{entity.to_s}> ?p#{@predicate_index+=1} ?o."
         @where_clauses << "<#{entity.to_s}> ?p#{@predicate_index} ?o."        
+      end
+      self
+    end
+    
+    def find_relations_in_common()
+      @items.each do |entity|
+        @construct_clauses << "<#{entity.to_s}> ?p ?o#{@object_index +=1}."
+        @where_clauses << "<#{entity.to_s}> ?p ?o#{@object_index}."       
       end
       self
     end
@@ -104,38 +106,54 @@ module SPARQLQuery
   
     def execute
       hash = {}
+      pages = @items.size/650
+      
       
       if(@items.empty?)
         @server.execute(build_select_query()).each_solution do |solution|
           if(solution[:s].nil? && solution[:o].nil?)
-            hash[solution[:p].to_s] = {Entity.new(solution[:p].to_s) => Set.new([])}
+            relation = Relation.new(solution[:p].to_s)
+            relation.add_server(@server)
+            hash[relation] = {}
           else
-            hash[Entity.new(solution[:s].to_s)] ||= {}
-            hash[Entity.new(solution[:s].to_s)][Entity.new(solution[:p].to_s)] ||=[]
+            
+            item = Entity.new(solution[:s].to_s)
+            item.add_server(@server)
+            relation = Relation.new(solution[:p].to_s)
+            relation.add_server(@server)
+            hash[item] ||= {}
+            hash[item][relation] ||=[]
             # 
             if solution[:o].literal?
               object = convert_literal(solution[:o])
             else
               object = Entity.new(solution[:o].to_s)
+              object.add_server(@server)
             end
 
-            hash[Entity.new(solution[:s].to_s)][Entity.new(solution[:p].to_s)] << object
+            hash[item][relation] << object
           end
         end
         hash
       else
-        @server.execute(build_query()).each_statement do |solution|
+        build_queries().each do |query|
+          @server.execute(query).each_statement do |solution|
+            item = Entity.new(solution[0].to_s)
+            item.add_server(@server)
+            relation = Relation.new(solution[1].to_s)
+            relation.add_server(@server)
        
-          hash[Entity.new(solution[0].to_s)] ||= {}
-          hash[Entity.new(solution[0].to_s)][Entity.new(solution[1].to_s)] ||=[]
-          # 
-          if solution[2].literal?
-            object = convert_literal(solution[2])
-          else
-            object = Entity.new(solution[2].to_s)
+            hash[item] ||= {}
+            hash[item][relation] ||=[]
+            # 
+            if solution[2].literal?
+              object = convert_literal(solution[2])
+            else
+              object = Entity.new(solution[2].to_s)
+              object.add_server(@server)
+            end
+            hash[item][relation] << object
           end
-
-          hash[Entity.new(solution[0].to_s)][Entity.new(solution[1].to_s)] << object
         end
         @items.each do |item|
           if(!hash.has_key?(item))
@@ -157,7 +175,7 @@ module SPARQLQuery
     
     def build_select_query
       query = "SELECT " << @select_clauses.join(" . ") << build_where()  
-      
+      puts "EXECUTING: #{query}"
       query
     end
     
@@ -165,9 +183,22 @@ module SPARQLQuery
       " WHERE{" << @where_clauses.map{|where_clause| "{#{where_clause}}"}.join(" UNION ") << @filters.join(" ") << "}"
     end
 
-    def build_query
-      query =  @construct_clauses << "}" << build_where()      
-      query
+    def build_queries
+      queries = []
+      limit = 300
+      pages = @items.size/limit
+      pages = 1 if pages < 1
+      offset = 0
+      while offset < @items.size
+        where = " WHERE{" << @where_clauses[offset..limit].map{|where_clause| "{#{where_clause}}"}.join(" UNION ") << @filters.join(" ") << "}"
+        query =  "CONSTRUCT{" << @construct_clauses[offset..limit].join(" ") << "}" << where
+        puts "BUILT QUERY #{offset.to_s}: #{query}"
+        puts
+        queries << query
+        offset = limit + 1
+        limit += 300
+      end      
+      queries
     end
   end
 end

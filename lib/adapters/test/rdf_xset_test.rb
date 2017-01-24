@@ -2,6 +2,7 @@ require "test/unit"
 require "rdf"
 
 require './mixins/hash_explorable'
+require './mixins/auxiliary_operations'
 require './mixins/enumerable'
 require './mixins/persistable'
 require './filters/filtering'
@@ -13,6 +14,8 @@ require './filters/in_range'
 require './model/item'
 require './model/xset'
 require './model/entity'
+require './model/relation'
+require './model/type'
 require './model/ranked_set'
 
 require './aux/grouping_expression.rb'
@@ -130,122 +133,20 @@ class EndpointExplorationTest < Test::Unit::TestCase
       }
     end
     test_set.each
-    
     expected_extension = {
-      Entity.new("_:p1") => Set.new([Entity.new("_:r1")]),
-      Entity.new("_:p2") => Set.new([Entity.new("_:r1")]),
-      Entity.new("_:p3") => Set.new([Entity.new("_:r1")]),
-      Entity.new("_:p4") => Set.new([Entity.new("_:r2")]),
-      Entity.new("_:p5") => Set.new([Entity.new("_:r2")])      
+      Relation.new("_:r1") => {
+        Entity.new("_:p1") => Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/has_relation"),
+        Entity.new("_:p2") => Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/has_relation"),
+        Entity.new("_:p3") => Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/has_relation")
+      },
+      Relation.new("_:r2") => {
+        Entity.new("_:p4") => Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/has_relation"),
+        Entity.new("_:p5") => Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/has_relation")
+      }
     }
-    
     assert_equal expected_extension, test_set.relations.extension
   end
   
-  def test_domain
-    test_set = Xset.new do |s|
-      s.extension = { 
-        Entity.new("_:p1") => [Entity.new("_:o1"), Entity.new("_:o2")],
-        Entity.new("_:p2") => [Entity.new("_:o2")],
-        Entity.new("_:p3") => [Entity.new("_:o3")]
-      }     
-    end
-    
-    test_set.server = @server
-    
-    expected_domain = Set.new [Entity.new("_:p1"), Entity.new("_:p2"),Entity.new("_:p3")]   
-    
-    assert_equal expected_domain, Set.new(test_set.each_domain    )
-  end
-  
-  
-  def test_image
-    test_set = Xset.new do |s|
-      s.extension = { 
-        Entity.new("_:p1") => {
-          Entity.new("_:r1") => Set.new([Entity.new("_:o1"), Entity.new("_:o2")])
-        },
-        Entity.new("_:p2") => {
-          Entity.new("_:r1") => Set.new([Entity.new("_:o2")])
-        },
-        Entity.new("_:p3") => {
-          Entity.new("_:r1") => Set.new([Entity.new("_:o3")])
-        }
-      }     
-    end
-    
-    expected_image = Set.new [Entity.new("_:o1"), Entity.new("_:o2"), Entity.new("_:o3")] 
-    assert_equal expected_image, Set.new(test_set.each_image)
-  end
-  
-  def test_restricted_image
-    test_set = Xset.new do |s|
-      s.extension = { 
-        Entity.new("_:p1") => {
-          Entity.new("_:r1") => Set.new([Entity.new("_:o1"), Entity.new("_:o2")])
-        },
-        Entity.new("_:p2") => {
-          Entity.new("_:r1") => Set.new([Entity.new("_:o2")])
-        },
-        Entity.new("_:p3") => {
-          Entity.new("_:r1") => Set.new([Entity.new("_:o3")])
-        }
-      }     
-    end
-    
-    expected_restricted_image_p1 = Set.new([Entity.new("_:o1"), Entity.new("_:o2")])
-    expected_restricted_image_p2 = Set.new([Entity.new("_:o2")])
-    expected_restricted_image_p3 = Set.new([Entity.new("_:o3")])
-    
-    assert_equal expected_restricted_image_p1, test_set.restricted_image([Entity.new("_:p1")])
-    assert_equal expected_restricted_image_p2, test_set.restricted_image([Entity.new("_:p2")])
-    assert_equal expected_restricted_image_p3, test_set.restricted_image([Entity.new("_:p3")])    
-  end
-  
-  def test_restricted_domain
-    test_set = Xset.new do |s|
-      s.extension = { 
-        Entity.new("_:p1") => {
-          Entity.new("_:r1") => Set.new([Entity.new("_:o1"), Entity.new("_:o2")])
-        },
-        Entity.new("_:p2") => {
-          Entity.new("_:r1") => Set.new([Entity.new("_:o2")])
-        },
-        Entity.new("_:p3") => {
-          Entity.new("_:r1") => Set.new([Entity.new("_:o3")])
-        }
-      }     
-    end
-    
-    expected_restricted_domain_o1 = Set.new([Entity.new("_:p1")])
-    expected_restricted_domain_o2 = Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
-    expected_restricted_domain_o3 = Set.new([Entity.new("_:p3")])
-
-    assert_equal expected_restricted_domain_o1, test_set.restricted_domain([Entity.new("_:o1")])
-    assert_equal expected_restricted_domain_o2, test_set.restricted_domain([Entity.new("_:o2")])
-    assert_equal expected_restricted_domain_o3, test_set.restricted_domain([Entity.new("_:o3")])
-  end
-  
-  # def test_pivot_no_relation
-  #   test_set = Xset.new do |s|
-  #     s.extension = {
-  #       Entity.new("_:p1") => [Entity.new("_:o1"), Entity.new("_:o2")],
-  #       Entity.new("_:p2") => [Entity.new("_:o2")],
-  #       Entity.new("_:p3") => [Entity.new("_:o3")]
-  #     }
-  #   end
-  #
-  #   test_set.server = @server
-  #
-  #   expected_image = Set.new([Entity.new("_:p1"), Entity.new("_:p2"),Entity.new("_:p3")])
-  #   expected_domain = Set.new([Entity.new("_:o1"),Entity.new("_:o2"), Entity.new("_:o3")])
-  #
-  #   rs = test_set.pivot
-  #
-  #   assert_equal expected_image, Set.new(rs.each_image)
-  #   assert_equal expected_domain, Set.new(rs.each_domain)
-  # end
-  #
   def test_pivot_forward
     set = Xset.new do |s| 
       s << Entity.new("_:p1")
@@ -254,18 +155,16 @@ class EndpointExplorationTest < Test::Unit::TestCase
     end
     
     set.server = @server    
-
+    
     expected_extension = { 
-      Entity.new("_:p1") => {
-        Entity.new("_:r1") => Set.new([Entity.new("_:o1"), Entity.new("_:o2")])
+      Entity.new("_:o1") => {Entity.new("_:p1")=>Relation.new("_:r1")},
+      Entity.new("_:o2") => {
+        Entity.new("_:p2") => Relation.new("_:r1"),
+        Entity.new("_:p1") => Relation.new("_:r1")
       },
-      Entity.new("_:p2") => {
-        Entity.new("_:r1") =>Set.new([Entity.new("_:o2")])
-      },
-      Entity.new("_:p3") => {
-        Entity.new("_:r1") => Set.new([Entity.new("_:o3")])
-      }
+      Entity.new("_:o3") => {Entity.new("_:p3")=>Relation.new("_:r1")}
     }
+        
     assert_equal expected_extension, set.pivot_forward(["_:r1"]).extension
   end
   
@@ -276,29 +175,32 @@ class EndpointExplorationTest < Test::Unit::TestCase
     end
     set.server = @papers_server
     expected_extension = {
-      Entity.new("_:paper1") => {
-        Entity.new("_:cite") => {
-          Entity.new("_:p2") => {
-            Entity.new("_:author") => Set.new([Entity.new("_:a1")])
-          },
-          Entity.new("_:p3") => {
-            Entity.new("_:author") => Set.new([Entity.new("_:a2")])
-          }, 
-        },        
+      Entity.new("_:a1") => {
+        Entity.new("_:paper1") => {
+          Relation.new("_:cite") => {
+            Entity.new("_:p2")=>Relation.new("_:author")
+          }
+        },
+        Entity.new("_:p6") => {
+          Relation.new("_:cite") => {
+            Entity.new("_:p2")=>Relation.new("_:author"),
+            Entity.new("_:p5")=>Relation.new("_:author")
+          }
+        }
       },
-      Entity.new("_:p6") => {
-        Entity.new("_:cite") => {
-          Entity.new("_:p2") => {
-            Entity.new("_:author") => Set.new([Entity.new("_:a1")])
-          },
-          Entity.new("_:p3") => {
-            Entity.new("_:author") => Set.new([Entity.new("_:a2")])
-          }, 
-          Entity.new("_:p5") => {
-            Entity.new("_:author") => Set.new([Entity.new("_:a1"), Entity.new("_:a2")])
-          },
-        },        
-      },
+      Entity.new("_:a2") => {
+        Entity.new("_:paper1") => {
+          Relation.new("_:cite") => {
+            Entity.new("_:p3") => Relation.new("_:author")
+          }
+        },
+        Entity.new("_:p6") => {
+          Relation.new("_:cite") => {
+            Entity.new("_:p3") => Relation.new("_:author"),
+            Entity.new("_:p5") => Relation.new("_:author") 
+          }
+        }
+      }
     }
     assert_equal expected_extension, set.pivot_forward([["_:cite", "_:author"]]).extension
   end
@@ -310,13 +212,31 @@ class EndpointExplorationTest < Test::Unit::TestCase
     end
     set.server = @papers_server
     expected_extension = {
-      Entity.new("_:paper1") => {
-        Entity.new("_:cite") => Set.new([Entity.new("_:p2"), Entity.new("_:p3"), Entity.new("_:p4") ]),
-        Entity.new("_:author") => Set.new([Entity.new("_:a1"), Entity.new("_:a2")])
+      Entity.new("_:a1") => {
+        Entity.new("_:paper1") => Relation.new("_:author")
       },
-      Entity.new("_:p6") => {
-        Entity.new("_:cite") => Set.new([Entity.new("_:p2"), Entity.new("_:p3"), Entity.new("_:p5") ]),
-        Entity.new("_:author") => Set.new([Entity.new("_:a2")])
+            
+      Entity.new("_:a2") => {
+        Entity.new("_:paper1") => Relation.new("_:author"),
+        Entity.new("_:p6") => Relation.new("_:author")
+      },
+      
+      Entity.new("_:p2") => {
+        Entity.new("_:paper1") => Relation.new("_:cite"),
+        Entity.new("_:p6") => Relation.new("_:cite")
+      },
+      
+      Entity.new("_:p3") => {
+        Entity.new("_:paper1") => Relation.new("_:cite"),
+        Entity.new("_:p6") => Relation.new("_:cite")
+      },
+      
+      Entity.new("_:p4") => {
+        Entity.new("_:paper1") => Relation.new("_:cite")
+      },
+      
+      Entity.new("_:p5") => {
+        Entity.new("_:p6") => Relation.new("_:cite")
       }
     }
     assert_equal expected_extension, set.pivot_forward(["_:cite", "_:author"]).extension
@@ -332,16 +252,15 @@ class EndpointExplorationTest < Test::Unit::TestCase
     
     set.server = @server
     
-
-    expected_extension = { 
-      Entity.new("_:o1") => {
-        Entity.new("_:r1")=>Set.new([Entity.new("_:p1")])
+    expected_extension = {
+      Entity.new("_:p1") => {
+        Entity.new("_:o1") => Relation.new("_:r1"),
+        Entity.new("_:o2") => Relation.new("_:r1")
       },
-      Entity.new("_:o2") => {
-        Entity.new("_:r1")=>Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
+      Entity.new("_:p2") => {        
+        Entity.new("_:o2") => Relation.new("_:r1")
       }
-    }
-    
+    }    
     assert_equal expected_extension, set.pivot_backward(["_:r1"]).extension
   end
   
@@ -444,12 +363,10 @@ class EndpointExplorationTest < Test::Unit::TestCase
     relation = set.pivot_forward(["_:r1"]).refine{|f| f.equals(Entity.new("_:o2"))}
     
     expected_extension = { 
-      Entity.new("_:p1") => {
-        Entity.new("_:r1") => Set.new([Entity.new("_:o2")])
-      },
-      Entity.new("_:p2") => {
-        Entity.new("_:r1") => Set.new([Entity.new("_:o2")])
-      } 
+      Entity.new("_:o2") => {
+        Entity.new("_:p1") => Relation.new("_:r1"),
+        Entity.new("_:p2") => Relation.new("_:r1")
+      }
     }    
     assert_equal expected_extension, relation.extension
     
@@ -469,13 +386,14 @@ class EndpointExplorationTest < Test::Unit::TestCase
     expected_set = Xset.new do |s|
       s.extension = {
         Entity.new("_:o1") => {
-          Entity.new("group")=> Set.new([Entity.new("_:p1")])
+          Entity.new("_:p1")=>Relation.new("_:r1")
         },
         Entity.new("_:o2") => {
-          Entity.new("group")=> Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
+          Entity.new("_:p1") => Relation.new("_:r1"),
+          Entity.new("_:p2") => Relation.new("_:r1")
         },
         Entity.new("_:o3") => {
-          Entity.new("group")=> Set.new([Entity.new("_:p3")])
+          Entity.new("_:p3") => Relation.new("_:r1")
         },
       }
     end
@@ -485,13 +403,25 @@ class EndpointExplorationTest < Test::Unit::TestCase
     
   
   def test_merge
-    mid_set_1 = Xset.new do |s|
-      s.extension[Entity.new("_:i1")]= {Entity.new("_:r")=>Set.new([Entity.new("_:t1")])}
-      s.extension[Entity.new("_:i2")]= {Entity.new("_:r")=>Set.new([Entity.new("_:t2")])}
-      s.extension[Entity.new("_:i3")]= {Entity.new("_:r")=>Set.new([Entity.new("_:t1"), Entity.new("_:t3")])}
-      s.extension[Entity.new("_:i4")]= {Entity.new("_:r")=>Set.new([Entity.new("_:t1"), Entity.new("_:t4")])}
+    mid_set_1 = Xset.new do |s|      
+      s.extension = {
+        Entity.new("_:t1") => {
+          Entity.new("_:i1") => Relation.new("_:r"),
+          Entity.new("_:i3") => Relation.new("_:r"),
+          Entity.new("_:i4") => Relation.new("_:r"),
+        },
+        Entity.new("_:t2") => {
+          Entity.new("_:i2") => Relation.new("_:r")
+        },
+        Entity.new("_:t3") => {
+          Entity.new("_:i3") => Relation.new("_:r")
+        },
+        Entity.new("_:t4") => {
+          Entity.new("_:i4") => Relation.new("_:r")
+        }
+      }
       s.id = "mid_set"
-    end
+    end    
     
     origin_set = Xset.new do |s|
       s << Entity.new("_:i1")
@@ -502,6 +432,7 @@ class EndpointExplorationTest < Test::Unit::TestCase
       s.resulted_from = Xset.new
       s.id = "origin_set"
     end
+    
     mid_set_1.resulted_from = origin_set
     expected_extension = {
      Entity.new("_:i1") => {
@@ -619,6 +550,49 @@ class EndpointExplorationTest < Test::Unit::TestCase
 
   end
   
+  def test_pagination
+    test_set = Xset.new do |s|
+      s.server = @server
+      s.resulted_from = Xset.new
+      s.extension = {
+        Entity.new("_:p1") => {},
+        Entity.new("_:p2") => {},
+        Entity.new("_:p3") => {},
+        Entity.new("_:p4") => {},
+        Entity.new("_:p5") => {},
+        Entity.new("_:p6") => {},
+        Entity.new("_:p7") => {},
+        Entity.new("_:p8") => {},
+        Entity.new("_:p9") => {},
+        Entity.new("_:p10") => {}        
+      }
+    end
+    test_set.paginate(1, 5);
+    assert_equal 2, test_set.number_of_pages
+    assert_equal 5, test_set.max_per_page
+    assert_equal 0, test_set.offset
+    assert_equal 4, test_set.limit
+    assert_equal test_set.each_domain_paginated, Set.new([Entity.new("_:p1"),Entity.new("_:p2"), Entity.new("_:p3"), Entity.new("_:p4"), Entity.new("_:p5")])
+    assert equal_streams?(test_set.each_item, { Entity.new("_:p1") => {},  Entity.new("_:p2") => {},  Entity.new("_:p3") => {},  Entity.new("_:p4") => {},  Entity.new("_:p5") => {}}.each)
+    
+    test_set.paginate(2, 5);
+    assert_equal 2, test_set.number_of_pages
+    assert_equal 5, test_set.max_per_page
+    assert_equal 5, test_set.offset
+    assert_equal 10, test_set.limit
+    
+    assert_equal test_set.each_domain_paginated, Set.new([Entity.new("_:p6"),Entity.new("_:p7"), Entity.new("_:p8"), Entity.new("_:p9"), Entity.new("_:p10")])
+    assert equal_streams?(test_set.each_item, { Entity.new("_:p6") => {},  Entity.new("_:p7") => {},  Entity.new("_:p8") => {},  Entity.new("_:p9") => {},  Entity.new("_:p10") => {}}.each)
+  end
+  
+  def equal_streams?(s1, s2)
+    loop do
+      e1 = s1.next rescue :eof
+      e2 = s2.next rescue :eof
+      return false unless e1 == e2
+      return true if e1 == :eof
+    end
+  end
   # def test_find_path
   #
   #   correlate_test = Xset.new do |s|
