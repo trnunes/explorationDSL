@@ -4,16 +4,24 @@ class Xset
   include HashExplorable
   include Persistable::Writable
   extend Persistable::Readable
-  attr_accessor :server, :extension, :intention, :resulted_from, :generates, :id
+  attr_accessor :server, :extension, :intention, :resulted_from, :generates, :id, :projection
 
   def initialize(&block)
     @bindings = {}
     @extension = {}      
     @generates = []
-
     yield(self) if block_given?
     self
   end
+  
+  def projection
+    if @projection.nil?
+
+      domain_items()
+    end
+    @projection
+  end
+    
   
   def bindings(&block)    
     yield(@bindings)

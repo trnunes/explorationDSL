@@ -38,10 +38,20 @@ module SPARQLQuery
       @filters << SimpleFilter.new(equals_stmt(entity))
     end
   
-    def relation_equals(relation, entity)
+    def relation_equals(relation, item)
+      sparql_entity = ""
+      if(entity.is_a?(Entity) || entity.is_a?(Relation) || entity.is_a?(Type))
+        sparql_entity = "<#{entity.to_s}>"
+      else
+        if(entity.is_a?(String))
+          sparql_entity = "\"#{entity.to_s}\""
+        else
+          sparql_entity = "#{entity.to_s}"
+        end
+        
+      end
 
-      @where_stmts << SimpleFilter.new("?s <#{relation.to_s}> <#{entity.to_s}>")
-    
+      @where_stmts << SimpleFilter.new("?s <#{relation.to_s}> #{sparql_entity}")    
     end
     
     def filter_by_range(relation, min, max)

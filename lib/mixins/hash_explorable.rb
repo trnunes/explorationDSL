@@ -6,10 +6,11 @@ module HashExplorable
     end
   end
   
-  def relations
+  def relations(level=0)
     mappings = {}    
     query = @server.begin_nav_query do |q|
-      each do |item|
+      each_entity do |item|
+        puts "Item: " << item.to_s
         q.on(item)      
       end
       q.find_relations
@@ -20,10 +21,99 @@ module HashExplorable
         mappings[relation][item] = Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/has_relation")
       end
     end
+    
+    query = @server.begin_nav_query do |q|
+      each_entity do |item|
+        puts "Item: " << item.to_s
+        q.on(item)      
+      end
+      q.find_backward_relations
+    end
+    query.execute.each do |item, relations_hash|
+      relations_hash.each do |relation, values|
+        r = Relation.new(relation.id)
+        r.servers = relation.servers
+        r.inverse = true
+
+        mappings[r] ||= {}
+        mappings[r][item] = Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/has_relation")
+      end
+    end
     mount_result_set("#{self.intention}.relations()", mappings)
   end
   
-  def pivot_forward(relations)
+  
+  def pivot(level=0)
+    mappings = {}
+    results_hash = {}
+    relations = self.relations
+    puts "BACKWARD AND FORWARD RELATIONS: "
+    relations.each{|item| puts item.inspect + "\n"}
+    relations.each do |relation|
+      if !path?(relation)
+        relation = [relation]
+      end
+
+      source_items = entities()
+      
+      relation_mappings = {}
+      relation.each do |path_relation|        
+
+        query = @server.begin_nav_query do |q|
+
+          source_items.each do |item|
+            q.on(item)
+          end
+
+          if path_relation.inverse
+            q.restricted_domain(path_relation)
+          else
+            q.restricted_image(path_relation)
+          end
+          
+        end
+        partial_values_set = Set.new
+        
+        partial_path_results = {}
+        if path_relation.inverse
+
+          query.execute.each do |item, relations_hash|
+            partial_path_results[item] ||= {}
+            relations_hash.each do |relation, values|
+              values.each do |value|
+                inverse_relation = Relation.new(relation.id);
+                inverse_relation.inverse = true;
+                partial_path_results[value] ||= {}
+                partial_path_results[value][inverse_relation] ||= Set.new()
+                partial_path_results[value][inverse_relation] << item;                
+              end
+            end
+          end          
+        else
+          partial_path_results = query.execute
+        end
+        
+        partial_path_results.each do |item, relations_hash|
+          relations_hash.each do |key, values|
+            relations_hash[key] = Set.new(values)
+            if values.empty?
+              partial_path_results.delete(item)
+            end
+            partial_values_set += values
+          end  
+        end
+        relation_mappings = join(relation_mappings, partial_path_results)        
+        source_items = partial_values_set
+      end
+      add_hash(mappings, relation_mappings)
+    end
+    
+    pivoted_mappings = pivot_hash(mappings)
+
+    mount_result_set("#{self.intention}.pivot", pivoted_mappings)
+  end
+  
+  def pivot_backward(relations, level=0)
     mappings = {}
     results_hash = {}
     relations.each do |relation|
@@ -31,15 +121,57 @@ module HashExplorable
         relation = [relation]
       end
 
-      source_items = domain(false)
+      source_items = entities()
+      
+      relation_mappings = {}
+      local_inverted_mappings = {}
+      relation.each do |path_relation|        
+        query = @server.begin_nav_query do |q|
+          source_items.each do |item|
+            q.on(item)
+          end
+          q.restricted_domain(path_relation)
+        end
+        partial_values_set = Set.new
+        
+        partial_path_results = query.execute
+        
+        partial_path_results.each do |item, relations_hash|
+          relations_hash.each do |relation, values|
+            inverse_relation = Relation.new(relation.id, true);
+            values.each do |value|
+              if local_inverted_mappings[value].nil?
+                local_inverted_mappings[value] = {inverse_relation => Set.new()}
+              end
+              local_inverted_mappings[value][inverse_relation] << item              
+            end
+            partial_values_set << item
+          end  
+        end
+        relation_mappings = join(relation_mappings, local_inverted_mappings)        
+        source_items = partial_values_set
+      end
+      add_hash(mappings, relation_mappings)
+    end
+    pivoted_mappings = pivot_hash(mappings)
+    mount_result_set("pivot_backward", pivoted_mappings, {:relations => relations.inspect})
+  end  
+  
+  def pivot_forward(relations, level=0)
+    mappings = {}
+    results_hash = {}
+    relations.each do |relation|
+      if !path?(relation)
+        relation = [relation]
+      end
+
+      source_items = entities()
       
       relation_mappings = {}
       relation.each do |path_relation|        
         query = @server.begin_nav_query do |q|
-          if !root?
-            source_items.each do |item|
-              q.on(item)
-            end
+          source_items.each do |item|
+            q.on(item)
           end
           q.restricted_image(path_relation)
         end
@@ -82,12 +214,18 @@ module HashExplorable
       end      
     end    
   end
-  
-  def image_merge(target_set)
+    
+  def select(items)
+    mappings = {}
+    items.each do |item|
+
+      if contains_item?(self.extension, item)
+        mappings[item] = {}
+      end
+    end
+    mount_result_set("#{self.intention}.select(\"#{items.to_s}\")", mappings, {:items => items.to_s})
   end
   
-  def domain_merge(target_set)
-  end
   
   def join(source_hash, target_hash)    
     merged_hash = {}
@@ -120,53 +258,9 @@ module HashExplorable
     merged_hash
   end
   
-  def pivot_backward(relations)
-    mappings = {}
-    results_hash = {}
-    relations.each do |relation|
-      if !path?(relation)
-        relation = [relation]
-      end
-
-      source_items = domain(false)
-      
-      relation_mappings = {}
-      local_inverted_mappings = {}
-      relation.each do |path_relation|        
-        query = @server.begin_nav_query do |q|
-          if !root?
-            source_items.each do |item|
-              q.on(item)
-            end
-          end
-          q.restricted_domain(path_relation)
-        end
-        partial_values_set = Set.new
-        
-        partial_path_results = query.execute
-        
-        partial_path_results.each do |item, relations_hash|
-          relations_hash.each do |relation, values|
-            values.each do |value|
-              if local_inverted_mappings[value].nil?
-                local_inverted_mappings[value] = {relation => Set.new()}
-              end
-              local_inverted_mappings[value][relation] << item              
-            end
-            partial_values_set << item
-          end  
-        end
-        relation_mappings = join(relation_mappings, local_inverted_mappings)        
-        source_items = partial_values_set
-      end
-      add_hash(mappings, relation_mappings)
-    end
-    pivoted_mappings = pivot_hash(mappings)
-    mount_result_set("pivot_backward", pivoted_mappings, {:relations => relations.inspect})
-  end
 
 
-  def refine(&block)
+  def refine(&block, level=0)
 
     yield(Filtering)
 
@@ -174,14 +268,12 @@ module HashExplorable
     mount_result_set("#{self.intention}.refine()", mappings, {:filter => Filtering})
   end
 
-  def group(relation)
+  def group(relation, level=0)
     mappings = {}
 
     query = @server.begin_nav_query do |q|
-      if !root?
-        each do |item|
-          q.on(item)
-        end
+      each_entity do |item|
+        q.on(item)
       end
       q.restricted_image(relation)
     end
@@ -191,23 +283,26 @@ module HashExplorable
     results_hash = query.execute
     puts "GROUP RESULTS: #{results_hash.inspect}"
     results_hash.each do |subject, relations|
-      group_relation = relations.keys.first
-      group_relation.inverse = true if !group_relation.nil?
-      objects = results_hash[subject][group_relation]
+      if !relations.empty?
+        puts "Relations: " << relations.inspect
+        group_relation = relations.keys.first 
+        inverse_relation = Relation.new(group_relation.id, true);
+        objects = results_hash[subject][group_relation]
 
-      objects ||= []
-      objects.each do |object|
-        if mappings[object].nil?
-          mappings[object] ||={}
+        objects ||= []
+        objects.each do |object|
+          if mappings[object].nil?
+            mappings[object] ||={}
+          end
+          mappings[object][subject] = inverse_relation
         end
-        mappings[object][subject] = group_relation
       end
     end
     mount_result_set("#{self.intention}.group(\"#{relation.to_s}\")", mappings, {:grouping_expression => relation})
   end
 
   #post condition 1: substitute the images of the original set by the mapped values and preserve the keys
-  def map(&block)
+  def map(&block, level=0)
     mappings = {}
     function = yield(MappingFunctions)
     function.origin_set = self
@@ -217,7 +312,7 @@ module HashExplorable
     mount_result_set("map", function.mappings, {:mapping_function => function})
   end
   
-  def find_path(target_set)
+  def find_path(target_set, level=0)
     mappings = {}
     ###
     #TODO Compute mappings
@@ -357,7 +452,7 @@ module HashExplorable
     merged_extension
   end
 
-  def intersect(xset)
+  def intersect(xset, level=0)
     mappings = {}
     copied_extension = self.extension_copy
     intersection_items = self.extension.keys & xset.extension.keys
@@ -368,7 +463,7 @@ module HashExplorable
   end
   
 
-  def diff(xset)
+  def diff(xset, level=0)
     mappings = {}
     copied_extension = self.extension_copy
     diff_items = copied_extension.keys - xset.extension.keys
@@ -378,7 +473,42 @@ module HashExplorable
     mount_result_set("diff", mappings, {:xset => xset})
   end
   
-  def rank(&block)
+  def join_hash(hash1, hash2)
+    joined_hash = {}
+    hash1.each do |key1, values1|
+      hash2.each do |key2, values2|
+        if(key1 == key2)
+          if (values1.is_a?(Array) || values1.is_a?(Set))
+            joined_hash[key1] = (values1 + values2)
+          elsif values1.is_a? Hash
+            joined_values_hash = join_hash(values1, values2)
+            joined_hash[key1] = joined_values_hash
+          end            
+        end
+      end
+    end
+    joined_hash
+  end
+  
+  def union(xset, level=0)
+    mappings = {}
+    each do |item|
+      mappings[item] = self[item]
+    end
+    xset.each do |item|
+      if mappings.has_key?(item)
+        if mappings[item].is_a? Hash
+          joined_hash = join_hash(mappings[item], xset[item])
+          mappings[item] = joined_hash
+        end        
+      else
+        mappings[item] = xset[item]
+      end      
+    end
+    mount_result_set("union", mappings, {:xset => xset})
+  end
+  
+  def rank(&block,level=0)
     mappings = {}
     ranking_function = nil
     if(block_given?)
@@ -392,7 +522,7 @@ module HashExplorable
     mount_result_set("#{self.intention}.rank{|s|s.#{ranking_function.name}}", mappings)
   end
 
-  def mount_result_set(intention, mappings, bindings=nil)
+  def mount_result_set(intention, mappings, bindings=nil, level=0)
 
     result_set = Xset.new do |s|
       s.extension = mappings
@@ -404,8 +534,9 @@ module HashExplorable
           b = bindings
         end
       end
-    end
+    end    
     self.generates << result_set
+    result_set.save      
     return result_set
   end
   

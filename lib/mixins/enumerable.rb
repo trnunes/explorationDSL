@@ -10,19 +10,10 @@ module Xenumerable
 
     @page = page_number
     @max_per_page = max_elements
-    if extension.empty? && root?
-      server.each_item do |item| 
-        extension[item] = {}
-      end
-    end    
   end
   
   def size
-    if(root?)
-      server.size
-    else
-      extension.size
-    end
+    extension.size
   end
   
   def page
@@ -158,21 +149,56 @@ module Xenumerable
   end
   
   def each_paginated(&block)
-    if root?
-      server.each_item do |item| 
-        extension[item] = {}
+    domain(true).each &block
+  end
+
+  def contains_item?(hash, item_to_search)
+    has_item = false
+    hash.each do |key, values|
+
+      if key == item_to_search
+        return true
+      else
+        if values.respond_to? :keys
+          has_item = contains_item?(values, item_to_search)
+        else
+          values = [values] if !values.respond_to?(:each)
+          values.each do |value|
+            if value == item_to_search
+              return true
+            else
+              if(value.respond_to? :keys)
+                has_item = contains_item?(value)
+              end             
+            end
+          end
+        end
       end
     end
-    domain(true).each &block
+    return has_item
+  end
+  
+  def each_entity(&block)
+    entities = []
+    each do |item|
+      if block_given?
+        if (item.is_a?(Entity) || item.is_a?(Relation) || item.is_a?(Type))
+          puts "ITEM IN ENUM: " << item.to_s
+          yield(item) 
+        end
+      end
+      entities << item
+    end
+
   end
   
   def each(&block)
-    if root?
-      server.each_item do |item| 
-        extension[item] = {}
-      end
-    end
     domain(false).each &block   
+  end
+  
+  def entities
+    puts "ALL ENTITIES " << domain(false).select{|item| item.is_a?(Entity) || item.is_a?(Relation) || item.is_a?(Type)}.map{|item|item.id}.inspect
+    domain(false).select{|item| item.is_a?(Entity) || item.is_a?(Relation) || item.is_a?(Type)}
   end
   
   def each_item(&block)

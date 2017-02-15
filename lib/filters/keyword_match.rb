@@ -16,16 +16,16 @@ module Filtering
       keep_item = false
       
       relations_query.execute.each_pair do |item, relations|
-        keep_item = false        
-      
+        keep_item = false              
         relations.values.each do |related_item|
           @keyword_pattern.each do |pattern|
+
             if pattern.respond_to? :each
               pattern.each do |disjunctive_keyword|
-                keep_item = true if related_item.to_s.include?(disjunctive_keyword)
+                keep_item = true if (related_item.to_s.include?(disjunctive_keyword) || item.to_s.include?(disjunctive_keyword))
               end
             else
-              keep_item = false if !related_item.to_s.include?(pattern)
+              keep_item = true if (related_item.to_s.include?(pattern) || item.to_s.include?(pattern))
             end
           end
         end

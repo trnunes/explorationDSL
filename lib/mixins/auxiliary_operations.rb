@@ -13,22 +13,55 @@ module AuxiliaryOperations
     @projections
   end
 
-  def group_by_domain_and_relation
-    grouped_hash = {}
-    self.extension.each do |item, relations|
-      grouped_hash[item] ||= {}
+  def group_by_image_and_relation
+    @projection = {}
+
+    self.extension.each do |item, relations|      
       relations.each do |image, relation|
-        grouped_hash[item][relation] ||= Set.new()
-        grouped_hash[item][relation] << image
+        @projection[image] ||= {}
+        @projection[image][relation] ||= Set.new()
+        @projection[image][relation] << item
       end
     end
-    grouped_hash
+    self
+  end
+  def group_by_domain_and_relation
+    self.projection = {}
+    self.extension.each do |item, relations|      
+      relations.each do |image, relation|
+        self.projection[item] ||= {}
+        self.projection[item][relation] ||= Set.new()
+        self.projection[item][relation] << image
+      end
+    end
+    self
+  end
+  
+  def domain_items
+    puts "EXECUTING DOMAIN ITEMS"
+    @projection = {}
+    self.extension.keys.each do |item|
+      puts "PROJECTION: " << @projection.inspect
+      @projection[item] = {}
+    end
+    self
   end
 
   def count_by_image
   end
 
   def count_by_domain
+  end
+  
+  def relations_hash
+    relations_hash = {}
+    self.each_item do |image_item, backward_relations|
+      backward_relations.each do |domain_item, relation|
+        relations_hash[relation] ||= Set.new()
+        relations_hash[relation] << image_item
+      end
+    end
+    relations_hash
   end
   
   def common_relations
@@ -80,7 +113,7 @@ module AuxiliaryOperations
   end
 
   def root?
-    resulted_from.nil? && extension.empty?
+    resulted_from.nil?
   end
 
   def path?(relation)

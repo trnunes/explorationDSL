@@ -90,6 +90,14 @@ module SPARQLQuery
       self
     end
     
+    def find_backward_relations()
+      @items.each do |entity|
+        @construct_clauses << "?s ?p#{@predicate_index+=1} <#{entity.to_s}>."
+        @where_clauses << "?s ?p#{@predicate_index} <#{entity.to_s}>."        
+      end
+      self
+    end
+    
     def find_relations_in_common()
       @items.each do |entity|
         @construct_clauses << "<#{entity.to_s}> ?p ?o#{@object_index +=1}."
@@ -108,6 +116,9 @@ module SPARQLQuery
       hash = {}
       pages = @items.size/650
       
+      if empty_query?
+        return {}
+      end
       
       if(@items.empty?)
         @server.execute(build_select_query()).each_solution do |solution|
@@ -177,6 +188,10 @@ module SPARQLQuery
       query = "SELECT " << @select_clauses.join(" . ") << build_where()  
       puts "EXECUTING: #{query}"
       query
+    end
+    
+    def empty_query?
+      @select_clauses.empty? && @construct_clauses.empty?
     end
     
     def build_where

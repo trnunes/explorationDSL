@@ -30,33 +30,24 @@ module Filtering
     end
     
     def build_query_filter(set)
-      
-
-      if set.root?        
-        @filter = set.server.begin_filter
-      else
-        @filter = set.server.begin_filter do |f|
-          f.union do |u|
-            set.each do |item|
-              u.equals(item)
-            end
+      @filter = set.server.begin_filter do |f|
+        f.union do |u|
+          set.each do |item|
+            u.equals(item)
           end
-        end        
-      end
+        end
+      end        
+
       @filter
     end
     
     def build_nav_query(set)
-      if set.root?
-        
-        @nav_query = set.server.begin_nav_query
-      else
-        @nav_query = set.server.begin_nav_query do |nav_query|
-          set.each do |item|
-            nav_query.on(item)
-          end
-        end        
-      end
+      @nav_query = set.server.begin_nav_query do |nav_query|
+        set.each do |item|
+          nav_query.on(item)
+        end
+      end        
+
       @nav_query
     end
     

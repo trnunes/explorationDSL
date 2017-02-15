@@ -31,7 +31,10 @@ class Item
   end
   
   def eql?(item)
-    self.class.equal?(item.class) && @id == item.id
+    if !item.respond_to? :id
+      return false
+    end
+    @id == item.id
   end
   
   def hash

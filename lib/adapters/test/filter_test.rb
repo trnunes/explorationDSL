@@ -173,4 +173,5 @@ class FilterTest < Test::Unit::TestCase
     assert_equal expected_results, filter.eval
   end
   
+  
 end

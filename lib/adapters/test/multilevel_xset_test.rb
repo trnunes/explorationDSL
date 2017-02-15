@@ -125,17 +125,24 @@ class EndpointExplorationTest < Test::Unit::TestCase
       s.server = @server
       s.resulted_from = Xset.new
       s.extension = {
-        Entity.new("_:p1") => {},
-        Entity.new("_:p2") => {},
-        Entity.new("_:p3") => {},
-        Entity.new("_:p4") => {},
-        Entity.new("_:p5") => {}        
+        Entity.new("_:p1") => {Entity.new("a1")},
+        Entity.new("_:p2") => {Entity.new("a1")},
+        Entity.new("_:p3") => {Entity.new("a1")},
+        Entity.new("_:p4") => {Entity.new("a1")},
+        Entity.new("_:p5") => {Entity.new("a1")}        
       }
     end
     test_set.each
     expected_extension = {
-      Relation.new("_:r1") => { },
-      Relation.new("_:r2") => {}
+      Relation.new("_:r1") => {
+        Entity.new("_:p1") => Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/has_relation"),
+        Entity.new("_:p2") => Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/has_relation"),
+        Entity.new("_:p3") => Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/has_relation")
+      },
+      Relation.new("_:r2") => {
+        Entity.new("_:p4") => Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/has_relation"),
+        Entity.new("_:p5") => Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/has_relation")
+      }
     }
     assert_equal expected_extension, test_set.relations.extension
   end
@@ -150,9 +157,12 @@ class EndpointExplorationTest < Test::Unit::TestCase
     set.server = @server    
     
     expected_extension = { 
-      Entity.new("_:o1") => {},
-      Entity.new("_:o2") => {},
-      Entity.new("_:o3") => {}
+      Entity.new("_:o1") => {Entity.new("_:p1")=>Relation.new("_:r1")},
+      Entity.new("_:o2") => {
+        Entity.new("_:p2") => Relation.new("_:r1"),
+        Entity.new("_:p1") => Relation.new("_:r1")
+      },
+      Entity.new("_:o3") => {Entity.new("_:p3")=>Relation.new("_:r1")}
     }
         
     assert_equal expected_extension, set.pivot_forward(["_:r1"]).extension
@@ -164,7 +174,7 @@ class EndpointExplorationTest < Test::Unit::TestCase
       s << Entity.new("_:p6")
     end
     set.server = @papers_server
-    expected_index = {
+    expected_extension = {
       Entity.new("_:a1") => {
         Entity.new("_:paper1") => {
           Relation.new("_:cite") => {
@@ -192,11 +202,6 @@ class EndpointExplorationTest < Test::Unit::TestCase
         }
       }
     }
-    expected_extension = {
-      Entity.new("_:a1") => {},
-      Entity.new("_:a2") => {}
-    }
-    
     assert_equal expected_extension, set.pivot_forward([["_:cite", "_:author"]]).extension
   end
   def test_pivot_property_path_2
@@ -212,7 +217,7 @@ class EndpointExplorationTest < Test::Unit::TestCase
       }
     end
     set.server = @papers_server
-    expected_index = {
+    expected_extension = {
       Entity.new("_:2010") => {
         Entity.new("_:paper1") => {
           Relation.new("_:cite") => {
@@ -240,10 +245,6 @@ class EndpointExplorationTest < Test::Unit::TestCase
         }
       }
     }
-    expected_extension = {
-      Entity.new("_:2010") => {},
-      Entity.new("_:a2") => {}
-    }
     # assert_equal expected_extension, set.pivot_forward([["_:publishedOn", "_:releaseYear"]]).extension
   end
   
@@ -255,11 +256,28 @@ class EndpointExplorationTest < Test::Unit::TestCase
     end
     set.server = @papers_server
     expected_extension = {
+      Entity.new("_:a2") => {        
+        Entity.new("_:p6") => Relation.new("_:author")
+      },
+      
+      Entity.new("_:p2") => {
+        Entity.new("_:p6") => Relation.new("_:cite")
+      },
+      
+      Entity.new("_:p3") => {
+        Entity.new("_:p6") => Relation.new("_:cite")
+      },
+      
+      Entity.new("_:p5") => {
+        Entity.new("_:p6") => Relation.new("_:cite")
+      }
+    }
+    assert_equal expected_extension, set.select([Entity.new("_:p6")]).pivot.extension
+    expected_relations_hash = {
       Relation.new("_:cite") => Set.new([Entity.new("_:p2"),Entity.new("_:p3"),Entity.new("_:p5")]),
       Relation.new("_:author") => Set.new([Entity.new("_:a2")]),
     }
-    assert_equal expected_extension, set.select([Entity.new("_:p6")]).pivot.extension
-
+    assert_equal expected_relations_hash, set.select([Entity.new("_:p6")]).pivot.relations_hash
   end
   
   def test_pivot_backward_relations
@@ -268,14 +286,6 @@ class EndpointExplorationTest < Test::Unit::TestCase
     end
     set.server = @papers_server
     expected_extension = {
-      Relation.new("_:author") => Set.new([Entity.new("_:a1")]),
-      Relation.new("_:publishedOn") => Set.new([Entity.new("_:journal1")]),
-      Relation.new("_:publicationYear") => Set.new(2000),
-      Relation.new("_:keywords") => Set.new([Entity.new("_:k3")]),
-      Relation.new("_:cite", true) => Set.new([Entity.new("_:paper1"), Entity.new("_:p6")])
-    }
-    
-    expected_index = {
       Entity.new("_:a1") => {
         Entity.new("_:p2") => Relation.new("_:author")
       },
@@ -312,11 +322,6 @@ class EndpointExplorationTest < Test::Unit::TestCase
     end
     set.server = @papers_server
     expected_extension = {
-      Relation.new("_:author") => Set.new([Entity.new("_:a1"), Entity.new("_:a2")]),
-      Relation.new("_:cite") => Set.new([Entity.new("_:p2"), Entity.new("_:p3"), Entity.new("_:p4"), Entity.new("_:p5") ])
-    }
-        
-    expected_index = {
       Entity.new("_:a1") => {
         Entity.new("_:paper1") => Relation.new("_:author")
       },
@@ -358,8 +363,13 @@ class EndpointExplorationTest < Test::Unit::TestCase
     set.server = @server
     
     expected_extension = {
-      Entity.new("_:p1") => {},
-      Entity.new("_:p2") => {}
+      Entity.new("_:p1") => {
+        Entity.new("_:o1") => Relation.new("_:r1", true),
+        Entity.new("_:o2") => Relation.new("_:r1", true)
+      },
+      Entity.new("_:p2") => {        
+        Entity.new("_:o2") => Relation.new("_:r1", true)
+      }
     }    
     assert_equal expected_extension, set.pivot_backward(["_:r1"]).extension
   end
@@ -503,7 +513,10 @@ class EndpointExplorationTest < Test::Unit::TestCase
     relation = set.pivot_forward(["_:r1"]).refine{|f| f.equals(Entity.new("_:o2"))}
     
     expected_extension = { 
-      Entity.new("_:o2") => {}
+      Entity.new("_:o2") => {
+        Entity.new("_:p1") => Relation.new("_:r1"),
+        Entity.new("_:p2") => Relation.new("_:r1")
+      }
     }    
     assert_equal expected_extension, relation.extension
     
@@ -523,86 +536,86 @@ class EndpointExplorationTest < Test::Unit::TestCase
     expected_set = Xset.new do |s|
       s.extension = {
         Entity.new("_:o1") => {
-          Relation.new("_:r1", true) => Set.new([Entity.new("_:p1")])
+          Entity.new("_:p1")=>Relation.new("_:r1", true)
         },
         Entity.new("_:o2") => {
-          Relation.new("_:r1", true) => Set.new([Entity.new("_:p1"),Entity.new("_:p2")])
+          Entity.new("_:p1") => Relation.new("_:r1", true),
+          Entity.new("_:p2") => Relation.new("_:r1", true)
         },
         Entity.new("_:o3") => {
-          Relation.new("_:r1", true) => Set.new([Entity.new("_:p3")])
+          Entity.new("_:p3") => Relation.new("_:r1", true)
         },
       }
-      #
-      # s.index = {
-      #   Entity.new("_:o1") => {
-      #     Entity.new("_:p1")=>Relation.new("_:r1", true)
-      #   },
-      #   Entity.new("_:o2") => {
-      #     Entity.new("_:p1") => Relation.new("_:r1", true),
-      #     Entity.new("_:p2") => Relation.new("_:r1", true)
-      #   },
-      #   Entity.new("_:o3") => {
-      #     Entity.new("_:p3") => Relation.new("_:r1", true)
-      #   },
-      # }
     end
     
     assert_equal expected_set.extension, rs.extension
   end
   
-  # def test_group_by_projection
-#     test_set = Xset.new do |s|
-#       s << Entity.new("_:p1")
-#       s << Entity.new("_:p2")
-#       s << Entity.new("_:p3")
-#     end
-#
-#     test_set.server = @server
-#
-#     rs = test_set.group("_:r1")
-#
-#     expected_set = Xset.new do |s|
-#       s.extension = {
-#         Entity.new("_:o1") => {
-#           Entity.new("_:p1")=>Relation.new("_:r1", true)
-#         },
-#         Entity.new("_:o2") => {
-#           Entity.new("_:p1") => Relation.new("_:r1", true),
-#           Entity.new("_:p2") => Relation.new("_:r1", true)
-#         },
-#         Entity.new("_:o3") => {
-#           Entity.new("_:p3") => Relation.new("_:r1", true)
-#         },
-#       }
-#     end
-#
-#     assert_equal expected_set.extension, rs.extension
-#
-#     projection = {
-#       Entity.new("_:o1") => {
-#         Relation.new("_:r1", true) => Set.new([Entity.new("_:p1")])
-#       },
-#       Entity.new("_:o2") => {
-#         Relation.new("_:r1", true) => Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
-#       },
-#       Entity.new("_:o3") => {
-#         Relation.new("_:r1", true) => Set.new([Entity.new("_:p3")])
-#       },
-#
-#     }
-#     assert_equal projection, rs.projection
-#   end
+  def test_group_by_projection
+    test_set = Xset.new do |s| 
+      s << Entity.new("_:p1")
+      s << Entity.new("_:p2")
+      s << Entity.new("_:p3")
+    end
+    
+    test_set.server = @server
+    
+    rs = test_set.group("_:r1")
+    
+    expected_set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:o1") => {
+          Entity.new("_:p1")=>Relation.new("_:r1", true)
+        },
+        Entity.new("_:o2") => {
+          Entity.new("_:p1") => Relation.new("_:r1", true),
+          Entity.new("_:p2") => Relation.new("_:r1", true)
+        },
+        Entity.new("_:o3") => {
+          Entity.new("_:p3") => Relation.new("_:r1", true)
+        },
+      }
+    end
+    
+    assert_equal expected_set.extension, rs.extension
+    
+    projection = {
+      Entity.new("_:o1") => {
+        Relation.new("_:r1", true) => Set.new([Entity.new("_:p1")])
+      },
+      Entity.new("_:o2") => {
+        Relation.new("_:r1", true) => Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
+      },
+      Entity.new("_:o3") => {
+        Relation.new("_:r1", true) => Set.new([Entity.new("_:p3")])
+      },
+      
+    }
+    assert_equal projection, rs.projection 
+  end
   
   def test_select
     set = Xset.new do |s|
       s.extension = {
-        Relation.new("_:author") => Set.new([Entity.new("_:a1")]),
-        Relation.new("_:publishedOn") => Set.new([Entity.new("_:journal1")]),
-        Relation.new("_:publicationYear") => Set.new(2000),
-        Relation.new("_:keywords") => Set.new([Entity.new("_:k3")]),
-        Relation.new("_:cite", true) => Set.new([Entity.new("_:paper1"), Entity.new("_:p6")])
-      }      
-    
+        Entity.new("_:a1") => {
+          Entity.new("_:p2") => Relation.new("_:author")
+        },
+        Entity.new("_:journal1") => {
+          Entity.new("_:p2") => Relation.new("_:publishedOn")
+        },
+        2000 => {
+          Entity.new("_:p2") => Relation.new("_:publicationYear")
+        },
+        Entity.new("_:k3") => {
+          Entity.new("_:p2") => Relation.new("_:keywords")
+        },
+        Entity.new("_:paper1") => {
+          Entity.new("_:p2") => Relation.new("_:cite", true)
+        },
+        Entity.new("_:p6") => {
+          Entity.new("_:p2") => Relation.new("_:cite", true)
+        },
+      }
     end
     expected_extension = {
       Entity.new("_:p2") => {},
@@ -814,22 +827,21 @@ class EndpointExplorationTest < Test::Unit::TestCase
   
   def test_union
     set1 = Xset.new do |s|
-      
-      s.extension[Entity.new("_:t1")]= {Relation.new("_:r")=>Set.new([Entity.new("_:u1")])}
-      s.extension[Entity.new("_:t2")]= {Relation.new("_:r")=>Set.new([Entity.new("_:u2")])}
+      s.extension[Entity.new("_:t1")]= {Entity.new("_:r")=>Set.new([Entity.new("_:u1")])}
+      s.extension[Entity.new("_:t2")]= {Entity.new("_:r")=>Set.new([Entity.new("_:u2")])}
       s.id = "target set"
     end
     
     set2 = Xset.new do |s|
-      s.extension[Entity.new("_:t1")]= {Relation.new("_:r")=>Set.new([Entity.new("_:e1")])}
-      s.extension[Entity.new("_:i2")]= {Relation.new("_:r")=>Set.new([Entity.new("_:t2")])}
+      s.extension[Entity.new("_:t1")]= {Entity.new("_:r")=>Set.new([Entity.new("_:e1")])}
+      s.extension[Entity.new("_:i2")]= {Entity.new("_:r")=>Set.new([Entity.new("_:t2")])}
       s.id = "mid_set"
     end
     expected_extension = {}
 
-    expected_extension[Entity.new("_:t1")]= {Relation.new("_:r")=>Set.new([Entity.new("_:e1"), Entity.new("_:u1")])}
-    expected_extension[Entity.new("_:t2")]= {Relation.new("_:r")=>Set.new([Entity.new("_:u2")])}
-    expected_extension[Entity.new("_:i2")]= {Relation.new("_:r")=>Set.new([Entity.new("_:t2")])}
+    expected_extension[Entity.new("_:t1")]= {Entity.new("_:r")=>Set.new([Entity.new("_:e1"), Entity.new("_:u1")])}
+    expected_extension[Entity.new("_:t2")]= {Entity.new("_:r")=>Set.new([Entity.new("_:u2")])}
+    expected_extension[Entity.new("_:i2")]= {Entity.new("_:r")=>Set.new([Entity.new("_:t2")])}
     
     assert_equal expected_extension, set1.union(set2).extension
 
