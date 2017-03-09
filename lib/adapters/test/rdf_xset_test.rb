@@ -1,10 +1,13 @@
 require "test/unit"
 require "rdf"
 
+require './mixins/xpair'
 require './mixins/hash_explorable'
 require './mixins/auxiliary_operations'
 require './mixins/enumerable'
 require './mixins/persistable'
+require './mixins/graph'
+
 require './filters/filtering'
 require './filters/contains'
 require './filters/equals'
@@ -13,6 +16,7 @@ require './filters/match'
 require './filters/in_range'
 require './model/item'
 require './model/xset'
+require './model/literal'
 require './model/entity'
 require './model/relation'
 require './model/type'
@@ -21,6 +25,7 @@ require './model/ranked_set'
 require './aux/grouping_expression.rb'
 require './aux/ranking_functions'
 require './aux/mapping_functions'
+require './aux/hash_helper'
 
 require 'set'
 
@@ -33,44 +38,44 @@ $PAGINATE = 10
 ## contains_one does not admit literals
 ##
 
-class EndpointExplorationTest < Test::Unit::TestCase
+class XsetTest < Test::Unit::TestCase
   def setup
     @graph = RDF::Graph.new do |graph|
       graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o1")]
-      graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o2")]      
+      graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o2")]
       graph << [RDF::URI("_:p2"),  RDF::URI("_:r1"), RDF::URI("_:o2")]
       graph << [RDF::URI("_:p3"),  RDF::URI("_:r1"), RDF::URI("_:o3")]
       graph << [RDF::URI("_:p4"),  RDF::URI("_:r2"), RDF::URI("_:o4")]
       graph << [RDF::URI("_:p4"),  RDF::URI("_:r2"), RDF::URI("_:o5")]
       graph << [RDF::URI("_:p5"),  RDF::URI("_:r2"), RDF::URI("_:o6")]
     end
-    
+
     @server = RDFDataServer.new(@graph)
-    
-    @correlate_graph = RDF::Graph.new do |graph|
-      graph << [RDF::URI("_:o1"), RDF::URI("_:r1"), RDF::URI("_:p1")]
-      graph << [RDF::URI("_:o1"), RDF::URI("_:r1"), RDF::URI("_:p3")]
-      graph << [RDF::URI("_:o2"), RDF::URI("_:r1"), RDF::URI("_:p3")]
-      graph << [RDF::URI("_:p1"), RDF::URI("_:r1"), RDF::URI("_:p2")]
-      graph << [RDF::URI("_:o2"), RDF::URI("_:r1"), RDF::URI("_:p2")]
-    end
-    
-    @correlate_server = RDFDataServer.new(@correlate_graph)  
-    
-    @keyword_refine_graph = RDF::Graph.new do |graph|
-      graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), "keyword1"]
-      graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), "keyword2 keyword 3"]      
-      graph << [RDF::URI("_:p2"),  RDF::URI("_:r1"), RDF::URI("_:o2")]
-      graph << [RDF::URI("_:p3"),  RDF::URI("_:r1"), RDF::URI("_:o3")]
-      graph << [RDF::URI("_:p4"),  RDF::URI("_:r2"), RDF::URI("_:o4")]
-      graph << [RDF::URI("_:p4"),  RDF::URI("_:r2"), RDF::URI("_:o5")]
-      graph << [RDF::URI("_:p5"),  RDF::URI("_:r2"), RDF::URI("_:o6")]
-    end
-    
-    expected_extension = {
-      Entity.new("_:a1") => Set.new([3]),
-      Entity.new("_:a2") => Set.new([2])
-    }
+    #
+    # @correlate_graph = RDF::Graph.new do |graph|
+    #   graph << [RDF::URI("_:o1"), RDF::URI("_:r1"), RDF::URI("_:p1")]
+    #   graph << [RDF::URI("_:o1"), RDF::URI("_:r1"), RDF::URI("_:p3")]
+    #   graph << [RDF::URI("_:o2"), RDF::URI("_:r1"), RDF::URI("_:p3")]
+    #   graph << [RDF::URI("_:p1"), RDF::URI("_:r1"), RDF::URI("_:p2")]
+    #   graph << [RDF::URI("_:o2"), RDF::URI("_:r1"), RDF::URI("_:p2")]
+    # end
+    #
+    # @correlate_server = RDFDataServer.new(@correlate_graph)
+    #
+    # @keyword_refine_graph = RDF::Graph.new do |graph|
+    #   graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), "keyword1"]
+    #   graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), "keyword2 keyword 3"]
+    #   graph << [RDF::URI("_:p2"),  RDF::URI("_:r1"), RDF::URI("_:o2")]
+    #   graph << [RDF::URI("_:p3"),  RDF::URI("_:r1"), RDF::URI("_:o3")]
+    #   graph << [RDF::URI("_:p4"),  RDF::URI("_:r2"), RDF::URI("_:o4")]
+    #   graph << [RDF::URI("_:p4"),  RDF::URI("_:r2"), RDF::URI("_:o5")]
+    #   graph << [RDF::URI("_:p5"),  RDF::URI("_:r2"), RDF::URI("_:o6")]
+    # end
+    #
+    # expected_extension = {
+    #   Entity.new("_:a1") => Set.new([3]),
+    #   Entity.new("_:a2") => Set.new([2])
+    # }
     
     papers_graph = RDF::Graph.new do |graph|
       graph << [RDF::URI("_:paper1"),  RDF::URI("_:cite"), RDF::URI("_:p2")]
@@ -255,8 +260,8 @@ class EndpointExplorationTest < Test::Unit::TestCase
     end
     set.server = @papers_server
     expected_extension = {
-      Relation.new("_:cite") => Set.new([Entity.new("_:p2"),Entity.new("_:p3"),Entity.new("_:p5")]),
-      Relation.new("_:author") => Set.new([Entity.new("_:a2")]),
+      Relation.new("_:cite") => {Entity.new("_:p2")=>{},Entity.new("_:p3")=>{},Entity.new("_:p5")=>{}},
+      Relation.new("_:author") => {Entity.new("_:a2")=> {}},
     }
     assert_equal expected_extension, set.select([Entity.new("_:p6")]).pivot.extension
 
@@ -268,11 +273,11 @@ class EndpointExplorationTest < Test::Unit::TestCase
     end
     set.server = @papers_server
     expected_extension = {
-      Relation.new("_:author") => Set.new([Entity.new("_:a1")]),
-      Relation.new("_:publishedOn") => Set.new([Entity.new("_:journal1")]),
-      Relation.new("_:publicationYear") => Set.new(2000),
-      Relation.new("_:keywords") => Set.new([Entity.new("_:k3")]),
-      Relation.new("_:cite", true) => Set.new([Entity.new("_:paper1"), Entity.new("_:p6")])
+      Relation.new("_:author") => {Entity.new("_:a1")=>{}},
+      Relation.new("_:publishedOn") => {Entity.new("_:journal1")=>{}},
+      Relation.new("_:publicationYear") => {Literal.new(2000)=>{}},
+      Relation.new("_:keywords") => {Entity.new("_:k3")=>{}},
+      Relation.new("_:cite", true) => {Entity.new("_:paper1")=>{}, Entity.new("_:p6")=>{}}
     }
     
     expected_index = {
@@ -282,7 +287,7 @@ class EndpointExplorationTest < Test::Unit::TestCase
       Entity.new("_:journal1") => {
         Entity.new("_:p2") => Relation.new("_:publishedOn")
       },
-      2000 => {
+      Literal.new(2000) => {
         Entity.new("_:p2") => Relation.new("_:publicationYear")
       },
       Entity.new("_:k3") => {
@@ -295,11 +300,11 @@ class EndpointExplorationTest < Test::Unit::TestCase
         Entity.new("_:p2") => Relation.new("_:cite", true)
       },
     }
-    puts "test_pivot_backward_relations RESULT"
+
     set.pivot.extension.each do |item, relations|
-      puts "item: " << item.to_s
+
       relations.each do |ritem, relation|
-        puts "  "+ritem.to_s + ": " + relation.to_s
+
       end
     end
     assert_equal expected_extension, set.pivot.extension
@@ -312,8 +317,17 @@ class EndpointExplorationTest < Test::Unit::TestCase
     end
     set.server = @papers_server
     expected_extension = {
-      Relation.new("_:author") => Set.new([Entity.new("_:a1"), Entity.new("_:a2")]),
-      Relation.new("_:cite") => Set.new([Entity.new("_:p2"), Entity.new("_:p3"), Entity.new("_:p4"), Entity.new("_:p5") ])
+      Entity.new("_:a1") => {},
+            
+      Entity.new("_:a2") => {},
+      
+      Entity.new("_:p2") => {},
+      
+      Entity.new("_:p3") => {},
+      
+      Entity.new("_:p4") => {},
+      
+      Entity.new("_:p5") => {}
     }
         
     expected_index = {
@@ -431,7 +445,7 @@ class EndpointExplorationTest < Test::Unit::TestCase
     
     set.server = @server
     
-    relation = set.refine{|f| f.equals("_:r1", "_:o2")}
+    relation = set.refine{|f| f.equals("_:r1", Entity.new("_:o2"))}
     
     expected_extension = { 
      Entity.new("_:p1") => {},
@@ -523,13 +537,13 @@ class EndpointExplorationTest < Test::Unit::TestCase
     expected_set = Xset.new do |s|
       s.extension = {
         Entity.new("_:o1") => {
-          Relation.new("_:r1", true) => Set.new([Entity.new("_:p1")])
+          Relation.new("_:r1", true) => {Entity.new("_:p1")=>{}}
         },
         Entity.new("_:o2") => {
-          Relation.new("_:r1", true) => Set.new([Entity.new("_:p1"),Entity.new("_:p2")])
+          Relation.new("_:r1", true) => {Entity.new("_:p1")=>{},Entity.new("_:p2")=>{}}
         },
         Entity.new("_:o3") => {
-          Relation.new("_:r1", true) => Set.new([Entity.new("_:p3")])
+          Relation.new("_:r1", true) => {Entity.new("_:p3")=>{}}
         },
       }
       #
@@ -596,19 +610,19 @@ class EndpointExplorationTest < Test::Unit::TestCase
   def test_select
     set = Xset.new do |s|
       s.extension = {
-        Relation.new("_:author") => Set.new([Entity.new("_:a1")]),
-        Relation.new("_:publishedOn") => Set.new([Entity.new("_:journal1")]),
-        Relation.new("_:publicationYear") => Set.new(2000),
-        Relation.new("_:keywords") => Set.new([Entity.new("_:k3")]),
-        Relation.new("_:cite", true) => Set.new([Entity.new("_:paper1"), Entity.new("_:p6")])
+        Relation.new("_:author") => {Entity.new("_:a1")=>{}},
+        Relation.new("_:publishedOn") => {Entity.new("_:journal1")=>{}},
+        Relation.new("_:publicationYear") => {Literal.new(2000)=>{}},
+        Relation.new("_:keywords") => {Entity.new("_:k3")=>{}},
+        Relation.new("_:cite", true) => {Entity.new("_:paper1")=>{}, Entity.new("_:p6")=>{}}
       }      
     
     end
     expected_extension = {
-      Entity.new("_:p2") => {},
-      Entity.new("_:k3") => {}
+      Entity.new("_:a1") => {},
+      Relation.new("_:author") => {}
     }
-    assert_equal expected_extension, set.select([Entity.new("_:p2"), Entity.new("_:k3")]).extension
+    assert_equal expected_extension, set.select([Entity.new("_:a1"), Relation.new("_:author")]).extension
     expected_extension = {
       Relation.new("_:cite", true) => {},
     }
@@ -616,103 +630,82 @@ class EndpointExplorationTest < Test::Unit::TestCase
     expected_extension = { }
     assert_equal expected_extension, set.select([Entity.new("strange_item")]).extension
     
-  end
-  
-    
+  end   
   
   def test_merge
-    mid_set_1 = Xset.new do |s|      
+    origin_set = Xset.new do |s|      
       s.extension = {
-        Entity.new("_:t1") => {
-          Entity.new("_:i1") => Relation.new("_:r"),
-          Entity.new("_:i3") => Relation.new("_:r"),
-          Entity.new("_:i4") => Relation.new("_:r"),
-        },
-        Entity.new("_:t2") => {
-          Entity.new("_:i2") => Relation.new("_:r")
-        },
-        Entity.new("_:t3") => {
-          Entity.new("_:i3") => Relation.new("_:r")
-        },
-        Entity.new("_:t4") => {
-          Entity.new("_:i4") => Relation.new("_:r")
-        }
+        Entity.new("_:i1")=>{Relation.new("r")=>{Entity.new("_:t1")=>{}}},
+        Entity.new("_:i2")=>{Relation.new("r")=>{Entity.new("_:t2")=>{}}},
+        Entity.new("_:i3")=>{Relation.new("r")=>{Entity.new("_:t1")=>{}, Entity.new("_:t3")=>{}}},
+        Entity.new("_:i4")=>{Relation.new("r")=>{Entity.new("_:t1")=>{}, Entity.new("_:t4")=>{}}}
       }
-      s.id = "mid_set"
     end    
     
-    origin_set = Xset.new do |s|
-      s << Entity.new("_:i1")
-      s << Entity.new("_:i2")
-      s << Entity.new("_:i3")
-      s << Entity.new("_:i4")
-      s.generates << mid_set_1
-      s.resulted_from = Xset.new
-      s.id = "origin_set"
+    target_set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:t1")=>{Relation.new("r")=>{Entity.new("_:w1")=>{}}},
+        Entity.new("_:t2")=>{Relation.new("r")=>{Entity.new("_:w1")=>{}}},
+        Entity.new("_:t3")=>{Relation.new("r")=>{Entity.new("_:w1")=>{}}},
+        Entity.new("_:t4")=>{Relation.new("r")=>{Entity.new("_:w1")=>{}}}
+      }
     end
     
-    mid_set_1.resulted_from = origin_set
+
     expected_extension = {
-     Entity.new("_:i1") => {
-       Entity.new("_:r")=> Set.new([Entity.new("_:t1")])
-     },
-     Entity.new("_:i2") => {
-       Entity.new("_:r")=> Set.new([Entity.new("_:t2")])
-     },
-     Entity.new("_:i3") => {
-       Entity.new("_:r")=> Set.new([Entity.new("_:t1"), Entity.new("_:t3")])
-     },
-     Entity.new("_:i4") => {
-       Entity.new("_:r")=> Set.new([Entity.new("_:t1"), Entity.new("_:t4")])
-     }
+      Entity.new("_:i1")=>{Relation.new("r")=>{Entity.new("_:t1")=>{Relation.new("r")=>{Entity.new("_:w1")=>{}}}}},
+      Entity.new("_:i2")=>{Relation.new("r")=>{Entity.new("_:t2")=>{Relation.new("r")=>{Entity.new("_:w1")=>{}}}}},
+      Entity.new("_:i3")=>{Relation.new("r")=>{
+        Entity.new("_:t1")=>{Relation.new("r")=>{Entity.new("_:w1")=>{}}}, 
+        Entity.new("_:t3")=>{Relation.new("r")=>{Entity.new("_:w1")=>{}}}
+        }
+      },
+      Entity.new("_:i4")=>{Relation.new("r")=>{
+        Entity.new("_:t1")=>{Relation.new("r")=>{Entity.new("_:w1")=>{}}},
+        Entity.new("_:t4")=>{Relation.new("r")=>{Entity.new("_:w1")=>{}}}
+        }
+      }
     }
-    assert_equal expected_extension, origin_set.merge(mid_set_1).extension
+    assert_equal expected_extension, origin_set.merge(target_set).extension
   end
   
   def test_merge_missing_image
-    mid_set_1 = Xset.new do |s|
-      s.extension[Entity.new("_:i2")]= {Entity.new("_:r")=>Set.new([Entity.new("_:t2")])}
-      s.extension[Entity.new("_:i3")]= {Entity.new("_:r")=>Set.new([Entity.new("_:t1"), Entity.new("_:t3")])}
-      s.extension[Entity.new("_:i4")]= {Entity.new("_:r")=>Set.new([Entity.new("_:t1"), Entity.new("_:t4")])}
-
-      s.id = "mid_set"
+    mid_set = Xset.new do |s|
+      s.extension[Entity.new("_:i2")]= {Entity.new("_:r")=>{Entity.new("_:t2")=>{}}}
+      s.extension[Entity.new("_:i3")]= {Entity.new("_:r")=>{Entity.new("_:t1")=>{}, Entity.new("_:t3")=>{}}}
+      s.extension[Entity.new("_:i4")]= {Entity.new("_:r")=>{Entity.new("_:t1")=>{}, Entity.new("_:t4")=>{}}}
     end
     
     origin_set = Xset.new do |s|
       s << Entity.new("_:i1")
       s << Entity.new("_:i2")
       s << Entity.new("_:i3")
-      s.generates << mid_set_1
-      s.resulted_from = Xset.new
-      s.id = "origin_set"
     end
-    
-    mid_set_1.resulted_from = origin_set
     expected_extension = {
-     Entity.new("_:i2") => {
-       Entity.new("_:r")=>Set.new([Entity.new("_:t2")])},
-     Entity.new("_:i3") => {
-       Entity.new("_:r")=>Set.new([Entity.new("_:t1"), Entity.new("_:t3")])},
+      Entity.new("_:i1") => {},
+       Entity.new("_:i2") => {
+         Entity.new("_:r")=>{Entity.new("_:t2")=>{}}
+       },
+       Entity.new("_:i3") => {
+         Entity.new("_:r")=>{Entity.new("_:t1")=>{}, Entity.new("_:t3")=>{}},
+      }
     }
-    assert_equal expected_extension, origin_set.merge(mid_set_1).extension
+    assert_equal expected_extension, origin_set.merge(mid_set).extension
   end
   
   def test_merge_twice
     target_set = Xset.new do |s|
-      s.extension[Entity.new("_:t1")]= {Entity.new("_:r")=>Set.new([Entity.new("_:u1")])}
-      s.extension[Entity.new("_:t2")]= {Entity.new("_:r")=>Set.new([Entity.new("_:u2")])}
-      s.extension[Entity.new("_:t3")]= {Entity.new("_:r")=>Set.new([Entity.new("_:u3")])}
-      s.extension[Entity.new("_:t4")]= {Entity.new("_:r")=>Set.new([Entity.new("_:u4")])}
-      s.id = "target set"
+      s.extension[Entity.new("_:t1")]= {Entity.new("_:r")=>{Entity.new("_:u1")=>{}}}
+      s.extension[Entity.new("_:t2")]= {Entity.new("_:r")=>{Entity.new("_:u2")=>{}}}
+      s.extension[Entity.new("_:t3")]= {Entity.new("_:r")=>{Entity.new("_:u3")=>{}}}
+      s.extension[Entity.new("_:t4")]= {Entity.new("_:r")=>{Entity.new("_:u4")=>{}}}
     end
     
     mid_set_1 = Xset.new do |s|
-      s.extension[Entity.new("_:i1")]= {Entity.new("_:r")=>Set.new([Entity.new("_:t1")])}
-      s.extension[Entity.new("_:i2")]= {Entity.new("_:r")=>Set.new([Entity.new("_:t2")])}
-      s.extension[Entity.new("_:i3")]= {Entity.new("_:r")=>Set.new([Entity.new("_:t1"), Entity.new("_:t3")])}
-      s.extension[Entity.new("_:i4")]= {Entity.new("_:r")=>Set.new([Entity.new("_:t1"), Entity.new("_:t4")])}
-      s.generates << target_set
-      s.id = "mid_set"
+      s.extension[Entity.new("_:i1")]= {Entity.new("_:r")=>{Entity.new("_:t1")=>{}}}
+      s.extension[Entity.new("_:i2")]= {Entity.new("_:r")=>{Entity.new("_:t2")=>{}}}
+      s.extension[Entity.new("_:i3")]= {Entity.new("_:r")=>{Entity.new("_:t1")=>{}, Entity.new("_:t3")=>{}}}
+      s.extension[Entity.new("_:i4")]= {Entity.new("_:r")=>{Entity.new("_:t1")=>{}, Entity.new("_:t4")=>{}}}
     end
     
     origin_set = Xset.new do |s|
@@ -720,45 +713,40 @@ class EndpointExplorationTest < Test::Unit::TestCase
       s << Entity.new("_:i2")
       s << Entity.new("_:i3")
       s << Entity.new("_:i4")
-      s.generates << mid_set_1
-      s.resulted_from = Xset.new
-      s.id = "origin_set"
     end
-    mid_set_1.resulted_from = origin_set
-    target_set.resulted_from = mid_set_1
     local_path = origin_set.merge(mid_set_1).merge(target_set)
     expected_extension = {
      Entity.new("_:i1") => {
        Entity.new("_:r")=>{
          Entity.new("_:t1") => {
-           Entity.new("_:r")=>Set.new([Entity.new("_:u1")])
-           }
+           Entity.new("_:r")=>{Entity.new("_:u1")=>{}}
          }
-       },
+       }
+     },
      Entity.new("_:i2") => {
        Entity.new("_:r")=>{
          Entity.new("_:t2") => {
-           Entity.new("_:r")=>Set.new([Entity.new("_:u2")])
-           }
+           Entity.new("_:r")=>{Entity.new("_:u2")=>{}}
          }
-       },
+       }
+     },
      Entity.new("_:i3") => {
        Entity.new("_:r")=>{
         Entity.new("_:t1") => {
-          Entity.new("_:r")=>Set.new([Entity.new("_:u1")])
+          Entity.new("_:r")=>{Entity.new("_:u1")=>{}}
         },
         Entity.new("_:t3") => {
-          Entity.new("_:r")=>Set.new([Entity.new("_:u3")])
+          Entity.new("_:r")=>{Entity.new("_:u3")=>{}}
         }
        }
       },
       Entity.new("_:i4") => {
         Entity.new("_:r")=>{
           Entity.new("_:t1") => {
-            Entity.new("_:r")=>Set.new([Entity.new("_:u1")])
+            Entity.new("_:r")=>{Entity.new("_:u1")=>{}}
             },          
           Entity.new("_:t4") => {
-            Entity.new("_:r")=>Set.new([Entity.new("_:u4")])
+            Entity.new("_:r")=>{Entity.new("_:u4")=>{}}
           }
         }
       }        
@@ -766,6 +754,46 @@ class EndpointExplorationTest < Test::Unit::TestCase
 
     assert_equal expected_extension, local_path.extension
 
+  end
+  
+  def test_merge_two_steps
+    target_set = Xset.new do |s|
+      s.extension[Entity.new("_:w1")]= {Entity.new("_:r")=>{Entity.new("_:u1")=>{}}}
+      s.extension[Entity.new("_:w2")]= {Entity.new("_:r")=>{Entity.new("_:u2")=>{}}}
+      s.extension[Entity.new("_:w3")]= {Entity.new("_:r")=>{Entity.new("_:u3")=>{}}}
+      s.extension[Entity.new("_:w4")]= {Entity.new("_:r")=>{Entity.new("_:u4")=>{}}}
+    end
+    
+    origin_set = Xset.new do |s|
+      s.extension[Entity.new("_:i1")]= {Entity.new("_:r")=>{Entity.new("_:t1")=>{Entity.new("_:w1")=>{}}}}
+      s.extension[Entity.new("_:i2")]= {Entity.new("_:r")=>{Entity.new("_:t2")=>{Entity.new("_:w2")=>{}}}}
+    end
+        
+    local_path = origin_set.merge(target_set)
+    expected_extension = {
+      Entity.new("_:i1") => {
+         Entity.new("_:r")=>{
+           Entity.new("_:t1")=>{
+             Entity.new("_:w1") => {
+               Entity.new("_:r")=>{Entity.new("_:u1")=>{}}
+             }
+           }
+         }
+       },
+      Entity.new("_:i2") => {
+         Entity.new("_:r")=>{
+           Entity.new("_:t2")=>{
+             Entity.new("_:w2") => {
+               Entity.new("_:r")=>{Entity.new("_:u2")=>{}}
+             }
+           }
+         }
+      },
+    }
+
+    assert_equal expected_extension, local_path.extension
+
+    
   end
   
   def test_pagination
@@ -815,23 +843,25 @@ class EndpointExplorationTest < Test::Unit::TestCase
   def test_union
     set1 = Xset.new do |s|
       
-      s.extension[Entity.new("_:t1")]= {Relation.new("_:r")=>Set.new([Entity.new("_:u1")])}
-      s.extension[Entity.new("_:t2")]= {Relation.new("_:r")=>Set.new([Entity.new("_:u2")])}
+      s.extension[Entity.new("_:t1")]= {Relation.new("_:r")=>{Entity.new("_:u1")=>{}}}
+      s.extension[Entity.new("_:t2")]= {Relation.new("_:r")=>{Entity.new("_:u2")=>{}}}
       s.id = "target set"
     end
     
     set2 = Xset.new do |s|
-      s.extension[Entity.new("_:t1")]= {Relation.new("_:r")=>Set.new([Entity.new("_:e1")])}
-      s.extension[Entity.new("_:i2")]= {Relation.new("_:r")=>Set.new([Entity.new("_:t2")])}
+      s.extension[Entity.new("_:t1")]= {Relation.new("_:r")=>{Entity.new("_:e1")=>{}}}
+      s.extension[Entity.new("_:i2")]= {Relation.new("_:r")=>{Entity.new("_:t2")=>{}}}
       s.id = "mid_set"
     end
     expected_extension = {}
 
-    expected_extension[Entity.new("_:t1")]= {Relation.new("_:r")=>Set.new([Entity.new("_:e1"), Entity.new("_:u1")])}
-    expected_extension[Entity.new("_:t2")]= {Relation.new("_:r")=>Set.new([Entity.new("_:u2")])}
-    expected_extension[Entity.new("_:i2")]= {Relation.new("_:r")=>Set.new([Entity.new("_:t2")])}
+    expected_extension[Entity.new("_:t1")]= {Relation.new("_:r")=>{Entity.new("_:e1")=>{}, Entity.new("_:u1")=>{}}}
+    expected_extension[Entity.new("_:t2")]= {Relation.new("_:r")=>{Entity.new("_:u2")=>{}}}
+    expected_extension[Entity.new("_:i2")]= {Relation.new("_:r")=>{Entity.new("_:t2")=>{}}}
     
-    assert_equal expected_extension, set1.union(set2).extension
+    rs = set1.union(set2)
+
+    assert_equal expected_extension, rs.extension
 
     
   end
@@ -864,6 +894,43 @@ class EndpointExplorationTest < Test::Unit::TestCase
   def test_relation_eql
     assert_true !(Relation.new("id", true) == Relation.new("id", false))
   end
+  
+  def test_select_2
+    set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:p1") => {},
+        Entity.new("_:p2") => {},
+        Entity.new("_:p3") => {},
+        Entity.new("_:p4") => {},
+        Entity.new("_:p5") => {},
+        Entity.new("_:p6") => {},
+        Entity.new("_:paper1") => {}                        
+      }
+    end
+    set.server = @papers_server
+    assert_equal set.group(Relation.new("_:author")).extension.keys.size, 2
+    assert !set.group("_:author").select([Entity.new("_:p2")]).extension.empty?
+  end
+  
+  def test_get_item
+    set = Xset.new do |s|
+      s.extension = {
+        Relation.new("_:author") => {Entity.new("_:a1")=>{}},
+        Relation.new("_:publishedOn") => {Entity.new("_:journal1")=>{}},
+        Relation.new("_:publicationYear") => {Literal.new(2000)=>{}},
+        Relation.new("_:keywords") => {Entity.new("_:k3")=>{}},
+        Relation.new("_:cite", true) => {Entity.new("_:paper1")=>{}, Entity.new("_:p6")=>{}}
+      }      
+    
+    end
+    assert_equal Entity.new("_:a1"), set.get_item(Entity.new("_:a1"))
+    assert_equal Entity.new("_:k3"), set.get_item(Entity.new("_:k3"))
+    assert_equal Literal.new(2000), set.get_item(Literal.new(2000))
+    assert_equal Relation.new("_:cite", true), set.get_item(Relation.new("_:cite", true))
+    
+  end   
+  
+  
   # def test_find_path
   #
   #   correlate_test = Xset.new do |s|

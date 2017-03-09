@@ -1,10 +1,13 @@
 require "test/unit"
 require "rdf"
 
-require './mixins/auxiliary_operations'
+require './mixins/xpair'
 require './mixins/hash_explorable'
+require './mixins/auxiliary_operations'
 require './mixins/enumerable'
 require './mixins/persistable'
+require './mixins/graph'
+
 require './filters/filtering'
 require './filters/contains'
 require './filters/equals'
@@ -13,6 +16,7 @@ require './filters/match'
 require './filters/in_range'
 require './model/item'
 require './model/xset'
+require './model/literal'
 require './model/entity'
 require './model/relation'
 require './model/type'
@@ -21,6 +25,7 @@ require './model/ranked_set'
 require './aux/grouping_expression.rb'
 require './aux/ranking_functions'
 require './aux/mapping_functions'
+require './aux/hash_helper'
 
 require 'set'
 
@@ -30,6 +35,7 @@ require './adapters/rdf/rdf_nav_query.rb'
 
 class FunctionalTest < Test::Unit::TestCase
   def setup
+
     @graph = RDF::Graph.new do |graph|
       graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o1")]
       graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o2")]      
@@ -128,16 +134,16 @@ class FunctionalTest < Test::Unit::TestCase
     
     publication_years = citations.pivot_forward(["_:publicationYear"])
     expected_extension = {
-      2000 => {},
-      1998 => {},
-      2010 => {}
+      Literal.new(2000) => {},
+      Literal.new(1998) => {},
+      Literal.new(2010) => {}
     }
 
     assert_equal expected_extension, publication_years.extension
     
     meanYear = publication_years.map{|mf| mf.avg}
     expected_extension = {
-      2002 => {}
+      Literal.new(2002) => {}
     }
     assert_equal expected_extension, meanYear.extension
     

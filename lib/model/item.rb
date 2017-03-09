@@ -1,10 +1,12 @@
 class Item
+  include Xpair::Graph
   attr_accessor :servers, :id
   
   def initialize(id)
     @id = id
     @servers = []
-  end  
+  end 
+  
 
   def add_server(server)
     @servers << server

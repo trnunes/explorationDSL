@@ -54,4 +54,10 @@ class Xset
     Marshal.load(Marshal.dump(@extension))
   end
   
+  def extension=(hash)
+    @extension = hash
+    Xpair::Graph.generate_graph(@extension)
+
+  end
+  
 end

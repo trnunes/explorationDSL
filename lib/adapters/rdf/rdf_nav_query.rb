@@ -178,15 +178,15 @@ module SPARQLQuery
 
     def convert_literal(literal)
       if literal.to_s.match(/\A[-+]?[0-9]+\z/).nil?
-        literal.to_s
+        Literal.new(literal.to_s)
       else
-        literal.to_s.to_i
+        Literal.new(literal.to_s.to_i)
       end
     end
     
     def build_select_query
       query = "SELECT " << @select_clauses.join(" . ") << build_where()  
-      puts "EXECUTING: #{query}"
+
       query
     end
     
@@ -207,8 +207,8 @@ module SPARQLQuery
       while offset < @items.size
         where = " WHERE{" << @where_clauses[offset..limit].map{|where_clause| "{#{where_clause}}"}.join(" UNION ") << @filters.join(" ") << "}"
         query =  "CONSTRUCT{" << @construct_clauses[offset..limit].join(" ") << "}" << where
-        puts "BUILT QUERY #{offset.to_s}: #{query}"
-        puts
+
+
         queries << query
         offset = limit + 1
         limit += 300

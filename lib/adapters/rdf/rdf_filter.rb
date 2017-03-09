@@ -40,13 +40,13 @@ module SPARQLQuery
   
     def relation_equals(relation, item)
       sparql_entity = ""
-      if(entity.is_a?(Entity) || entity.is_a?(Relation) || entity.is_a?(Type))
-        sparql_entity = "<#{entity.to_s}>"
+      if(item.is_a?(Entity) || item.is_a?(Relation) || item.is_a?(Type))
+        sparql_entity = "<#{item.to_s}>"
       else
-        if(entity.is_a?(String))
-          sparql_entity = "\"#{entity.to_s}\""
+        if(item.is_a?(String))
+          sparql_entity = "\"#{item.to_s}\""
         else
-          sparql_entity = "#{entity.to_s}"
+          sparql_entity = "#{item.to_s}"
         end
         
       end

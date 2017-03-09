@@ -141,7 +141,7 @@ class RDFDataServer
   end
  
   def execute(query)
-    puts "SERVER EXECUTING: #{query}"
+
     @graph.query(query)
   end 
 

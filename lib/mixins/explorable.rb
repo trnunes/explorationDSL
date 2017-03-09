@@ -86,7 +86,7 @@ module Explorable
   #   retrieving the the value of a bound variable "r" => eval("r", b)
   def refine(*filters)
     result_set = Xset.new("refine")
-    filters.each{|f| puts f.to_source}
+
     filters_proc = filters.map{|filter| filter.to_proc}
     refined_items = self.select do |item|
       # begin

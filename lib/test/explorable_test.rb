@@ -125,7 +125,7 @@ class ExplorableTest < Test::Unit::TestCase
           
     actual_results = {}
     result = @dataset.group_by(){|item1, item2| expr.call(item1, item2)}
-    # result.each{|group| puts group.to_s}
+
     
     group1 = [
       Relation.new(Entity.new("p1"), Entity.new("o1")),

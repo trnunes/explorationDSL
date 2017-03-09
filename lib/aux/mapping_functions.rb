@@ -28,19 +28,22 @@ module MappingFunctions
       
     def map(*items)
       items.each do |item|
-        @sum += item
+        @sum += item.value
         @count += 1
         @mapped_items << item
       end      
     end
     
     def mappings
-      avg = @sum/@count
+      avg = Literal.new(@sum/@count)
       mappings = {}
       mappings[avg] ||= {}
       @mapped_items.each do |item|        
-        mappings[avg][item] = Relation.new("http://www.tecweb.inf.puc-rio.br/xpair/operation/map{|mf|mf.avg}")
+        mappings[avg] = {}
       end
+      @mapped_items = []
+      @sum = 0
+      @count = 0
       mappings
     end
   end
@@ -61,10 +64,12 @@ module MappingFunctions
     end
     
     def mappings      
-      mappings = {@count => {}}
+      mappings = {Literal.new(@count) => {}}
       @mapped_items.each do |item|        
-        mappings[@count][item] = Entity.new("http://www.tecweb.inf.puc-rio.br/xpair/operation/map{|mf|mf.count}")
+        mappings[Literal.new(@count)] = {}
       end
+      @mapped_items = []
+      @count = 0
       mappings
     end
   end
@@ -89,7 +94,7 @@ module MappingFunctions
           image_set.merge(item_image)
         end        
         @counts_by_image[image_set.size] ||={}
-        @counts_by_image[image_set.size][item] = Entity.new("http://www.tecweb.inf.puc-rio.br/xpair/operation/map{|mf|mf.domain_count}")
+
       end
     end
     

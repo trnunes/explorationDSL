@@ -38,10 +38,10 @@ module AuxiliaryOperations
   end
   
   def domain_items
-    puts "EXECUTING DOMAIN ITEMS"
+
     @projection = {}
     self.extension.keys.each do |item|
-      puts "PROJECTION: " << @projection.inspect
+
       @projection[item] = {}
     end
     self
@@ -80,6 +80,9 @@ module AuxiliaryOperations
     relations
   end
   
+  
+
+  
   def pivot_hash(hash)
     pivoted_hash = {}
     hash.each do |item, relation_hash|
@@ -101,7 +104,23 @@ module AuxiliaryOperations
     end
     pivoted_hash
   end
+  
+  def print_hash(hash = extension, level=1)
+    hash.each do |key, values|
+      level_str = ""
+      level.times{|t| level_str << " "}
 
+
+      if values.is_a? Hash
+        print_hash(values, level+1)
+      else
+        values.each do |value|
+
+        end
+      end        
+    end
+  end
+  
   def relations_set
     mappings = {}
     if root?
