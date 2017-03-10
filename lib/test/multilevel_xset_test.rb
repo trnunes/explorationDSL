@@ -1,42 +1,8 @@
-require "test/unit"
-require "rdf"
 
-require './mixins/hash_explorable'
-require './mixins/auxiliary_operations'
-require './mixins/enumerable'
-require './mixins/persistable'
-require './mixins/xpair'
-require './mixins/graph'
-require './filters/filtering'
-require './filters/contains'
-require './filters/equals'
-require './filters/keyword_match'
-require './filters/match'
-require './filters/in_range'
-require './model/item' 
-require './model/literal' 
-require './model/xset'
-require './model/entity'
-require './model/relation'
-require './model/type'
-require './model/ranked_set'
+require './test/xpair_unit_test'
 
-require './aux/grouping_expression.rb'
-require './aux/ranking_functions'
-require './aux/mapping_functions'
-require './aux/hash_helper'
-require 'set'
+class MultilevelXsetTest < XpairUnitTest
 
-require './adapters/rdf/rdf_data_server.rb'
-require './adapters/rdf/rdf_filter.rb'
-require './adapters/rdf/rdf_nav_query.rb'
-
-$PAGINATE = 10
-##TODO BUGS TO CORRECT
-## contains_one does not admit literals
-##
-
-class MultilevelXsetTest < Test::Unit::TestCase
   def setup
     @graph = RDF::Graph.new do |graph|
       graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o1")]
@@ -209,56 +175,6 @@ class MultilevelXsetTest < Test::Unit::TestCase
   end
   
   
-  def test_group_by_keep_structure
-    test_set = Xset.new do |s| 
-      s.extension = {
-        Entity.new("_:p1") => {},
-        Entity.new("_:p2") => {},
-        Entity.new("_:p3") => {},
-      }
-    end
-    test_set.server = @server
-
-    rs1 = test_set.group("_:r1")
-    expected_extension = {
-      Entity.new("_:o1") => {
-        Entity.new("_:p1")=>{}
-      },
-      Entity.new("_:o2") => {
-        Entity.new("_:p1")=>{}, 
-        Entity.new("_:p2")=>{}
-      },
-      Entity.new("_:o3") => {
-        Entity.new("_:p3")=>{}
-      },
-    }
-    
-    assert_equal expected_extension, rs1.extension
-    
-    rs = rs1.group("_:year", 3)
-    
-    
-    expected_extension = {
-      Entity.new("_:o1") => {        
-        Literal.new(2005) => {
-          Entity.new("_:p1")=>{}
-        }        
-      },
-      Entity.new("_:o2") => {        
-        Literal.new(2005) => {
-          Entity.new("_:p1")=>{},
-          Entity.new("_:p2")=>{}
-        }        
-      },
-      Entity.new("_:o3") => {
-        Literal.new(2010) => {
-          Entity.new("_:p3")=>{}
-        }
-      },
-    }
-    assert_equal expected_extension, rs.extension
-    
-  end
   
   def test_each_level2
     set = Xset.new do |s|
@@ -273,104 +189,6 @@ class MultilevelXsetTest < Test::Unit::TestCase
     assert_equal set.get_level(2).first.keys.size, 2
   end
   
-  def test_pivot_level2
-    set = Xset.new do |s|
-      s.extension = {
-        Relation.new("_:cite") => {Entity.new("_:p3")=> {},Entity.new("_:p4")=> {}}
-      }      
-    
-    end
-    set.server = @papers_server
-    h1 = {Relation.new("_:cite")=>{Entity.new("_:journal1") => {}, Entity.new("_:journal2") => {}}}
-    assert_equal h1, set.pivot_forward([Relation.new("_:publishedOn")],2).extension
-    
-    h2 = {
-      Relation.new("_:cite")=> {Entity.new("_:journal1") => {}, Entity.new("_:journal2")=> {},Literal.new(1998) => {},Literal.new(2010) => {}}
-      
-    }
-    assert_equal h2, set.pivot_forward([Relation.new("_:publishedOn"), Relation.new("_:publicationYear")], 2).extension
-    
-  end
   
-  def test_pivot_level2_two_parents
-    set = Xset.new do |s|
-      s.extension = {
-        Entity.new("_:paper1")=>{Relation.new("_:cite") => {Entity.new("_:p3")=> {},Entity.new("_:p4")=>{}}}
-        
-      }      
-    
-    end
-    set.server = @papers_server
-    h1 = {Entity.new("_:paper1")=>{Relation.new("_:cite")=>{Entity.new("_:journal1")=>{},Entity.new("_:journal2")=>{}}}}
-    assert_equal h1, set.pivot_forward([Relation.new("_:publishedOn")],3).extension
-    
-    h2 = {
-      Entity.new("_:paper1")=>{Relation.new("_:cite")=> {Entity.new("_:journal1") => {},Entity.new("_:journal2")=> {},Literal.new(1998)=> {},Literal.new(2010) => {}}}
-      
-    }
-    assert_equal h2, set.pivot_forward([Relation.new("_:publishedOn"), Relation.new("_:publicationYear")], 3).extension
-    
-  end
-  
-  def test_pivot_leve3_siblings
-    set = Xset.new do |s|
-      s.extension = {
-        Entity.new("_:paper1")=>{Relation.new("_:cite") => {Entity.new("_:p3") => {},Entity.new("_:p4") => {}}},
-        Entity.new("_:p5")=>{Relation.new("_:cite") => {Entity.new("_:p2")=>{}}}
-      }      
-    
-    end
-    set.server = @papers_server
-    h1 = {
-      Entity.new("_:paper1")=>{Relation.new("_:cite")=>{Entity.new("_:journal1") => {},Entity.new("_:journal2") => {}}},
-      Entity.new("_:p5")=>{Relation.new("_:cite")=>{Entity.new("_:journal1") => {}}}
-    }
-
-    assert_equal h1, set.pivot_forward([Relation.new("_:publishedOn")],3).extension
-
-    h2 = {
-      Entity.new("_:paper1")=>{Relation.new("_:cite")=> {Entity.new("_:journal1") => {},Entity.new("_:journal2") => {},Literal.new(1998)=> {},Literal.new(2010)=> {}}},
-      Entity.new("_:p5")=>{Relation.new("_:cite")=> {Entity.new("_:journal1")=>{}, Literal.new(2000)=>{}}}
-
-    }
-    assert_equal h2, set.pivot_forward([Relation.new("_:publishedOn"), Relation.new("_:publicationYear")], 3).extension
-    
-  end
-
-  def test_pivot_level2_property_path
-    set = Xset.new do |s|
-      s.extension = {
-        Entity.new("_:paper1")=>{Relation.new("_:cite") => {Entity.new("_:p3")=>{},Entity.new("_:p4")=>{}}},
-        Entity.new("_:p5")=>{Relation.new("_:cite") => {Entity.new("_:p2")=>{}}}
-      }      
-    
-    end
-    set.server = @papers_server
-    h1 = {
-      Entity.new("_:paper1")=>{Relation.new("_:cite")=>{Literal.new(2005)=>{}, Literal.new(2010)=>{}}},
-      Entity.new("_:p5")=>{Relation.new("_:cite")=>{Literal.new(2005)=>{}}}
-    }
-
-    assert_equal h1, set.pivot_forward([[Relation.new("_:publishedOn"), Relation.new("_:releaseYear")]],3).extension
-
-  end
-  
-  def test_map_level3
-    set = Xset.new do |s|
-      s.extension = {
-        Entity.new("_:paper1")=>{Relation.new("_:cite") => {Entity.new("_:p3") => {},Entity.new("_:p4") => {}}},
-        Entity.new("_:p5")=>{Relation.new("_:cite") => {Entity.new("_:p2")=>{}}}
-      }      
-    
-    end
-    set.server = @papers_server
-    h1 = {
-      Entity.new("_:paper1")=>{Relation.new("_:cite")=>{Literal.new(2) => {}}},
-      Entity.new("_:p5")=>{Relation.new("_:cite")=>{Literal.new(1) => {}}}
-    }
-    
-    assert_equal h1, set.map(3){|mf|mf.count}.extension
-    
-  end
   
 end

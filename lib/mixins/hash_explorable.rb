@@ -75,7 +75,7 @@ module HashExplorable
         if path_relation.inverse
 
           query.execute.each do |item, relations_hash|
-            partial_path_results[item] ||= {}
+
             relations_hash.each do |relation, values|
               values.each do |value|
                 inverse_relation = Relation.new(relation.id);
@@ -98,9 +98,6 @@ module HashExplorable
              end
            end
         end
-
-
-
         relation_mappings = HashHelper.join(relation_mappings, partial_path_results)        
         source_items = partial_values_set
       end
@@ -109,7 +106,8 @@ module HashExplorable
     pivot_mappings= {}
 
 
-    mappings.each do |item, relations|      
+    mappings.each do |item, relations|
+      pivot_mappings[item] = {}      
       relations.each do |relation, values|        
         if level > 1
           pivot_mappings = self_copy.extension if pivot_mappings.empty?
@@ -117,9 +115,6 @@ module HashExplorable
 
 
             if items_hash.has_key? item
-
-
-
 
               HashHelper.leaves(relations).each do |result_item|
                 items_hash.delete(item)
@@ -130,10 +125,11 @@ module HashExplorable
 
 
         else
-
-
-          pivot_mappings[relation] = values
-          relation.set_children(values.keys)
+          pivot_mappings[item][relation] = {}
+          values.each do |key, values|
+            pivot_mappings[item][relation][key] = values
+          end
+          # relation.set_children(values.keys)
         end        
       end      
     end
@@ -312,6 +308,7 @@ module HashExplorable
           s.server = self.server
         end
         partial_result_set = subset.group(relation)
+        HashHelper.print_hash(partial_result_set.extension)
         
         level_item_hash.keys.each do |key|
           level_item_hash.delete(key)         
@@ -348,10 +345,8 @@ module HashExplorable
             if mappings[object].nil?
               mappings[object] ||={}
             end
-            mappings[object][inverse_relation] ||= {}
-            mappings[object][inverse_relation][subject] = {}
-            object.add_child inverse_relation
-            inverse_relation.add_child(subject)
+            mappings[object] ||= {}
+            mappings[object][subject] = {}
           end
         end
       end
@@ -475,10 +470,10 @@ module HashExplorable
   end
   
   def merge(target_xset)
-    self_extension_copy = self.extension_copy
+    self_extension_copy = self.extension
     target_extension_copy = target_xset.extension_copy
     merge_hash(self_extension_copy, target_extension_copy)
-    mount_result_set("merge", self_extension_copy, {:target_xset => target_xset})
+    return self
   end
 
   def intersect(xset, level=1)

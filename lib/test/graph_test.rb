@@ -1,39 +1,7 @@
-require "test/unit"
-require "rdf"
+require './test/xpair_unit_test'
 
-require './mixins/hash_explorable'
-require './mixins/auxiliary_operations'
-require './mixins/enumerable'
-require './mixins/persistable'
-require './filters/filtering'
-require './filters/contains'
-require './filters/equals'
-require './filters/keyword_match'
-require './filters/match'
-require './filters/in_range'
-require './model/item'
-require './model/xset'
-require './model/entity'
-require './model/relation'
-require './model/type'
-require './model/ranked_set'
+class GraphTest < XpairUnitTest
 
-require './aux/grouping_expression.rb'
-require './aux/ranking_functions'
-require './aux/mapping_functions'
-
-require 'set'
-
-require './adapters/rdf/rdf_data_server.rb'
-require './adapters/rdf/rdf_filter.rb'
-require './adapters/rdf/rdf_nav_query.rb'
-
-$PAGINATE = 10
-##TODO BUGS TO CORRECT
-## contains_one does not admit literals
-##
-
-class EndpointExplorationTest < Test::Unit::TestCase
   def setup
     @graph = RDF::Graph.new do |graph|
       graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o1")]
@@ -120,145 +88,85 @@ class EndpointExplorationTest < Test::Unit::TestCase
       
   end
   
-  def test_get_level
-    set = Xset.new do |s|
-       s << Relation.new("_:author") 
-       s << Relation.new("_:publishedOn")
-       s << Relation.new("_:publicationYear")
-       s << Relation.new("_:keywords")
-       s << Relation.new("_:cite", true)      
-    end
-    
-    expected_items = Set.new([
-      Relation.new("_:author"),
-      Relation.new("_:publishedOn"),
-      Relation.new("_:publicationYear"),
-      Relation.new("_:keywords"),
-      Relation.new("_:cite", true)
-    ])
-    
-    assert_equal expected_items, set.get_level([set.extension], 1)
-  end
-
-  def test_get_level_2
+  
+  def test_all_parents_2
     set = Xset.new do |s|
       s.extension = {
         Relation.new("_:author") => Set.new([Entity.new("_:a1")]),
         Relation.new("_:publishedOn") => Set.new([Entity.new("_:journal1")]),
-        Relation.new("_:publicationYear") => Set.new([2000]),
+        Relation.new("_:publicationYear") => Set.new([Literal.new(2000)]),
         Relation.new("_:keywords") => Set.new([Entity.new("_:k3")]),
         Relation.new("_:cite", true) => Set.new([Entity.new("_:paper1"), Entity.new("_:p6")])
       }      
     
     end
-    expected_items = Set.new([
-      Set.new([Entity.new("_:a1")]),
-      Set.new([Entity.new("_:journal1")]),
-      Set.new([2000]),
-      Set.new([Entity.new("_:k3")]),
-      Set.new([Entity.new("_:paper1"), Entity.new("_:p6")])
-    ])
     
-    assert_equal expected_items, set.get_level([set.extension], 2)
-    
-    expected_items = Set.new([
-      Relation.new("_:author"),
-      Relation.new("_:publishedOn"),
-      Relation.new("_:publicationYear"),
-      Relation.new("_:keywords"),
-      Relation.new("_:cite", true)
-    ])
-    assert_equal expected_items, set.get_level([set.extension], 1)
+    assert_equal Set.new([Relation.new("_:cite", true)]), set.get_item(Entity.new("_:p6")).all_parents
+    assert_equal Set.new([Relation.new("_:keywords")]), set.get_item(Entity.new("_:k3")).all_parents
+    assert_equal Set.new([Relation.new("_:publicationYear")]), set.get_item(Literal.new(2000)).all_parents
   end
   
-  def test_get_level_3
+  def test_all_parents_3
     set = Xset.new do |s|
       s.extension = {
-       Entity.new("_:p1")=>{Relation.new("_:author") => Set.new([Entity.new("_:a1")])},
-       Entity.new("_:p2")=>{Relation.new("_:publishedOn") => Set.new([Entity.new("_:journal1")])},
-       Entity.new("_:p3")=>{Relation.new("_:publicationYear") => Set.new([2000])},
-       Entity.new("_:p4")=>{Relation.new("_:keywords") => Set.new([Entity.new("_:k3")])},
-       Entity.new("_:p5")=>{Relation.new("_:cite", true) => Set.new([Entity.new("_:paper1"), Entity.new("_:p6")])}
+        Entity.new("_:i1")=>{Relation.new("_:author") => Set.new([Entity.new("_:a1")])},
+        Entity.new("_:i2")=>{Relation.new("_:publishedOn") => Set.new([Entity.new("_:journal1")])},
+        Entity.new("_:i3")=>{Relation.new("_:publicationYear") => Set.new([Literal.new(2000)])},
+        Entity.new("_:i4")=>{Relation.new("_:keywords") => Set.new([Entity.new("_:k3")])},
+        Entity.new("_:i5")=>{Relation.new("_:cite", true) => Set.new([Entity.new("_:paper1"), Entity.new("_:p6")])}
       }      
     
     end
-    expected_items = Set.new([
-      Entity.new("_:p1"),
-      Entity.new("_:p2"),
-      Entity.new("_:p3"),
-      Entity.new("_:p4"),
-      Entity.new("_:p5")
-    ])
     
-    assert_equal expected_items, set.get_level([set.extension], 1)
-    
-    expected_items = Set.new([
-      Relation.new("_:author"),
-      Relation.new("_:publishedOn"),
-      Relation.new("_:publicationYear"),
-      Relation.new("_:keywords"),
-      Relation.new("_:cite", true)
-    ])
-    assert_equal expected_items, set.get_level([set.extension], 2)
-    
-    expected_items = Set.new([
-      Set.new([Entity.new("_:a1")]),
-      Set.new([Entity.new("_:journal1")]),
-      Set.new([2000]),
-      Set.new([Entity.new("_:k3")]),
-      Set.new([Entity.new("_:paper1"), Entity.new("_:p6")])
-    ])
-    
-    assert_equal expected_items, set.get_level([set.extension], 3)
-    
-  end
+    assert_equal Set.new([Entity.new("_:i5"), Relation.new("_:cite", true)]), set.get_item(Entity.new("_:p6")).all_parents
+    assert_equal Set.new([Entity.new("_:i4"),Relation.new("_:keywords")]), set.get_item(Entity.new("_:k3")).all_parents
+    assert_equal Set.new([Entity.new("_:i3"),Relation.new("_:publicationYear")]), set.get_item(Literal.new(2000)).all_parents
+  end   
   
-  def test_get_level_4
+  def test_parents_hash
     set = Xset.new do |s|
       s.extension = {
-       Entity.new("_:p1")=>{Relation.new("_:author") => {Entity.new("_:a1")=>{Relation.new("_:birth")=>Set.new([Entity.new("_:date")])}}},
-       Entity.new("_:p2")=>{Relation.new("_:publishedOn") => {Entity.new("_:journal1")=>{Relation.new("_:title")=>Set.new([Entity.new("_:name2")])}}},
+        Entity.new("_:i1")=>{Relation.new("_:author") => Set.new([Entity.new("_:a1")])},
+        Entity.new("_:i2")=>{Relation.new("_:publishedOn") => Set.new([Entity.new("_:journal1")])},
+        Entity.new("_:i3")=>{Relation.new("_:publicationYear") => Set.new([Literal.new(2000)])},
+        Entity.new("_:i4")=>{Relation.new("_:keywords") => Set.new([Entity.new("_:k3")])},
+        Entity.new("_:i5")=>{Relation.new("_:cite", true) => Set.new([Entity.new("_:paper1"), Entity.new("_:p6")])}
       }      
     
     end
-    expected_items = Set.new([
-      Entity.new("_:p1"),
-      Entity.new("_:p2")
-    ])
-    
-    assert_equal expected_items, set.get_level([set.extension], 1)
-    
-    expected_items = Set.new([
-      Relation.new("_:author"),
-      Relation.new("_:publishedOn")
-    ])
-    assert_equal expected_items, set.get_level([set.extension], 2)
-    
-    expected_items = Set.new([
-      Entity.new("_:a1"),
-      Entity.new("_:journal1")
-    ])
-    
-    assert_equal expected_items, set.get_level([set.extension], 3)
-    
-    expected_items = Set.new([
-      Relation.new("_:birth"),
-      Relation.new("_:title")
-    ])
-    
-    assert_equal expected_items, set.get_level([set.extension], 4)
-    
-    expected_items = Set.new([
-      Set.new([Entity.new("_:date")]),
-      Set.new([Entity.new("_:name2")])
-    ])
-    
-    assert_equal expected_items, set.get_level([set.extension], 5)
-    
-    
-    
-    
+    h1 = {Entity.new("_:i5")=> {Relation.new("_:cite", true)=>{}}}
+    h2 = {Entity.new("_:i4")=>{Relation.new("_:keywords")=>{}}}
+    h3 = {Entity.new("_:i3") => {Relation.new("_:publicationYear")=>{}}}
+    assert_equal h1, set.get_item(Entity.new("_:p6")).parents_hash
+    assert_equal h2, set.get_item(Entity.new("_:k3")).parents_hash
+    assert_equal h3, set.get_item(Literal.new(2000)).parents_hash
   end
-  
-  
+  # def test_find_path
+  #
+  #   correlate_test = Xset.new do |s|
+  #     s << Entity.new("_:o1")
+  #   end
+  #
+  #   correlate_target_test = Xset.new do |s|
+  #     s << Entity.new("_:o2")
+  #   end
+  #
+  #   correlate_target_test.server = @correlate_server
+  #
+  #   correlate_test.server = @correlate_server
+  #
+  #   actual_results = correlate_test.find_path(correlate_target_test)
+  #
+  #   expected_rs = Xset.new do |s|
+  #     s.extension = {
+  #       Entity.new("_:o1") => {
+  #         Entity.new("_:p3") => Entity.new("_:o2"),
+  #         Entity.new("_:p1") => {Entity.new("_:p2") => Entity.new("_:o2")}
+  #       }
+  #     }
+  #   end
+  #
+  #   assert_equal expected_rs.extension, actual_results.extension
+  # end
+ 
 end

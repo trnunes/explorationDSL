@@ -27,8 +27,44 @@ module RankingFunctions
     end
   end
   
+  class AlphabeticalSort
+    def score(set, item)
+      item.to_s
+    end
+    
+    def name
+      "alpha_sort"
+    end
+  end
+  
+  class RelationRank
+    attr_accessor :relation
+    def initialize(relation)
+      @relation = relation
+    end
+    def score(set, item)
+      @pivot_set ||= set.pivot(@relation)
+      
+    end
+    def name
+      "relation_rank"
+    end
+  end
+  
   def self.each_image_count(image_set)
     ImageCount.new(image_set)
+  end
+  
+  def self.alpha_sort
+    AlphabeticalSort.new()
+  end
+  
+  def self.relation_rank(relation)
+    RelationRank.new(relation)
+  end
+  
+  def self.custom_rank(function)
+    CustomRank.new(function)
   end
   
 end

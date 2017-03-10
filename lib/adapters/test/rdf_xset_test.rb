@@ -537,13 +537,14 @@ class XsetTest < Test::Unit::TestCase
     expected_set = Xset.new do |s|
       s.extension = {
         Entity.new("_:o1") => {
-          Relation.new("_:r1", true) => {Entity.new("_:p1")=>{}}
+          Entity.new("_:p1")=>{}
         },
         Entity.new("_:o2") => {
-          Relation.new("_:r1", true) => {Entity.new("_:p1")=>{},Entity.new("_:p2")=>{}}
+          Entity.new("_:p1")=>{},
+          Entity.new("_:p2")=>{}
         },
         Entity.new("_:o3") => {
-          Relation.new("_:r1", true) => {Entity.new("_:p3")=>{}}
+          Entity.new("_:p3")=>{}
         },
       }
       #
@@ -667,6 +668,8 @@ class XsetTest < Test::Unit::TestCase
       }
     }
     assert_equal expected_extension, origin_set.merge(target_set).extension
+    assert_equal expected_extension, origin_set.extension
+    assert_equal 5, origin_set.count_levels
   end
   
   def test_merge_missing_image
@@ -690,7 +693,10 @@ class XsetTest < Test::Unit::TestCase
          Entity.new("_:r")=>{Entity.new("_:t1")=>{}, Entity.new("_:t3")=>{}},
       }
     }
+    assert_equal 1, origin_set.count_levels
     assert_equal expected_extension, origin_set.merge(mid_set).extension
+    assert_equal expected_extension, origin_set.extension
+    assert_equal 3, origin_set.count_levels
   end
   
   def test_merge_twice
@@ -753,6 +759,7 @@ class XsetTest < Test::Unit::TestCase
     }
 
     assert_equal expected_extension, local_path.extension
+    assert_equal expected_extension, origin_set.extension
 
   end
   
@@ -792,7 +799,7 @@ class XsetTest < Test::Unit::TestCase
     }
 
     assert_equal expected_extension, local_path.extension
-
+    assert_equal expected_extension, origin_set.extension
     
   end
   
