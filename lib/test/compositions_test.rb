@@ -208,21 +208,21 @@ class CompositionsTest < XpairUnitTest
 
     
   end
-  # def test_group_by_twice_map_refine
-  #   set = Xset.new do |s|
-  #     s.extension = {
-  #       Entity.new("_:p2")=>{}
-  #       Entity.new("_:p3")=>{}
-  #       Entity.new("_:p5")=>{}
-  #       Entity.new("_:p6")=>{}
-  #     }
-  #   end
-  #
-  #   s1 = set.group{|gf| gf.by_relation(Relation.new("_:author"))}
-  #   # s2 = s.group(level: 2){|gf| gf.by_relation(Relation.new("_:keywords"))}
-  #   maps = s1.map(level: 2){|mf| mf.count}
-  #   s3 = s2.refine(level: 2){|f| f.image_equals([maps], Literal.new(2))}
-  # end
+  def test_group_by_twice_map_refine
+    set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:p2")=>{}
+        Entity.new("_:p3")=>{}
+        Entity.new("_:p5")=>{}
+        Entity.new("_:p6")=>{}
+      }
+    end
+
+    s1 = set.group{|gf| gf.by_relation(Relation.new("_:author"))}
+    # s2 = s.group(level: 2){|gf| gf.by_relation(Relation.new("_:keywords"))}
+    maps = s1.map(level: 2){|mf| mf.count}
+    s3 = s2.refine(level: 2){|f| f.image_equals([maps], Literal.new(2))}
+  end
   def test_pivot_map_rank2
     test_set1 = Xset.new do |s|
       s.extension = {
