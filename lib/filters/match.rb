@@ -6,7 +6,7 @@ module Filtering
       if args.size == 1
         @value = args[0]
       elsif args.size == 2
-        @relation = args[0]
+        @relations = args[0]
         @pattern = args[1]
       else
         raise "Invalid number of arguments. Expected: min 1, max 2; Received: #{args.size}"
@@ -17,12 +17,12 @@ module Filtering
     def eval(set)
       extension = set.extension_copy
       
-      if(@relation.nil?)
+      if(@relations.nil?)
         set.each.select{|item| item.to_s.match(/#{@pattern}/).nil?}.each do |removed_item|        
           extension.delete(removed_item) 
         end          
       else        
-        build_query_filter(set).relation_regex(@relation, @pattern)
+        build_query_filter(set).relation_regex(@relations, @pattern)
       end
       super(extension, set)
     end
@@ -36,8 +36,11 @@ module Filtering
     end
   end
   
-  def self.match(relation=nil, value)
-    self.add_filter(Match.new(relation, value))
+  def self.match(args)
+    if args[:values].nil?
+      raise "MISSING VALUES FOR FILTER!"
+    end
+    self.add_filter(Match.new(args[:relations], args[:values]))
     self
   end
 end

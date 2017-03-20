@@ -96,6 +96,7 @@ class MergeTest < XpairUnitTest
         Entity.new("_:i3")=>{Relation.new("r")=>{Entity.new("_:t1")=>{}, Entity.new("_:t3")=>{}}},
         Entity.new("_:i4")=>{Relation.new("r")=>{Entity.new("_:t1")=>{}, Entity.new("_:t4")=>{}}}
       }
+      
     end    
     
     target_set = Xset.new do |s|
@@ -122,7 +123,7 @@ class MergeTest < XpairUnitTest
         }
       }
     }
-    assert_equal expected_extension, origin_set.merge(target_set).extension
+    assert_equal expected_extension, origin_set.merge!([target_set]).extension
     assert_equal expected_extension, origin_set.extension
     assert_equal 5, origin_set.count_levels
   end
@@ -149,7 +150,7 @@ class MergeTest < XpairUnitTest
       }
     }
     assert_equal 1, origin_set.count_levels
-    assert_equal expected_extension, origin_set.merge(mid_set).extension
+    assert_equal expected_extension, origin_set.merge!([mid_set]).extension
     assert_equal expected_extension, origin_set.extension
     assert_equal 3, origin_set.count_levels
   end
@@ -175,7 +176,7 @@ class MergeTest < XpairUnitTest
       s << Entity.new("_:i3")
       s << Entity.new("_:i4")
     end
-    local_path = origin_set.merge(mid_set_1).merge(target_set)
+    local_path = origin_set.merge!([mid_set_1, target_set])
     expected_extension = {
      Entity.new("_:i1") => {
        Entity.new("_:r")=>{
@@ -224,6 +225,7 @@ class MergeTest < XpairUnitTest
       s.extension[Entity.new("_:w2")]= {Entity.new("_:r")=>{Entity.new("_:u2")=>{}}}
       s.extension[Entity.new("_:w3")]= {Entity.new("_:r")=>{Entity.new("_:u3")=>{}}}
       s.extension[Entity.new("_:w4")]= {Entity.new("_:r")=>{Entity.new("_:u4")=>{}}}
+      
     end
     
     origin_set = Xset.new do |s|
@@ -231,7 +233,7 @@ class MergeTest < XpairUnitTest
       s.extension[Entity.new("_:i2")]= {Entity.new("_:r")=>{Entity.new("_:t2")=>{Entity.new("_:w2")=>{}}}}
     end
         
-    local_path = origin_set.merge(target_set)
+    local_path = origin_set.merge!([target_set])
     expected_extension = {
       Entity.new("_:i1") => {
          Entity.new("_:r")=>{
@@ -257,5 +259,6 @@ class MergeTest < XpairUnitTest
     assert_equal expected_extension, origin_set.extension
     
   end
+  
   
 end

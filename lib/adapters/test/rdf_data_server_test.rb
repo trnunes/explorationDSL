@@ -1,55 +1,29 @@
-# require "test/unit"
-# require "rdf"
-#
-# require './mixins/xpair'
-# require './mixins/hash_explorable'
-# require './mixins/auxiliary_operations'
-# require './mixins/enumerable'
-# require './mixins/persistable'
-# require './mixins/graph'
-#
-# require './filters/filtering'
-# require './filters/contains'
-# require './filters/equals'
-# require './filters/keyword_match'
-# require './filters/match'
-# require './filters/in_range'
-# require './model/item'
-# require './model/xset'
-# require './model/literal'
-# require './model/entity'
-# require './model/relation'
-# require './model/type'
-# require './model/ranked_set'
-#
-# require './aux/grouping_expression.rb'
-# require './aux/ranking_functions'
-# require './aux/mapping_functions'
-# require './aux/hash_helper'
-#
-# require 'set'
-#
-# require './adapters/rdf/rdf_data_server.rb'
-# require './adapters/rdf/rdf_filter.rb'
-# require './adapters/rdf/rdf_nav_query.rb'
-#
-#
-# class RDFDataServerTest < Test::Unit::TestCase
-#
-#   def setup
-#
-#     @graph = RDF::Graph.new do |graph|
-#       graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o1")]
-#       graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o2")]
-#       graph << [RDF::URI("_:p1"),  RDF::URI("_:r2"), RDF::URI("_:o2")]
-#       graph << [RDF::URI("_:p2"),  RDF::URI("_:r2"), RDF::URI("_:o2")]
-#
-#     end
-#
-#
-#
-#     @server = RDFDataServer.new(@graph)
-#   end
+require './test/xpair_unit_test'
+class RDFDataServerTest < XpairUnitTest
+
+  def setup
+
+    @graph = RDF::Graph.new do |graph|
+      graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o1")]
+      graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o2")]
+      graph << [RDF::URI("_:p1"),  RDF::URI("_:r2"), RDF::URI("_:o2")]
+      graph << [RDF::URI("_:p2"),  RDF::URI("_:r2"), RDF::URI("_:o2")]
+      
+      graph << [RDF::URI("_:p1"),  RDF::RDFS.label, RDF::Literal('lp1')]
+      graph << [RDF::URI("_:p2"),  RDF::RDFS.label, RDF::Literal('lp2')]
+      graph << [RDF::URI("_:r1"),  RDF::RDFS.label, RDF::Literal('lr1')]
+      graph << [RDF::URI("_:r2"),  RDF::RDFS.label, RDF::Literal('lr2')]
+      graph << [RDF::URI("_:o1"),  RDF::RDFS.label, RDF::Literal('lo1')]
+      graph << [RDF::URI("_:o2"),  RDF::RDFS.label, RDF::Literal('lo2')]
+
+
+
+    end
+
+
+
+    @server = RDFDataServer.new(@graph)
+  end
 #
 #   def test_find_relations
 #     expected_hash = {
@@ -87,20 +61,28 @@
 #     assert_equal expected_rs, actual_rs
 #   end
 #
-#   def test_restricted_image_single
-#     expected_hash = {
-#       Entity.new("_:p1") => {
-#         Entity.new("_:r1") => [Entity.new("_:o1"), Entity.new("_:o2")]
-#       }
-#     }
-#     trans = @server.begin_nav_query do |t|
-#       t.on(Entity.new("_:p1"))
-#       t.restricted_image("_:r1")
-#     end
-#     result_hash = trans.execute()
-#     result_hash[Entity.new("_:p1")][Entity.new("_:r1")].sort!{|a, b| a.to_s <=> b.to_s }
-#     assert_equal expected_hash, result_hash
-#   end
+  def test_restricted_image_single
+    expected_hash = {
+      Entity.new("_:p1") => {
+        Relation.new("_:r1") => [Entity.new("_:o1"), Entity.new("_:o2")]
+      }
+    }
+    trans = @server.begin_nav_query do |t|
+      t.on(Entity.new("_:p1"))
+      t.restricted_image("_:r1")
+    end
+    
+    result_hash = trans.execute()
+    result_hash[Entity.new("_:p1")][Relation.new("_:r1")].sort!{|a, b| a.to_s <=> b.to_s }
+    assert_equal expected_hash, result_hash
+    
+    result_hash.keys.first.text == "lp1"
+    result_hash[Entity.new("_:p1")].keys.first.text == "lr1"
+    result_hash[Entity.new("_:p1")][Relation.new("_:r1")][0].text == "lo1"
+    result_hash[Entity.new("_:p1")][Relation.new("_:r1")][1].text == "lo2"
+  end
+  
+  
 #
 #   def test_restricted_image_union
 #
@@ -310,4 +292,4 @@
 #
 #
 #
-# end
+end

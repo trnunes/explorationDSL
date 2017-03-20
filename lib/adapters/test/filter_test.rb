@@ -21,6 +21,7 @@ require './model/entity'
 require './model/relation'
 require './model/type'
 require './model/ranked_set'
+require './model/namespace'
 
 require './aux/grouping_expression.rb'
 require './aux/ranking_functions'
@@ -44,6 +45,8 @@ class FilterTest < Test::Unit::TestCase
       graph << [RDF::URI("_:p1"),  RDF::URI("_:r2"), RDF::URI("_:o2")]      
       graph << [RDF::URI("_:p2"),  RDF::URI("_:r2"), RDF::URI("_:o2")]
       graph << [RDF::URI("_:p3"),  RDF::URI("_:r3"), RDF::URI("_:o4")]
+      graph << [RDF::URI("_:p4"),  RDF::URI("_:r4"), RDF::URI("_:o3")]
+      graph << [RDF::URI("_:o3"),  RDF::URI("_:r5"), RDF::URI("_:o5")]      
       
     end
     
@@ -67,24 +70,30 @@ class FilterTest < Test::Unit::TestCase
   
   def test_relation_filter
     filter = @server.begin_filter do |f|
-      f.relation_equals(Entity.new("_:r1"), Entity.new("_:o1"))
+      f.relation_equals([Entity.new("_:r1")], Entity.new("_:o1"))
     end
     expected_results = Set.new([Entity.new("_:p1")])
     
     assert_equal expected_results, filter.eval
     
     filter = @server.begin_filter do |f|
-      f.relation_equals(Entity.new("_:r2"), Entity.new("_:o2"))
+      f.relation_equals([Entity.new("_:r2")], Entity.new("_:o2"))
     end
     expected_results = Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
     assert_equal expected_results, filter.eval
     
   end
   
+  def test_relation_path_filter
+    filter = @server.begin_filter do |f|
+      f.relation_equals([Entity.new("_:r6"), Entity.new("_:r7")], Xpair::Literal.new("path"))
+    end
+  end
+  
   def test_conjunctive_relation_filter
     filter = @server.begin_filter do |f|
-      f.relation_equals(Entity.new("_:r1"), Entity.new("_:o1"))
-      f.relation_equals(Entity.new("_:r2"), Entity.new("_:o2"))
+      f.relation_equals([Entity.new("_:r1")], Entity.new("_:o1"))
+      f.relation_equals([Entity.new("_:r2")], Entity.new("_:o2"))
     end
     expected_results = Set.new([Entity.new("_:p1")])
     
@@ -97,7 +106,7 @@ class FilterTest < Test::Unit::TestCase
         u.equals(Entity.new("_:p1"))
         u.equals(Entity.new("_:p2"))
       end
-      f.relation_equals(Entity.new("_:r1"), Entity.new("_:o1"))
+      f.relation_equals([Entity.new("_:r1")], Entity.new("_:o1"))
     end
     
     expected_results = Set.new [Entity.new("_:p1")]
@@ -111,7 +120,7 @@ class FilterTest < Test::Unit::TestCase
         u.equals(Entity.new("_:p1"))
         u.equals(Entity.new("_:p2"))
       end
-      f.relation_equals(Entity.new("_:r2"), Entity.new("_:o2"))
+      f.relation_equals([Entity.new("_:r2")], Entity.new("_:o2"))
     end
     
     expected_results = Set.new [Entity.new("_:p1"), Entity.new("_:p2")]    
@@ -124,8 +133,8 @@ class FilterTest < Test::Unit::TestCase
         u.equals(Entity.new("_:p1"))
         u.equals(Entity.new("_:p2"))
       end
-      f.relation_equals(Entity.new("_:r1"), Entity.new("_:o2"))
-      f.relation_equals(Entity.new("_:r2"), Entity.new("_:o2"))
+      f.relation_equals([Entity.new("_:r1")], Entity.new("_:o2"))
+      f.relation_equals([Entity.new("_:r2")], Entity.new("_:o2"))
     end
     
     expected_results = Set.new [Entity.new("_:p1")]    
@@ -135,8 +144,8 @@ class FilterTest < Test::Unit::TestCase
   def test_disjunctive_relation_filter
     filter = @server.begin_filter do |f|
       f.union do |u|
-        u.relation_equals(Entity.new("_:r1"), Entity.new("_:o1"))
-        u.relation_equals(Entity.new("_:r2"), Entity.new("_:o2"))
+        u.relation_equals([Entity.new("_:r1")], Entity.new("_:o1"))
+        u.relation_equals([Entity.new("_:r2")], Entity.new("_:o2"))
       end      
     end
     
@@ -156,7 +165,7 @@ class FilterTest < Test::Unit::TestCase
   
   def test_relation_regex
     filter = @server.begin_filter do |f|      
-      f.relation_regex(Entity.new("_:r1"), "2")
+      f.relation_regex([Entity.new("_:r1")], "2")
     end
     expected_results = Set.new([Entity.new("_:p1")])
     
@@ -180,8 +189,8 @@ class FilterTest < Test::Unit::TestCase
   def test_union_relation_regex
     filter = @server.begin_filter do |f|
       f.union do |u|
-        u.relation_regex(Entity.new("_:r1"), "1")
-        u.relation_regex(Entity.new("_:r2"), "o2")
+        u.relation_regex([Entity.new("_:r1")], "1")
+        u.relation_regex([Entity.new("_:r2")], "o2")
       end      
     end
     
@@ -192,11 +201,11 @@ class FilterTest < Test::Unit::TestCase
   def test_union_relation_regex_conjunction
     filter = @server.begin_filter do |f|
       f.union do |u|
-        u.relation_regex(Entity.new("_:r1"), "1")
-        u.relation_regex(Entity.new("_:r2"), "o2")
+        u.relation_regex([Entity.new("_:r1")], "1")
+        u.relation_regex([Entity.new("_:r2")], "o2")
       end
       
-      f.relation_equals(Entity.new("_:r1"), Entity.new("_:o2")) 
+      f.relation_equals([Entity.new("_:r1")], Entity.new("_:o2")) 
     end
     
     expected_results = Set.new [Entity.new("_:p1")]  

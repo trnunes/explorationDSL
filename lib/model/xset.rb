@@ -4,12 +4,14 @@ class Xset
   include HashExplorable
   include Persistable::Writable
   extend Persistable::Readable
-  attr_accessor :server, :extension, :intention, :resulted_from, :generates, :id, :projection
+  attr_accessor :server, :extension, :intention, :resulted_from, :generates, :id, :projection, :relation_index, :subset_of
 
   def initialize(&block)
     @bindings = {}
     @extension = {}      
     @generates = []
+    @relation_index = {}
+    @subset_of = nil
     yield(self) if block_given?
     self
   end
@@ -21,7 +23,7 @@ class Xset
     end
     @projection
   end
-    
+  
   
   def bindings(&block)    
     yield(@bindings)
@@ -54,10 +56,23 @@ class Xset
     Marshal.load(Marshal.dump(@extension))
   end
   
-  def extension=(hash)
-    @extension = hash
-    Xpair::Graph.generate_graph(@extension)
+  def order_relations(relations)
 
+    ordered_relations = []
+    
+    relations_hash = relations.map{|r| [r.resulted_from, r]}.to_h
+    result_set = relations_hash[self]
+    ordered_relations << result_set
+    while(result_set != nil && ordered_relations.size < relations.size)
+      result_set = relations_hash[result_set]
+      ordered_relations << result_set
+    end
+    ordered_relations
   end
   
+  def extension=(hash)
+    @extension = hash
+    # Xpair::Graph.generate_graph(@extension)
+
+  end  
 end

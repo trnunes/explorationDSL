@@ -98,12 +98,7 @@ class MultilevelXsetTest < XpairUnitTest
       s.extension[Entity.new("_:i2")]= {Entity.new("_:r")=>{Entity.new("_:t2")=>{Entity.new("_:w2")=>{}}}}
       s.extension[Entity.new("_:i3")]= {Entity.new("_:r")=>{Entity.new("_:t3")=>{Entity.new("_:w3")=>{}}}}
     end
-    expected_level_1 = Set.new([
-      {Entity.new("_:i1") => {Entity.new("_:r")=>{Entity.new("_:t1")=>{Entity.new("_:w1")=>{}}}}},
-      {Entity.new("_:i2") => {Entity.new("_:r")=>{Entity.new("_:t2")=>{Entity.new("_:w2")=>{}}}}},
-      {Entity.new("_:i3") => {Entity.new("_:r")=>{Entity.new("_:t3")=>{Entity.new("_:w3")=>{}}}}}
-      
-    ])
+    expected_level_1 = Set.new([origin_set.extension])
     expected_level_3 = Set.new([
       {Entity.new("_:t1")=>{Entity.new("_:w1")=>{}}}, 
       {Entity.new("_:t2")=>{Entity.new("_:w2")=>{}}}, 
@@ -125,12 +120,7 @@ class MultilevelXsetTest < XpairUnitTest
       s.extension[Entity.new("_:i2")]= {Entity.new("_:r")=>{Entity.new("_:t2")=>{Entity.new("_:w2")=>{}}}}
       s.extension[Entity.new("_:i3")]= {Entity.new("_:r")=>{Entity.new("_:t3")=>{Entity.new("_:w3")=>{}}}}
     end
-    expected_level_1 = Set.new([
-      {Entity.new("_:i1") => {Entity.new("_:r")=>{Entity.new("_:t1")=>{Entity.new("_:w1")=>{}}}}},
-      {Entity.new("_:i2") => {Entity.new("_:r")=>{Entity.new("_:t2")=>{Entity.new("_:w2")=>{}}}}},
-      {Entity.new("_:i3") => {Entity.new("_:r")=>{Entity.new("_:t3")=>{Entity.new("_:w3")=>{}}}}}
-      
-    ])
+    expected_level_1 = Set.new([ origin_set.extension])
     expected_level_3 = Set.new([
       {Entity.new("_:t1")=>{Entity.new("_:w1")=>{}}}, 
       {Entity.new("_:t2")=>{Entity.new("_:w2")=>{}}}, 

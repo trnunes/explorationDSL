@@ -110,22 +110,12 @@ module HashHelper
       end        
     end
   end
-    
-  def self.leaves(hash)
-    leaves = Set.new()
-    self.find_leaves(hash, leaves)
-    leaves
-  end
   
   def self.copy(hash)
     Marshal.load(Marshal.dump(hash))
   end
   
   def self.subhash_search(hash, subhash_key)
-
-
-    
-
     if hash.has_key? subhash_key
       return hash[subhash_key]
     else
@@ -136,6 +126,12 @@ module HashHelper
       end
     end
     return nil
+  end
+  
+  def self.leaves(hash)
+    leaves = Set.new()
+    self.find_leaves(hash, leaves)
+    leaves
   end
   
   def self.find_leaves(hash, leaves)

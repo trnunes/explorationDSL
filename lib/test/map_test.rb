@@ -98,13 +98,157 @@ class MapTest < XpairUnitTest
     end
     set.server = @papers_server
     h1 = {
-      Entity.new("_:paper1")=>{Relation.new("_:cite")=>{Literal.new(2) => {}}},
-      Entity.new("_:p5")=>{Relation.new("_:cite")=>{Literal.new(1) => {}}}
+      Entity.new("_:paper1")=>{Relation.new("_:cite")=>{Xpair::Literal.new(2) => {}}},
+      Entity.new("_:p5")=>{Relation.new("_:cite")=>{Xpair::Literal.new(1) => {}}}
     }
     
-    assert_equal h1, set.map(3){|mf|mf.count}.extension
+    expected_index = {
+      Xsubset.new(set, 3) do |s|
+        s.extension = {Entity.new("_:p3") => {},Entity.new("_:p4") => {}}
+      end => {Xpair::Literal.new(2) => {}},
+      Xsubset.new(set, 3) do |s|
+        s.extension = {Entity.new("_:p2")=>{}}
+      end => {Xpair::Literal.new(1) => {}},
+      
+    }
+    
+    assert_equal h1, set.map(level: 3){|mf|mf.count}.extension
     
   end
   
+  def test_map_image_count
+    target_set = Xset.new do |s|
+      s.extension[Entity.new("_:t1")]= {Entity.new("_:r")=>{Entity.new("_:u1")=>{}}}
+      s.extension[Entity.new("_:t2")]= {Entity.new("_:r")=>{Entity.new("_:u2")=>{}}}
+      s.extension[Entity.new("_:t3")]= {Entity.new("_:r")=>{Entity.new("_:u3")=>{}}}
+      s.extension[Entity.new("_:t4")]= {Entity.new("_:r")=>{Entity.new("_:u4")=>{}}}
+      s.relation_index = {
+        Entity.new("_:t1") => {Entity.new("_:u1")=>{}},
+        Entity.new("_:t2") => {Entity.new("_:u2")=>{}},
+        Entity.new("_:t3") => {Entity.new("_:u3")=>{}},
+        Entity.new("_:t4") => {Entity.new("_:u4")=>{}}
+      }
+
+    end
+    
+    mid_set_1 = Xset.new do |s|
+      s.extension[Entity.new("_:i1")]= {Entity.new("_:r")=>{Entity.new("_:t1")=>{}}}
+      s.extension[Entity.new("_:i2")]= {Entity.new("_:r")=>{Entity.new("_:t2")=>{}}}
+      s.extension[Entity.new("_:i3")]= {Entity.new("_:r")=>{Entity.new("_:t1")=>{}, Entity.new("_:t3")=>{}}}
+      s.extension[Entity.new("_:i4")]= {Entity.new("_:r")=>{Entity.new("_:t1")=>{}, Entity.new("_:t4")=>{}}}
+      s.relation_index = {
+        Entity.new("_:i1") => {Entity.new("_:t1")=>{}},
+        Entity.new("_:i2") => {Entity.new("_:t2")=>{}},
+        Entity.new("_:i3") => {
+          Entity.new("_:t1")=>{},
+          Entity.new("_:t3")=>{}
+        },
+        Entity.new("_:i4") => {
+          Entity.new("_:t1")=>{},
+          Entity.new("_:t4")=>{}
+        }
+      }
+      
+    end
+    
+    origin_set = Xset.new do |s|
+      s << Entity.new("_:i1")
+      s << Entity.new("_:i2")
+      s << Entity.new("_:i3")
+      s << Entity.new("_:i4")
+    end
+    mid_set_1.resulted_from = origin_set
+    target_set.resulted_from = mid_set_1
+    rs = origin_set.map{|mf| mf.image_count([target_set, mid_set_1])}
+
+    expected_extension = {
+      Entity.new("_:i1")=>{Xpair::Literal.new(1)=>{}},
+      Entity.new("_:i2")=>{Xpair::Literal.new(1)=>{}},
+      Entity.new("_:i3")=>{Xpair::Literal.new(2)=>{}},
+      Entity.new("_:i4")=>{Xpair::Literal.new(2)=>{}}
+    }
+    assert_equal expected_extension, rs.extension
+  end
+  
+  def test_average_relations
+    target_set = Xset.new do |s|
+      s.extension[Entity.new("_:t1")]= {
+        Entity.new("_:r")=>{
+          Entity.new("_:o1") =>{Xpair::Literal.new(20)=>{}},
+          Entity.new("_:o2") =>{Xpair::Literal.new(30)=>{}}
+        }
+      }
+      s.extension[Entity.new("_:t2")]= {
+        Entity.new("_:r")=>{
+          Entity.new("_:o1") =>{Xpair::Literal.new(40)=>{}},
+          Entity.new("_:o2") =>{Xpair::Literal.new(50)=>{}}
+        }
+      }
+      s.relation_index = {
+        Entity.new("_:t1") => {
+          Entity.new("_:r")=>{
+            Entity.new("_:o1") =>{Xpair::Literal.new(20)=>{}},
+            Entity.new("_:o2") =>{Xpair::Literal.new(30)=>{}}
+          }          
+        },
+        Entity.new("_:t2") => {
+          Entity.new("_:r")=>{
+            Entity.new("_:o1") =>{Xpair::Literal.new(40)=>{}},
+            Entity.new("_:o2") =>{Xpair::Literal.new(50)=>{}}
+          }          
+        }        
+      }
+      
+    end
+    
+    mid_set_1 = Xset.new do |s|
+      s.extension[Entity.new("_:i1")]= {Entity.new("_:r")=>{Entity.new("_:t1")=>{}}}
+      s.extension[Entity.new("_:i2")]= {Entity.new("_:r")=>{Entity.new("_:t2")=>{}}}
+      s.relation_index = {
+        Entity.new("_:i1") => {Entity.new("_:t1")=>{}},
+        Entity.new("_:i2") => {Entity.new("_:t2") =>{}}
+      }
+    end
+    
+    origin_set = Xset.new do |s|
+      s << Entity.new("_:i1")
+      s << Entity.new("_:i2")
+    end
+    rs = origin_set.map{|mf| mf.avg([mid_set_1, target_set])}
+    expected_extension = {
+      Entity.new("_:i1")=>{Xpair::Literal.new(25.0)=>{}},
+      Entity.new("_:i2")=>{Xpair::Literal.new(45.0)=>{}},
+    }
+    
+    expected_index = {
+      Entity.new("_:i1")=>{Xpair::Literal.new(25.0)=>{}},
+      Entity.new("_:i2")=>{Xpair::Literal.new(45.0)=>{}}
+    }
+    assert_equal expected_extension, rs.extension
+    assert_equal expected_index, rs.relation_index
+  end
+
+end
+
+def test_average_level3
+  expected_index = {
+    Entity.new("_:t1") => {
+      Xsubset.new(target_set, 1) do |s| 
+        s.extension = {
+            Entity.new("_:o1") =>{Xpair::Literal.new(20)=>{}},
+            Entity.new("_:o2") =>{Xpair::Literal.new(30)=>{}}
+        }
+      end => {Xpair::Literal.new(25.0)=>{}}        
+    },
+    Entity.new("_:t2") => {
+      Xsubset.new(target_set, 1) do |s|
+        s.extension = {
+          Entity.new("_:o1") =>{Xpair::Literal.new(40)=>{}},
+          Entity.new("_:o2") =>{Xpair::Literal.new(50)=>{}}
+        }
+      end => {Xpair::Literal.new(45.0)=>{}}
+      
+    },
+  }
   
 end

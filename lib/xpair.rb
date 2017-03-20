@@ -15,7 +15,19 @@ require 'filters/equals'
 require 'filters/keyword_match'
 require 'filters/match'
 require 'filters/in_range'
+require 'filters/image_equals'
 
+require 'grouping_functions/grouping'
+require 'grouping_functions/by_relation'
+
+require 'ranking_functions/ranking'
+require 'ranking_functions/alpha_sort'
+require 'ranking_functions/by_relation'
+
+require 'mapping_functions/mapping'
+require 'mapping_functions/average'
+require 'mapping_functions/count'
+require 'mapping_functions/image_count'
 
 require 'model/item'
 require 'model/xset'
@@ -24,6 +36,8 @@ require 'model/literal'
 require 'model/relation'
 require 'model/type'
 require 'model/ranked_set'
+require 'model/xsubset'
+require 'model/namespace'
 
 require 'aux/grouping_expression.rb'
 require 'aux/ranking_functions'

@@ -102,16 +102,16 @@ class EvalPapersFunctionalTest < XpairUnitTest
     
     publication_years = citations.pivot_forward(["_:publicationYear"])
     expected_extension = {
-      Literal.new(2000) => {},
-      Literal.new(1998) => {},
-      Literal.new(2010) => {}
+      Xpair::Literal.new(2000) => {},
+      Xpair::Literal.new(1998) => {},
+      Xpair::Literal.new(2010) => {}
     }
 
     assert_equal expected_extension, publication_years.extension
     
     meanYear = publication_years.map{|mf| mf.avg}
     expected_extension = {
-      Literal.new(2002) => {}
+      Xpair::Literal.new(2002) => {}
     }
     assert_equal expected_extension, meanYear.extension
     
@@ -130,7 +130,7 @@ class EvalPapersFunctionalTest < XpairUnitTest
     # all_keywords = papers_set.pivot("_:keywords")
     # papers_with_keywords = keywords.pivot_backward("_:keywords")}
     
-    papers_with_keywords = papers_set.refine{|f| f.contains_one("_:keywords", keywords)}
+    papers_with_keywords = papers_set.refine{|f| f.contains_one(relations: [Relation.new("_:keywords")], values: keywords)}
     
     expected_extension = {
       Entity.new("_:paper1")=>{},
@@ -153,7 +153,7 @@ class EvalPapersFunctionalTest < XpairUnitTest
     
     assert_equal expected_extension, related_papers_citations.extension
     
-    ranked_papers = papers_with_keywords.rank{|f| f.each_image_count(related_papers_citations)}
+    ranked_papers = papers_with_keywords.rank{|f| f.by_relation([papers_with_keywords.map{|mf| mf.image_count(related_papers_citations)}])}
     
     expected_extension = {
       Entity.new("_:p5") => {}, 
@@ -215,7 +215,7 @@ class EvalPapersFunctionalTest < XpairUnitTest
     }
     assert_equal expected_extension, submitted_journal.extension
     
-    citations_published_same_journal = citations.refine{|f| f.equals("_:publishedOn", submitted_journal.first)} 
+    citations_published_same_journal = citations.refine{|f| f.equals(relations: [Relation.new("_:publishedOn")], values: submitted_journal.first)} 
     
     expected_extension = {
       Entity.new("_:p2") => {},

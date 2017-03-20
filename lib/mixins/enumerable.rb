@@ -74,9 +74,59 @@ module Xenumerable
     (page - 1) * max_per_page
   end
   
-  def image    
-    @image ||= all_images(extension)
-    @image
+  def image(item = nil)
+    if(item.nil?)
+      extension.values
+    else
+      extension[item]
+    end    
+  end
+  
+  def trace_image(item, target_sets)
+    # puts "TARGET SET ORIGIN: " << target_sets.inspect
+    path_image = Xset.new{|s| s.extension = target_sets.shift.relation_index[item]}
+
+    while(!target_sets.empty?)
+      # puts "TARGET SET: " << target_sets.inspect
+      target_set = target_sets.shift
+      
+
+
+      path_image.last_level.each do |level_items|
+        level_items.keys.each do |key|
+
+          values = level_items[key]
+          if(target_set.relation_index.has_key? key)
+            values.merge!(target_set.relation_index[key])
+          else
+            if(key.is_a? Xsubset)
+              key.each do |subset_item|
+
+                if(target_set.relation_index.has_key? subset_item)
+                  level_items.delete(key)                  
+                  level_items[subset_item] ||= {}
+                  level_items[subset_item].merge!(target_set.relation_index[subset_item])                  
+                end
+              end
+            end
+          end
+        end
+
+      end
+    end
+    path_image.extension     
+  end
+  
+  def has_subset?(xsubset)
+    if xsubset == self
+      return true
+    end
+    get_level(xsubset.level).each do |level_subset|
+      if level_subset == xsubset.extension
+        return true
+      end
+    end
+    return false
   end
   
   def all_images(hash)
@@ -226,6 +276,11 @@ module Xenumerable
     level
   end
   
+  def items_of_level(level=1)
+    level = get_level(level)
+    level
+  end
+  
 
   
   def each_item(&block)
@@ -290,10 +345,12 @@ module Xenumerable
     next_level_items = Set.new
     if level_items.nil?
       level_items = Set.new
+
       extension.each_key do |key|
         next_level_items << [key, extension] if !HashHelper.empty_values?(extension)
-        items_to_return << {key=>extension[key]} 
+        
       end
+      items_to_return << extension
     else
       level_items.each do |pair| 
         hash_key = pair[0]

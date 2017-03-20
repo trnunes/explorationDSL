@@ -2,18 +2,27 @@ require 'rdf'
 require 'sparql/client'
 
 class RDFDataServer
-  attr_accessor :graph, :limit , :offset  
+  attr_accessor :graph, :limit , :offset, :namespace_map
 
 
   def initialize(graph)
     @graph = SPARQL::Client.new graph
     @or_clause = false
+    @namespace_map = {}
   end
   
+  def add_namespace(namespace_prefix, namespace)
+    @namespace_map[namespace_prefix] = namespace
+  end
+    
   def size
     @graph.count
   end
-  
+  def path_string(relations)
+    relations.map{|r| "<" << Xpair::Namespace.expand_uri(r.to_s) << ">"}.join("/")
+    
+  end
+
   def begin_nav_query(&block)
     t = SPARQLQuery::NavigationalQuery.new(self)
     if block_given?

@@ -37,26 +37,33 @@ module SPARQLQuery
     
       @filters << SimpleFilter.new(equals_stmt(entity))
     end
+    
+    def convert_literal(literal)
+      if literal.value.to_s.match(/\A[-+]?[0-9]+\z/).nil?
+        "\"" << literal.value << "\""
+      else
+        literal.value.to_s
+      end
+    end
   
-    def relation_equals(relation, item)
+    def relation_equals(relations, item)
+
       sparql_entity = ""
       if(item.is_a?(Entity) || item.is_a?(Relation) || item.is_a?(Type))
         sparql_entity = "<#{item.to_s}>"
       else
         if(item.is_a?(String))
-          sparql_entity = "\"#{item.to_s}\""
+          sparql_entity = convert_literal(Xpair::Literal.new(item))
         else
-          sparql_entity = "#{item.to_s}"
+          sparql_entity = convert_literal(item)
         end
-        
       end
-
-      @where_stmts << SimpleFilter.new("?s <#{relation.to_s}> #{sparql_entity}")    
+      @where_stmts << SimpleFilter.new("?s #{path_string(relations)} #{sparql_entity}")    
     end
     
-    def filter_by_range(relation, min, max)
+    def filter_by_range(relations, min, max)
       object_index = SPARQLFilter.next_object_index
-      @where_stmts << SimpleFilter.new("?s <#{relation.to_s}> ?o#{object_index}")
+      @where_stmts << SimpleFilter.new("?s #{path_string(relations)} ?o#{object_index}")
       @filters << SimpleFilter.new("?o#{object_index} >= #{min.to_s}")
       @filters << SimpleFilter.new("?o#{object_index} <= #{max.to_s}")
     end
@@ -64,10 +71,16 @@ module SPARQLQuery
     def regex(pattern)
       @filters << SimpleFilter.new(regex_stmt(pattern))
     end
-  
-    def relation_regex(relation, pattern)
+    
+    def path_string(relations)
+      relations.map{|r| "<" << Xpair::Namespace.expand_uri(r.to_s) << ">"}.join("/")
+      
+    end
+    
+    def relation_regex(relations, pattern)
       object_index = SPARQLFilter.next_object_index
-      @where_stmts << SimpleFilter.new("?s <#{relation.to_s}> ?o#{object_index}")
+      
+      @where_stmts << SimpleFilter.new("?s #{path_string(relations)} ?o#{object_index}")
       @filters << SimpleFilter.new("regex(str(?o#{object_index}), \"#{pattern.to_s}\", \"i\")")
     end
   
@@ -102,7 +115,9 @@ module SPARQLQuery
       query = "SELECT ?s WHERE{ #{where_stmt}."      
       query << " FILTER(" + filter_stmt + ")." if !filter_stmt.empty?      
       query << "}"
-      
+      puts "FILTER QUERY: "
+      puts query.to_s
+      puts "------------------------------"
       query
     end
   

@@ -5,7 +5,7 @@ module Filtering
       super(args)
       
       if args.size == 2
-        @relation = args[0]
+        @relations = args[0]
         @values = args[1]
       else
         raise "Invalid number of arguments. Expected: min 1, max 2; Received: #{args.size}"
@@ -18,11 +18,9 @@ module Filtering
       
       f.union do |u|
         @values.each do |value|
-          u.relation_equals(@relation, value) 
+          u.relation_equals(@relations, value) 
         end
       end
-      
-      
       
       super(set.extension_copy, set)      
     end
@@ -32,8 +30,11 @@ module Filtering
     end
   end
   
-  def self.contains_one(relation, values)
-    self.add_filter(Contains.new(relation, values))
+  def self.contains_one(args)
+    if args[:values].nil?
+      raise "MISSING VALUES FOR FILTER!"
+    end
+    self.add_filter(Contains.new(args[:relations], args[:values]))
     self
   end
 end

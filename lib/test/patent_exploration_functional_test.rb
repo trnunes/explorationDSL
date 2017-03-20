@@ -44,7 +44,7 @@ class PatentExplorationFunctionalTest < XpairUnitTest
     
     assert_equal expected_extension, ipcs.extension
 
-    semiconductor_ipcs = ipcs.refine{|f| f.keyword_match([["semiconductor",  "silicon", "led", "insulator","transistor"]])}
+    semiconductor_ipcs = ipcs.refine{|f| f.keyword_match(keywords: [["semiconductor",  "silicon", "led", "insulator","transistor"]])}
     expected_extension = {
       Entity.new("_:IPC1") =>{},
       Entity.new("_:IPC2") =>{},
@@ -64,7 +64,7 @@ class PatentExplorationFunctionalTest < XpairUnitTest
     
     assert_equal expected_extension, semiconductor_patents.extension
     
-    patents_2001_2002 = semiconductor_patents.refine{|f| f.in_range("_:publication_year", 2001, 2004)}
+    patents_2001_2002 = semiconductor_patents.refine{|f| f.in_range(relations: [Relation.new("_:publication_year")], min: 2001, max: 2004)}
     expected_extension = {
       Entity.new("_:p1") => { },
       Entity.new("_:p2") => { }
@@ -72,7 +72,7 @@ class PatentExplorationFunctionalTest < XpairUnitTest
     
     assert_equal expected_extension, patents_2001_2002.extension
 
-    patents_2003_2004 = semiconductor_patents.refine{|f| f.in_range("_:publication_year", 2005, 2007)}
+    patents_2003_2004 = semiconductor_patents.refine{|f| f.in_range(relations: [Relation.new("_:publication_year")], min: 2005, max: 2007)}
     expected_extension = {
       Entity.new("_:p3") => { },
       Entity.new("_:p4") => { }      

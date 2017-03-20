@@ -40,7 +40,11 @@ module Filtering
     end
   end
   
-  def self.keyword_match(keyword_pattern)
-    self.add_filter KeywordMatch.new(keyword_pattern)
+  def self.keyword_match(args)
+    if args[:keywords].nil?
+      raise "MISSING KEYWORD PATTERN!"
+    end
+    
+    self.add_filter KeywordMatch.new(args[:keywords])
   end
 end

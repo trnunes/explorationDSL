@@ -99,7 +99,7 @@ class GroupTest < XpairUnitTest
     
     test_set.server = @server
     
-    rs = test_set.group("_:r1")
+    rs = test_set.group{|gf| gf.by_relation(Relation.new("_:r1"))}
     
     expected_set = Xset.new do |s|
       s.extension = {
@@ -114,35 +114,40 @@ class GroupTest < XpairUnitTest
           Entity.new("_:p3")=>{}
         },
       }
-      #
-      # s.index = {
-      #   Entity.new("_:o1") => {
-      #     Entity.new("_:p1")=>Relation.new("_:r1", true)
-      #   },
-      #   Entity.new("_:o2") => {
-      #     Entity.new("_:p1") => Relation.new("_:r1", true),
-      #     Entity.new("_:p2") => Relation.new("_:r1", true)
-      #   },
-      #   Entity.new("_:o3") => {
-      #     Entity.new("_:p3") => Relation.new("_:r1", true)
-      #   },
-      # }
     end
+    expected_index = {
+      Entity.new("_:p1")=>{
+        Entity.new("_:o1") => {
+          
+        },
+        Entity.new("_:o2") => {
+        }
+      },
+      Entity.new("_:p2")=>{
+        Entity.new("_:o2") => {
+        },
+      },
+      Entity.new("_:p3")=>{
+        Entity.new("_:o3") => {
+        }
+      }
+    }
     
     assert_equal expected_set.extension, rs.extension
+    assert_equal expected_index, rs.relation_index
   end
   
   def test_group_by_keep_structure
     test_set = Xset.new do |s| 
-      s.extension = {
-        Entity.new("_:p1") => {},
-        Entity.new("_:p2") => {},
-        Entity.new("_:p3") => {},
-      }
+      s << Entity.new("_:p1")
+      s << Entity.new("_:p2")
+      s << Entity.new("_:p3")
     end
+    
     test_set.server = @server
+    
+    rs1 = test_set.group{|gf| gf.by_relation(Relation.new("_:r1"))}
 
-    rs1 = test_set.group("_:r1")
     expected_extension = {
       Entity.new("_:o1") => {
         Entity.new("_:p1")=>{}
@@ -158,29 +163,85 @@ class GroupTest < XpairUnitTest
     
     assert_equal expected_extension, rs1.extension
     
-    rs = rs1.group("_:year", 2)
+    rs = rs1.group(level: 2){|gf| gf.by_relation(Relation.new("_:year"))}
     
     
     expected_extension = {
       Entity.new("_:o1") => {        
-        Literal.new(2005) => {
+        Xpair::Literal.new(2005) => {
           Entity.new("_:p1")=>{}
         }        
       },
       Entity.new("_:o2") => {        
-        Literal.new(2005) => {
+        Xpair::Literal.new(2005) => {
           Entity.new("_:p1")=>{},
           Entity.new("_:p2")=>{}
         }        
       },
       Entity.new("_:o3") => {
-        Literal.new(2010) => {
+        Xpair::Literal.new(2010) => {
           Entity.new("_:p3")=>{}
         }
       },
     }
+    
+    expected_index = {
+      Xsubset.new(rs1, 1) do |s|
+        s.extension = {
+
+            Entity.new("_:p1")=>{}
+
+        }        
+      end => 
+        Xsubset.new(rs, 1) do |s|
+          s.extension = {
+            Xpair::Literal.new(2005) => {
+              Entity.new("_:p1")=>{}
+            }
+          }
+        end,
+      Xsubset.new(rs1, 1) do |s|
+        s.extension = {
+
+            Entity.new("_:p1")=>{}, 
+            Entity.new("_:p2")=>{}
+
+        }        
+      end => Xsubset.new(rs, 1) do |s|
+          s.extension = {
+            Xpair::Literal.new(2005) => {
+              Entity.new("_:p1")=>{},
+              Entity.new("_:p2")=>{}
+            }
+          }
+        end,
+      Xsubset.new(rs1, 1) do |s|
+        s.extension = {
+
+            Entity.new("_:p3")=>{}
+
+        }        
+      end => Xsubset.new(rs, 1) do |s|
+          s.extension ={
+            Xpair::Literal.new(2010) => {
+              Entity.new("_:p3")=>{}
+            }
+          }
+        end
+      
+    }
+    
     HashHelper.print_hash(rs.extension)
     assert_equal expected_extension, rs.extension
+    puts "RELATION INDEX"
+    rs.relation_index.each do |key, values|
+      puts "KEY:"
+      HashHelper.print_hash(key.extension)
+      puts "VALUES: "
+      HashHelper.print_hash(values.extension)
+    end
+    
+    assert_equal expected_index, rs.relation_index
     
   end
   

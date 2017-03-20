@@ -1,13 +1,12 @@
 class Item
   include Xpair::Graph
-  attr_accessor :servers, :id
+  attr_accessor :servers, :id, :text
   
   def initialize(id)
     @id = id
     @servers = []
   end 
   
-
   def add_server(server)
     @servers << server
   end
@@ -30,6 +29,12 @@ class Item
   
   def set?
     false
+  end
+  
+  def text
+    if @text.nil?
+      return Xpair::Namespace.colapse_uri(id)
+    end
   end
   
   def eql?(item)

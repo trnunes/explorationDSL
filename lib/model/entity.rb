@@ -1,6 +1,6 @@
 
 class Entity < Item
-      
+
   def relations
     relations = {}
     servers.each do |server|

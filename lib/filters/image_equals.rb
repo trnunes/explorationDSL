@@ -1,6 +1,5 @@
-
 module Filtering
-  class Equals < Filtering::Filter
+  class ImageEquals < Filtering::Filter
     def initialize(*args)
       super(args)
       
@@ -16,18 +15,21 @@ module Filtering
     
     def eval(set)
       extension = set.extension_copy
-      if(@relations.nil?)
-          set.each.select{|item| !(item.eql?(@value))}.each do |removed_item|
-            extension.delete(removed_item)
-          end
-      else        
-        build_query_filter(set).relation_equals(@relations, @value)        
+
+      set.each do |item|
+        puts "ITEM " << item.inspect
+        leaves = HashHelper.leaves(set.trace_image(item, set.order_relations(@relations.dup)))
+        puts "LEAVES: " << leaves.inspect
+        puts "VALUE: " << @value.inspect
+        if !leaves.include? @value
+          extension.delete(item)
+        end
       end
       super(extension, set)
     end
     
     def expression
-      if(@relations.nil?)
+      if(@relation.nil?)
         ".equals(\"#{@value.to_s}\")"
       else
         ".equals(\"#{@relations.to_s}\", \"#{@value.to_s}\")"
@@ -35,11 +37,14 @@ module Filtering
     end  
   end
   
-  def self.equals(args)
-    if args[:values].nil?
-      raise "MISSING VALUES FOR FILTER!"
+  def self.image_equals(args)
+    if args[:relations].nil?
+      raise "Missing relations for filter!"
     end
-    self.add_filter(Equals.new(args[:relations], args[:values]))
+    if args[:values].nil?
+      raise "Missing values for filter!"
+    end
+    self.add_filter(ImageEquals.new(args[:relations], args[:values]))
     self
   end
 end
