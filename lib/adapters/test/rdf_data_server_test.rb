@@ -67,19 +67,19 @@ class RDFDataServerTest < XpairUnitTest
         Relation.new("_:r1") => [Entity.new("_:o1"), Entity.new("_:o2")]
       }
     }
+    @server.label_property = RDF::RDFS.label.to_s
     trans = @server.begin_nav_query do |t|
       t.on(Entity.new("_:p1"))
       t.restricted_image("_:r1")
     end
-    
+
     result_hash = trans.execute()
     result_hash[Entity.new("_:p1")][Relation.new("_:r1")].sort!{|a, b| a.to_s <=> b.to_s }
     assert_equal expected_hash, result_hash
     
-    result_hash.keys.first.text == "lp1"
-    result_hash[Entity.new("_:p1")].keys.first.text == "lr1"
-    result_hash[Entity.new("_:p1")][Relation.new("_:r1")][0].text == "lo1"
-    result_hash[Entity.new("_:p1")][Relation.new("_:r1")][1].text == "lo2"
+    assert_equal "lp1", result_hash.keys.first.text
+    assert_equal "lo1", result_hash[Entity.new("_:p1")][Relation.new("_:r1")][0].text
+    assert_equal "lo2", result_hash[Entity.new("_:p1")][Relation.new("_:r1")][1].text
   end
   
   
@@ -292,4 +292,16 @@ class RDFDataServerTest < XpairUnitTest
 #
 #
 #
+
+  def test_project
+    set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:o1") => {},
+        Entity.new("_:o2") => {},
+      }
+      s.server = @server
+    end
+    puts set.project(Relation.new(RDF::RDFS.label.to_s)).extension.inspect
+  end
+
 end

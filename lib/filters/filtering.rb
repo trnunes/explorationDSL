@@ -8,20 +8,28 @@ module Filtering
   def self.eval_filters(set)
     filtered_extension = {}    
     current_set = set
-    @@filters.each do |filter|
+    begin
+      @@filters.each do |filter|
       
-      filtered_extension = filter.eval(current_set)
+        filtered_extension = filter.eval(current_set)
       
-      current_set = Xset.new do |s|
-        s.server = current_set.server
-        s.extension = filtered_extension
-        s.resulted_from = current_set.resulted_from      
-      end      
+        current_set = Xset.new do |s|
+          s.server = current_set.server
+          s.extension = filtered_extension
+          s.resulted_from = current_set.resulted_from      
+        end      
           
+      end
+    rescue Exception => e
+      self.clear
+      raise "It is not possible to apply the filters due to an internal error: (#{e.to_s})!"
     end
-    @@filters = []
 
     filtered_extension
+  end
+  
+  def self.clear
+    @@filters = []
   end
   
   class Filter
@@ -32,7 +40,7 @@ module Filtering
     def build_query_filter(set)
       @filter = set.server.begin_filter do |f|
         f.union do |u|
-          set.each do |item|
+          set.each_item do |item|
             u.equals(item)
           end
         end
@@ -43,7 +51,7 @@ module Filtering
     
     def build_nav_query(set)
       @nav_query = set.server.begin_nav_query do |nav_query|
-        set.each do |item|
+        set.each_item do |item|
           nav_query.on(item)
         end
       end        

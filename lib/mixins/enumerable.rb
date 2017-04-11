@@ -6,14 +6,12 @@ module Xenumerable
   def each_pair
   end
 
-  def paginate(page_number, max_elements)
-
-    @page = page_number
+  def paginate(max_elements)
     @max_per_page = max_elements
   end
   
   def size
-    extension.size
+    last_level.flatten.size
   end
   
   def page
@@ -25,23 +23,27 @@ module Xenumerable
     self.extension[item]
   end
   
+  def []=(item, element)
+    self.extension[item] = element
+  end
+  
+  def has_key?(item)
+    self.extension.has_key? item
+  end
   def max_per_page
-    @max_per_page ||= extension.keys.size
+    @max_per_page ||= size
     @max_per_page 
   end
-  
-  def domain_number_of_pages
-    if max_per_page == 0
-      return 0
-    end    
-    (size/max_per_page.to_f).ceil
-  end
-  
+    
   def image_number_of_pages
     if max_per_page == 0
       return 0
     end
-    (image.size/max_per_page.to_f).ceil    
+    (each_image.size/max_per_page.to_f).ceil    
+  end
+  
+  def keys
+    self.extension.keys
   end
   
   def limit
@@ -49,16 +51,23 @@ module Xenumerable
     if size == 0 || max_per_page == 0
       return 0
     end
+
+
+
+
+    
     
     number_of_pages = (size.to_f/max_per_page.to_f).ceil
-    if page == number_of_pages
+
+
+    if page.to_f == number_of_pages
       size
     else
       (max_per_page * page) - 1
     end    
   end
-  
-  def number_of_pages
+
+  def count_pages
     if max_per_page == 0
       return 0
     end
@@ -68,6 +77,14 @@ module Xenumerable
     else
       (size.to_f/max_per_page.to_f).ceil
     end
+  end
+  
+  def many_to_one?
+    !self.extension.keys.first.nil? && (self.extension.keys.first.is_a?(Xsubset) && self.extension.values.first.is_a?(Hash))
+  end
+  
+  def many_to_many?
+    !self.extension.keys.first.nil? && (self.extension.keys.first.is_a?(Xsubset) && self.extension.values.first.is_a?(Xsubset))
   end
   
   def offset
@@ -81,40 +98,104 @@ module Xenumerable
       extension[item]
     end    
   end
+  def trace_image_items(item, target_sets)
+    image_set = trace_image(item, target_sets)
+    image_set.map do |image|
+
+
+      if image.is_a? Xsubset
+        image.keys
+      else
+        image
+      end
+    end.flatten
+  end
   
-  def trace_image(item, target_sets)
-    # puts "TARGET SET ORIGIN: " << target_sets.inspect
-    path_image = Xset.new{|s| s.extension = target_sets.shift.relation_index[item]}
+  def trace_domains(item)
+    images_array = []
+    local_domains = self.domain(item)
+    
+    # images_array << [self.id, local_domains].flatten unless local_domains.empty?
+  
+    if self.resulted_from
 
-    while(!target_sets.empty?)
-      # puts "TARGET SET: " << target_sets.inspect
-      target_set = target_sets.shift
-      
+
+      origin_set = self.resulted_from
+      while(origin_set)
+        origin_set_domains = []
+        images_array.unshift [origin_set.id, local_domains].flatten unless local_domains.empty?
 
 
-      path_image.last_level.each do |level_items|
-        level_items.keys.each do |key|
-
-          values = level_items[key]
-          if(target_set.relation_index.has_key? key)
-            values.merge!(target_set.relation_index[key])
-          else
-            if(key.is_a? Xsubset)
-              key.each do |subset_item|
-
-                if(target_set.relation_index.has_key? subset_item)
-                  level_items.delete(key)                  
-                  level_items[subset_item] ||= {}
-                  level_items[subset_item].merge!(target_set.relation_index[subset_item])                  
-                end
-              end
-            end
-          end
+        local_domains.each do |local_domain|
+          origin_set_domains += origin_set.domain(local_domain)
+          
         end
+        local_domains = origin_set_domains.flatten
 
+        
+        origin_set = origin_set.resulted_from
       end
     end
-    path_image.extension     
+
+    return images_array
+  end
+  
+  def trace_image(item, target_sets)
+
+    images = Set.new
+    source_images = Set.new([item])
+    
+
+    while(!target_sets.empty?)
+
+      target_set = target_sets.shift
+
+
+      if !(target_set.many_to_many? || target_set.many_to_one?)
+
+        source_images = source_images.map do |image|
+          if image.is_a? Xsubset
+            image.keys
+          else
+            image
+          end
+        end.flatten
+      end
+
+      images = Set.new
+
+
+
+      # if(item.id == "http://data.semanticweb.org/workshop/cold/2011/proceedings")
+      #   binding.pry
+      # end
+
+      source_images.each do |local_image|
+
+
+
+        if target_set.has_key? local_image
+          if target_set[local_image].is_a? Hash
+            images += target_set[local_image].keys            
+          elsif target_set[local_image].is_a? Xsubset
+
+            if target_set[local_image].count_levels > 1
+              images += target_set[local_image].each_image
+            else
+              images << target_set[local_image]
+            end
+            
+          else
+            images << local_image
+          end
+        end
+      end
+
+
+      source_images = images        
+    end
+
+    source_images
   end
   
   def has_subset?(xsubset)
@@ -145,13 +226,38 @@ module Xenumerable
     image
   end
   
-  def domain(paginated, level=1)
-    @domain ||= get_level(level).map{|items_hash| items_hash.keys}.flatten
-    if paginated
-      @domain[offset..limit]
-    else
-      @domain
-    end    
+  def domain(item)
+
+
+   
+    domains = []
+    if HashHelper.empty_values?(self.extension) && self.has_key?(item)
+      domains << item
+      return domains
+    end
+    self.keys.each do |domain_key|      
+      if self[domain_key] == item
+        domains << domain_key 
+      else
+        if self[domain_key].is_a? Xsubset
+
+          search_results = []
+          if item.is_a? Xsubset
+
+            subset = self[domain_key].get_subset(item.id)
+
+            search_results << subset unless subset.nil?
+          else
+
+            self[domain_key].search_items([item], search_results)
+          end
+          if !search_results.empty?
+            domains << domain_key
+          end
+        end
+      end
+    end
+    domains
   end
   
   
@@ -193,13 +299,118 @@ module Xenumerable
     image
   end
   
-  def each_image(&block)
-    image[offset..limit(image.size)].each &block if block_given?
-    Set.new(image[offset..limit(image.size)])
+  def each_image(options = {}, &block)
+    @page = options[:page]
+    images = []
+
+
+    enumerable = []
+    if(options[:page])
+      enumerable = last_level.to_a[offset..limit]
+    else
+      enumerable = last_level
+    end
+    enumerable.each do |item|
+      if item.is_a? Hash
+        images += item.keys
+      else
+        images << item
+      end
+    end
+    if block_given?
+      images.each &block
+    end
+    images
+  end
+  
+  def has_subsets?
+    self.extension.values.first.is_a? Xsubset
+  end
+  
+  def each_entity(&block)
+    entities = Set.new
+    each_item{|item| entities << item if item.is_a?(Item)}
+
+    entities.each &block
+  end
+  
+  def each_item(&block)
+    images = Set.new
+
+
+    last_level.each do |item|
+      if item.is_a? Xsubset
+        images += item.extension.keys
+      else
+        images << item
+      end
+      
+    end
+    if block_given?
+      images.each &block
+    end
+    images
   end
   
   def each_paginated(&block)
     domain(true).each &block
+  end
+  
+  def search_items(items, search_results)
+    items.each do |item|
+      if self.has_key? item
+        search_results << item
+      end
+    end
+    each_level do|level_items| 
+      level_items.each do |item|
+        if item.is_a? Xsubset
+          item.search_items(items, search_results)
+        elsif item.is_a? Hash
+          (item.keys & items).each do |item_key|
+            search_results << item_key
+          end
+        else
+          search_results << item if items.include?(item)
+        end
+      end
+    end
+  end
+  
+  def search_subsets(subsets, selected_subsets)
+    if has_subsets?
+      each_level do |level_items|
+        if level_items.first.is_a? Xsubset
+          level_items.select{|item| !selected_subsets.select{|s| s.id == item.id}.empty?}.each do |subset|
+            selected_subsets << subset
+          end
+        end
+      end
+    end    
+  end
+  
+  def get_subset(subset_id)
+    if has_subsets?
+      each_level do |level_items|
+        if level_items.first.is_a? Xsubset
+          level_items.each do |level_item|
+            return level_item if level_item.id == subset_id
+          end
+        end
+      end
+    end        
+  end
+
+  def get_item(item_id)
+
+    each_item do |item|
+
+      if item.is_a? Xpair::Literal
+        return item if item.to_s == item_id
+      else
+        return item if item.id == item_id
+      end
+    end
   end
 
   def contains_item?(hash, item_to_search)
@@ -214,6 +425,7 @@ module Xenumerable
         if values.respond_to? :keys
           has_item = contains_item?(values, item_to_search)
         else
+          
           values = [values] if !values.respond_to?(:each)
           values.each do |value|
 
@@ -235,32 +447,32 @@ module Xenumerable
     return has_item
   end
   
-  def each_entity(level=1, &block)
-
-
-
-
-    entities = []
-    get_level(level).each do |item_hash|
-      if block_given?
-        
-        item_hash.each do |item, values|
-          if (item.is_a?(Entity) || item.is_a?(Relation) || item.is_a?(Type))
-            
-
-            yield(item) 
-            entities << item
-          end
-          
-        end
-      end
-      
-    end
-
-  end
-  
-  def each(level=1, &block)
-    domain(false, level).each &block   
+  # def each_entity(level=1, &block)
+  #
+  #
+  #
+  #
+  #   entities = []
+  #   get_level(level).each do |item_hash|
+  #     if block_given?
+  #
+  #       item_hash.each do |item, values|
+  #         if (item.is_a?(Entity) || item.is_a?(Relation) || item.is_a?(Type))
+  #
+  #
+  #           yield(item)
+  #           entities << item
+  #         end
+  #
+  #       end
+  #     end
+  #
+  #   end
+  #
+  # end
+  #
+  def each(&block)
+    each_item &block   
   end
   
   def entities(level=1)
@@ -281,20 +493,42 @@ module Xenumerable
     level
   end
   
-
-  
-  def each_item(&block)
-    items_hash = {}
-    each_domain_paginated do |item|
-      if block_given?
-        yield(item, extension[item])
-      else
-        items_hash[item] = extension[item]
-      end
-    end
-    items_hash.each &block
+  def empty?
+    return true if self.extension.nil?
+    
+    return self.extension.empty?
   end
+  
+  def remove_item(item)
 
+
+    searched_item = nil
+    extension_copy = self.extension
+
+    self_copy = self
+    count = 0
+    extension_copy.keys.each do |key|
+      values = extension_copy[key]
+
+
+
+      if (item == key || item == values)
+
+
+        extension_copy.delete(key)
+
+      else
+        if values.is_a? Xsubset
+          values.remove_item(item)
+        elsif values.is_a? Hash
+          values.delete(item)
+        end
+      end
+      # extension_copy.delete(key) if extension_copy.has_key?(key) && extension_copy[key].empty?
+
+    end
+  end
+  
   def all_items(&block)
     @page = nil
     each &block
@@ -304,12 +538,9 @@ module Xenumerable
     @extension[entity] = {}
   end
   
-  def size
-    self.extension.keys.size
-  end
   
   def first
-    self.extension.keys.first
+    each_image.first
   end 
   
   def remove(item)
@@ -343,31 +574,31 @@ module Xenumerable
   def each_level(level_items = nil, &block)
     items_to_return = Set.new
     next_level_items = Set.new
+    
     if level_items.nil?
-      level_items = Set.new
-
-      extension.each_key do |key|
-        next_level_items << [key, extension] if !HashHelper.empty_values?(extension)
-        
+      level_items = extension.keys
+      if !HashHelper.empty_values?(extension)
+        next_level_items = extension.values
       end
-      items_to_return << extension
-    else
-      level_items.each do |pair| 
-        hash_key = pair[0]
-        hash_to_address = pair[1]
+      
 
-        items_to_return << hash_to_address[hash_key]
 
-        if !HashHelper.empty_values?(hash_to_address[hash_key])
-          hash_to_address[hash_key].each_key do |key|
-            next_level_items << [key, hash_to_address[hash_key]]
-          end        
+    end
+    
+    items_to_return = level_items
+
+    level_items.each do |level_item|
+      if level_item.is_a? Xsubset
+        if !HashHelper.empty_values?(level_item.extension)
+          next_level_items += level_item.extension.values
         end
-      end
+      end        
     end
     
     
+
     yield(items_to_return) if block_given? && !items_to_return.empty?
+    
   
     if(!next_level_items.empty?)
       each_level(next_level_items, &block)
@@ -378,18 +609,6 @@ module Xenumerable
     get_level(level)
   end
     
-  def get_item(items = @extension.keys, item_to_get)
-    return if items.nil?
-    items.each do |item|
-      if item == item_to_get
-        return item
-      else
-        returned_item = get_item(item.children, item_to_get)
-        return returned_item if !returned_item.nil?
-      end
-    end
-    return nil    
-  end
   
   def get_level(level)
     level_count = 0
@@ -403,8 +622,12 @@ module Xenumerable
   end
   
   def last_level()
-    last_level_items = nil
-    each_level{|items| last_level_items = items}
+    last_level_items = []
+    each_level do |items| 
+
+
+      last_level_items = items
+    end
     last_level_items
   end
   

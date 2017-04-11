@@ -20,12 +20,12 @@ module Mapping
       else
         relation_sets = xset.order_relations(self.relations)
       end
-      xset.each do |item|
-        images_count = HashHelper.leaves(xset.trace_image(item, relation_sets.dup)).size
-        mappings[item] = {Xpair::Literal.new(images_count) => {}}
-      end        
+      xset.each_image do |item|
+        images_count = xset.trace_image_items(item, relation_sets.dup).size
+        mappings[item] = Xpair::Literal.new(images_count)
+      end
       
-      [mappings, HashHelper.copy(mappings)]
+      mappings
     end
   end
 

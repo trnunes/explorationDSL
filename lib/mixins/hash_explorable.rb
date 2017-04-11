@@ -6,158 +6,86 @@ module HashExplorable
   end
   
   def relations(args={})
+    start_time = Time.now
+    self.save
     level = args[:level].nil? ? 1 : args[:level]
     keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
     
     mappings = {}
     result_relation_index = {}
     query = @server.begin_nav_query do |q|
-      each_entity(level) do |item|
-
+      each_entity do |item|
         q.on(item)      
       end
       q.find_relations
     end
     query.execute.each do |item, relations_hash|
       result_relation_index[item] = {}
+      mappings[item] = Xsubset.new(item){|s| s.server = self.server}
       relations_hash.each do |relation, values|
-        mappings[relation] ||= {}
-        result_relation_index[item][relation] = {}
+        mappings[item] << relation
         item.add_child(relation)
       end
     end
     
     query = @server.begin_nav_query do |q|
-      each_entity(level) do |item|
+      each_entity do |item|
         q.on(item)      
       end
       q.find_backward_relations
     end
     query.execute.each do |item, relations_hash|
-      result_relation_index[item] ||= {}
+      mappings[item] ||= Xsubset.new(item){|s| s.server = self.server}
       relations_hash.each do |relation, values|
         r = Relation.new(relation.id)
         r.servers = relation.servers
         r.inverse = true
+        r.text += " of"
 
-        mappings[r] ||= {}
-        result_relation_index[item][r] = {}
+        mappings[item] << r
       end
     end
-    mappings = result_relation_index if keep_structure
+    finish_time = Time.now
+
+
     mount_result_set("#{self.intention}.relations()", mappings, result_relation_index)
   end
   
+
   def pivot(args={})
+    start_time = Time.now
+    
+    self.save
     level = args[:level].nil? ? 1 : args[:level]
     keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
+    backward_relations = []
+    forward_relations = []
     mappings = {}
-    results_hash = {}
-    result_relation_index = {}
-    relations = self.relations(level: level).extension.keys.flatten
-    relations.each do |relation|
-      if !path?(relation)
-        relation = [relation]
+    self.relations.each do |relation|
+      if relation.inverse
+        backward_relations << relation 
+      else
+        forward_relations << relation
       end
-
-      source_items = entities_of_level(level)
-      parents_map = {}
-      relation_mappings = {}
-      relation.each do |path_relation|        
-
-        query = @server.begin_nav_query do |q|
-
-          source_items.each do |item_hash|
-            item_hash.keys.each do |key|
-              q.on(key)
-            end
-          end
-
-          if path_relation.inverse
-            q.restricted_domain(path_relation)
-          else
-            q.restricted_image(path_relation)
-          end
-          
-        end
-        partial_values_set = Set.new
-        
-        partial_path_results = {}
-        if path_relation.inverse
-
-          query.execute.each do |item, relations_hash|
-
-            relations_hash.each do |relation, values|
-              values.each do |value|
-                inverse_relation = Relation.new(relation.id);
-                inverse_relation.inverse = true;
-                partial_path_results[value] ||= {}
-                partial_path_results[value][inverse_relation] ||= {}
-                partial_path_results[value][inverse_relation][item] = {};
-              end
-            end
-          end
-                  
-        else
-           query.execute.each do |item, relations|
-             partial_path_results[item] = {}
-             relations.each do |relation, values|
-               values.each do |v| 
-                 partial_path_results[item][relation] ||= {}
-                 partial_path_results[item][relation][v] = {}
-               end
-             end
-           end
-        end
-        relation_mappings = HashHelper.join(relation_mappings, partial_path_results)        
-        source_items = partial_values_set
-      end
-      HashHelper.unite(mappings, relation_mappings)
     end
-    pivot_mappings= {}
-
-
-    mappings.each do |item, relations|
-
-      pivot_mappings[item] = {}    
-      result_relation_index[item] = {}
-      relations.each do |relation, values|        
-        item.add_child(relation)
-        
-        if level > 1
-          pivot_mappings = self_copy.extension if pivot_mappings.empty?
-          entities.each do |items_hash|
-
-
-            if items_hash.has_key? item
-
-              HashHelper.leaves(relations).each do |result_item|
-                items_hash.delete(item)
-                items_hash[result_item] = {}
-                result_relation_index[item][result_item] = {}
-                
-              end            
-            end
-          end
-
-
-        else
-          pivot_mappings[item][relation] = {}
-          
-          values.each do |key, values|
-            pivot_mappings[item][relation][key] = values
-            relation.add_child(key)
-          end
-          result_relation_index[item] = pivot_mappings[item]
-          # relation.set_children(values.keys)
-        end        
-      end      
+    forward_pivot = pivot_forward(forward_relations, args)
+    backward_pivot = pivot_backward(backward_relations, args)
+    if !forward_pivot.nil? && !forward_pivot.empty?
+      mappings.merge!(forward_pivot.extension)
     end
+    if !backward_pivot.nil? && !backward_pivot.empty?
+      mappings.merge!(backward_pivot.extension){|item, subset1, subset2| subset1.extension.merge!(subset2.extension); subset1 }
+    end
+    finish_time = Time.now
 
-    mount_result_set("#{self.intention}.pivot", pivot_mappings, result_relation_index)
+
+
+    mount_result_set("#{self.intention}.pivot", mappings)
   end
   
   def pivot_backward(relations, args={})
+    start_time = Time.now
+    self.save
     level = args[:level].nil? ? 1 : args[:level]
     keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
     mappings = {}
@@ -167,7 +95,7 @@ module HashExplorable
         relation = [relation]
       end
 
-      source_items = entities(level)
+      source_items = each_item
       
       relation_mappings = {}
       local_inverted_mappings = {}
@@ -185,6 +113,7 @@ module HashExplorable
         partial_path_results.each do |item, relations_hash|
           relations_hash.each do |relation, values|
             inverse_relation = Relation.new(relation.id, true);
+            inverse_relation.text = relation.text + " of"
             values.each do |value|
               if local_inverted_mappings[value].nil?
                 local_inverted_mappings[value] = {inverse_relation => {}}
@@ -200,23 +129,34 @@ module HashExplorable
       HashHelper.unite(mappings, relation_mappings)
     end
     pivot_mappings, result_relation_index = build_pivot_result_set(mappings, level, relations.size > 1, keep_structure)
+    
+    finish_time = Time.now
+    puts "EXECUTED PIVOT BACKWARD: " << (finish_time - start_time).to_s
 
     mount_result_set("pivot_backward", pivot_mappings, result_relation_index, {:relations => relations.inspect})
   end  
-  
+    
   def pivot_forward(relations, args={})
+    start_time  = Time.now
+    self.save
     level = args[:level].nil? ? 1 : args[:level]
     
     keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
     mappings = {}
     results_hash = {}
     partial_values_set = Set.new
+
+
+    
     relations.each do |relation|
       if !path?(relation)
         relation = [relation]
       end
 
-      source_items = entities(level)
+      source_items = each_item
+      
+
+
 
 
       relation_mappings = {}
@@ -246,184 +186,142 @@ module HashExplorable
           end
         end
 
-        relation_mappings = HashHelper.join(relation_mappings, partial_path_results)
+        relation_mappings = partial_path_results
         source_items = partial_values_set
       end
-      HashHelper.unite(mappings, relation_mappings)
+      mappings.merge!(relation_mappings){|item, relation1, relation2| relation1.merge(relation2)}
     end
     pivot_mappings, result_relation_index = build_pivot_result_set(mappings, level, relations.size > 1, keep_structure)   
-    puts "RESULTS"
-    HashHelper.print_hash(pivot_mappings) 
+
+    finish_time = Time.now
+    puts "EXECUTED PIVOT FORWARD: " << (finish_time - start_time).to_s
+
+
     mount_result_set("#{self.intention}.pivot_forward(\"#{relations.to_s}\")", pivot_mappings, result_relation_index, {:relation => relations.to_s})
   end
   
   def build_pivot_result_set(mappings, level, is_multiple, keep_structure)
     item_relation_index = {}
     self_copy = Xset.new{|s| s.extension = self.extension_copy}
-    entities = self_copy.entities_of_level(level)
+
     pivot_mappings= {}
+
+    # HashHelper.print_hash(mappings)
     mappings.each do |item, relations|
-      item_subset = {}
-      item_relation_index[item] = item_subset
-      
-      if level > 1
-
-        pivot_mappings = self_copy.extension if pivot_mappings.empty?
-        entities.each do |items_hash|
-          
-          if items_hash.has_key? item
-            if is_multiple
-              relations.each do |relation, values|
-                item_subset[relation] = {}
-
-                HashHelper.leaves(values).each do |result_item|
-                  items_hash.delete(item)
-                  items_hash[result_item] = {}              
-                  item_subset[relation][result_item] = {}
-                end
-              end
-            else
-              HashHelper.leaves(relations).each do |result_item|
-                items_hash.delete(item)
-                items_hash[result_item] = {}
-                item_subset[result_item] = {}
-              end              
-            end
-          end
+      item_subset = Xsubset.new(item){|s| s.server = self.server}
+      pivot_mappings[item] = item_subset
+      relations.each do |relation, values|
+        # item.add_child(relation)
+        item_subset[relation] = Xsubset.new(relation){|s| s.server = self.server}
+        # HashHelper.leaves(values).each do |result_item|
+        #   item_subset[relation][result_item] = {}
+        #   # relation.add_child(result_item);
+        # end
+        values.keys.each do |result_item|
+          item_subset[relation][result_item] = {}
+          # relation.add_child(result_item);
         end
-      else
-        if is_multiple
-          relations.each do |relation, values|
-            item.add_child(relation)
-            
-            item_subset[relation] = {}
-
-            HashHelper.leaves(values).each do |result_item|
-              pivot_mappings[result_item] = {}
-              item_subset[relation][result_item] = {}
-              relation.add_child(result_item);
-            end
-          end
-        else
-          HashHelper.leaves(relations).each do |result_item|
-            pivot_mappings[result_item] = {}
-            item_subset[result_item] = {}
-            item.add_child(result_item)
-          end
-        end
+        
       end
     end
-    pivot_mappings = item_relation_index if keep_structure
     [pivot_mappings, item_relation_index]
+      
   end
   
     
-  def select(items)
-    mappings = {}
-    items.each do |item|
+  def select_items(items)
+    start_time = Time.now
+    self.save
+    result_items = Set.new
+    search_items(items, result_items)
+    finish_time = Time.now
 
-      if contains_item?(self.extension, item)
-
-        mappings[item] = {}
-      end
-    end
-
-    mount_result_set("#{self.intention}.select(\"#{items.to_s}\")", mappings, {:items => items.to_s})
+    
+    mount_result_set("#{self.intention}.select_items(\"#{items.to_s}\")", result_items.map{|i| [i, {}]}.to_h, {:items => items.to_s})
+  end
+  
+  def select_subsets(subsets)
+    self.save
+    result_items = Set.new
+    search_subsets(items, result_items)
+    mount_result_set("#{self.intention}.select_subsets(\"#{items.to_s}\")", result_items.map{|i| [i, {}]}.to_h, {:items => items.to_s})
   end
   
   def refine(args={}, &block)
+    start_time = Time.now
+    self.save
     level = args[:level].nil? ? 1 : args[:level]
     keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
     mappings = {}
     yield(Filtering)
-    mappings = Filtering.eval_filters(self)
+    if(has_subsets? && args[:apply_to_subsets])
+      each_image do |subset|
+        subset_mappings = Filtering.eval_filters(subset)
+        mappings[subset] = Xsubset.new(subset.key){|s| s.server = self.server; s.extension = subset_mappings}
+      end
+    else
+      mappings = Filtering.eval_filters(self)
+    end
+    Filtering.clear
+    finish_time = Time.now
+    puts "EXECUTED REFINE: " << (finish_time - start_time).to_s
     mount_result_set("#{self.intention}.refine()", mappings, {:filter => Filtering})
   end
 
   def group(args={}, &block)
+    start_time = Time.now
+    self.save
+    
     level = args[:level].nil? ? 1 : args[:level]
     keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
     grouping_function = yield(Grouping)
     mappings = {}
     result_relation_index = {}
     parents_hash = {}
-    if level > 1
-      self_copy = Xset.new{|s| s.extension = self.extension_copy}
-      self_copy.server = self.server
-      level_items = self_copy.select_level(level - 1)
-      level_items.each do |previous_level_item_hash|
-        previous_level_item_hash.each do |key_item, level_item_hash|
-          subset = Xsubset.new(self, level) do |s|
-            s.extension = HashHelper.copy(level_item_hash)
-            s.server = self.server
-          end
-          partial_result_set = subset.group{grouping_function}
-
-          result_relation_index[subset] = Xsubset.new(self, level){|s| s.extension = partial_result_set.extension}
-
-          level_item_hash.keys.each do |key|
-            level_item_hash.delete(key)
-          end
-          partial_result_set.extension.each do |result_key, result_values|
-            level_item_hash[result_key] = result_values
-          end
-        end  
+    if has_subsets?
+      self.each_image do |subset|
+        
+        grouped_subset = subset.group{grouping_function}
+        
+        mappings[subset] = Xsubset.new(subset.key){|s|s.server = self.server; s.extension = grouped_subset.extension}
       end
-      
-      mappings = self_copy.extension
     else
-      mappings = grouping_function.group(self)
-      mappings.each do |group_key, group_values|
-        group_values.keys.each do |value|
-          result_relation_index[value] ||= {}
-          result_relation_index[value][group_key] = {}
-          value.add_child(group_key)
-        end
-      end
+      groups = grouping_function.group(self)
+      mappings = {}
+      groups.each do |group_key, group_values|
+        subset = Xsubset.new(group_key){|s| s.server = self.server; s.extension = group_values}
+        subset.server = self.server
+        mappings[group_key] = subset
+      end    
     end
-
-    group_result_set = mount_result_set("#{self.intention}.group", mappings, {})
-    group_result_set.relation_index = result_relation_index
-    group_result_set
+    finish_time = Time.now
+    puts "EXECUTED GROUP: " << (finish_time - start_time).to_s
+    mount_result_set("#{self.intention}.group", mappings, {})
   end
 
   #post condition 1: substitute the images of the original set by the mapped values and preserve the keys
   def map(args={}, &block)
+    start_time = Time.now
+    self.save
     level = args[:level].nil? ? 1 : args[:level]
     keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
     mappings = {}
     function = yield(Mapping)
     result_relation_index = {}
     function.origin_set = self
-    self_copy = Xset.new{|s| s.extension = self.extension_copy}
-    self_copy.server = self.server
-    
 
-    if(level > 1)
-      self_copy.get_level(level).each do |item_hash|
-        intermediary_set = Xsubset.new(self, level){|s| s.extension = item_hash}
-        intermediary_set.subset_of = self
-        intermediary_set.server = self.server
-        intermediary_map_result = intermediary_set.map{function}
-        result_relation_index[intermediary_set] = intermediary_map_result
-
-        item_hash.keys.each do |key|
-          item_hash.delete(key)
-        end
-        intermediary_map_result.extension.each do |result_key, result_values|
-          item_hash[result_key] = result_values
-        end
+    if(has_subsets?)
+      
+      self.each_image do |subset|
+        grouped_subset = subset.map{function}
+        mappings.merge! grouped_subset.extension
       end
     else
-      mappings, result_relation_index = function.map(self)
-
-    end      
-    
-    if level > 1
-      mappings = self_copy.extension
+      mappings = function.map(self)
     end
-    map_results = mount_result_set("map", mappings, result_relation_index, {:mapping_function => function})
-    
+    finish_time = Time.now
+    puts "EXECUTED MAP: " << (finish_time - start_time).to_s
+    mount_result_set("map", mappings, result_relation_index, {:mapping_function => function})
   end
   
   def find_path(target_set, args={})
@@ -530,40 +428,73 @@ module HashExplorable
   end
 
   def intersect(xset, args={})
+    start_time = Time.now
+    self.save
     level = args[:level].nil? ? 1 : args[:level]
     keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
     mappings = {}
-    copied_extension = self.extension_copy
-    intersection_items = self.extension.keys & xset.extension.keys
-    intersection_items.each do |item|
-      mappings[item] = copied_extension[item]
-    end    
+
+    intersection_items = self.each_item & xset.each_item
+    mappings = intersection_items.map{|item| [item, {}]}.to_h
+    finish_time = Time.now
+    puts "EXECUTED INTERSECT: " << (finish_time - start_time).to_s
     mount_result_set("intersect", mappings, {:xset => xset})
   end  
 
   def diff(xset, args={})
+    start_time = Time.now
+    self.save
     level = args[:level].nil? ? 1 : args[:level]
     keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
     mappings = {}
-    copied_extension = self.extension_copy
-    diff_items = copied_extension.keys - xset.extension.keys
-    diff_items.each do |item|
-      mappings[item] = copied_extension[item]
-    end
+    source_items = self.each_item
+    target_items = xset.each_item
+    diff_items = source_items - target_items
+    mappings = diff_items.map{|item| [item,{}]}.to_h
+
+    finish_time = Time.now
+    puts "EXECUTED DIFF: " << (finish_time - start_time).to_s
     mount_result_set("diff", mappings, {:xset => xset})
   end
     
   def union(xset, args={})
+    start_time = Time.now
+    self.save
     level = args[:level].nil? ? 1 : args[:level]
     keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
-    mappings = {}
-    self_copy = self.extension_copy    
-    HashHelper.unite(self_copy, xset.extension)
-    mount_result_set("union", self_copy, {:xset => xset})
+    
+    mappings = self.extension_copy
+    self_images = self.each_image
+    target_images = xset.each_image
+    mappings = (self_images + target_images).map do |image| 
+      if image.is_a? Xsubset
+        [image, image]
+      else
+        [image, {}]
+      end
+    end.to_h
+    finish_time = Time.now
+    puts "EXECUTED UNION: " << (finish_time - start_time).to_s
+    # HashHelper.unite(self_copy, xset.extension)
+    if args[:inplace]
+      self.extension = mappings
+      self
+    else      
+      mount_result_set("union", mappings, {:xset => xset})
+    end
+    
   end
   
   def rank(args={}, &block)
+    start_time = Time.now
+    self.save
     level = args[:level].nil? ? 1 : args[:level]
+    
+    multiplier = -1
+
+    if(args[:order] == "ASC")
+      multiplier = 1
+    end
     keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
     mappings = {}
     ranking_function = nil
@@ -572,24 +503,43 @@ module HashExplorable
     end
     ranking_function.source_set = self
     
-    mappings = self.extension.sort do |item1_array, item2_array| 
-      (ranking_function.score(item1_array[0]) <=> ranking_function.score(item2_array[0])) * -1
+    mappings = self.extension.sort do |item1_array, item2_array|
+      comparable1 = (item1_array[1].nil? || item1_array[1].empty?) ? item1_array[0] : item1_array[1]
+      comparable2 = (item2_array[1].nil? || item2_array[1].empty?) ? item2_array[0] : item2_array[1]
+
+      score_1 = ranking_function.score(comparable1)
+      score_2 = ranking_function.score(comparable2)
+      # binding.pry
+      comparison = (score_1 <=> score_2 )
+      if comparison.nil?
+        if score_1 == -Float::INFINITY
+          1
+        elsif score_2 == -Float::INFINITY
+          -1
+        else
+          (score_1.to_s <=> score_2.to_s) * multiplier
+        end
+                  
+      else
+        (score_1 <=> score_2 ) * multiplier
+      end      
     end.to_h
-    
+    finish_time = Time.now
+    puts "EXECUTED RANK: " << (finish_time - start_time).to_s
     mount_result_set("#{self.intention}.rank{|s|s.#{ranking_function.name}}", mappings)
   end
 
-  def flatten(level)
+  def flatten()
+    start_time = Time.now
+    self.save
     mappings = {}
-    result_relation_index = {}
-    copy_set = Xset.new{|s| s.extension = self.extension_copy}
-    copy_set.select_level(level).each do |level_items|
-      level_items.keys.each do |key|
-        mappings[key] = {}
-        result_relation_index[key] = {key=>{}}
-      end
+    
+    self.each_item do |item|
+      mappings[item] = item
     end
-    mount_result_set("#{self.intention}.flatten(#{level})", mappings, result_relation_index)
+    finish_time = Time.now
+    puts "EXECUTED FLATTEN: " << (finish_time - start_time).to_s
+    mount_result_set("#{self.intention}.flatten()", mappings)
   end
   
   def mount_result_set(intention, mappings, result_relation_index = {}, bindings=nil, level=1)
@@ -614,4 +564,5 @@ module HashExplorable
   def save
     
   end
+  
 end

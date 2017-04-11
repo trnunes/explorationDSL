@@ -87,39 +87,20 @@ class CompositionsTest < XpairUnitTest
     @papers_server = RDFDataServer.new(papers_graph)
     
   end
-  
-
-  def test_pivot_refine
-    set = Xset.new do |s| 
-      s << Entity.new("_:p1")
-      s << Entity.new("_:p2")
-      s << Entity.new("_:p3")
-    end
     
-    set.server = @server
-    
-    relation = set.pivot_forward(["_:r1"]).refine{|f| f.equals(values: Entity.new("_:o2"))}
-    
-    expected_extension = { 
-      Entity.new("_:o2") => {}
-    }    
-    assert_equal expected_extension, relation.extension
-    
-  end
-  
   def test_select_pivot
     set = Xset.new do |s|
       s << Entity.new("_:paper1")
       s << Entity.new("_:p6")
     end
     set.server = @papers_server
+    s1 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:p2")=>{},Entity.new("_:p3")=>{},Entity.new("_:p5")=>{}}}
+    s2 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:a2")=> {}}}
+    s3 = Xsubset.new("key"){|s| s.extension = {Relation.new("_:cite") => s1, Relation.new("_:author")=>s2}}
     expected_extension = {
-      Entity.new("_:p6") =>{
-        Relation.new("_:cite") => {Entity.new("_:p2")=>{},Entity.new("_:p3")=>{},Entity.new("_:p5")=>{}},
-        Relation.new("_:author") => {Entity.new("_:a2")=> {}}
-      }
+      Entity.new("_:p6") => s3
     }
-    assert_equal expected_extension, set.select([Entity.new("_:p6")]).pivot.extension
+    assert_equal expected_extension, set.select_items([Entity.new("_:p6")]).pivot.extension
 
   end
   
@@ -145,7 +126,7 @@ class CompositionsTest < XpairUnitTest
       s.server = @papers_server
     end
     resourceset.save
-    Xset.load(resourceset.id).group{|gf| gf.by_relation(Relation.new('_:author'))}
+    Xset.load(resourceset.id).group{|gf| gf.by_relation(relations: [Relation.new('_:author')])}
   end
   
   def test_map_rank
@@ -156,45 +137,15 @@ class CompositionsTest < XpairUnitTest
         Entity.new("_:p2") => {}
       }
     end
+    
+    s1 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:i1") => {}, Entity.new("_:i2") => {}}}
+    s2 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:i1") => {}, Entity.new("_:i2") => {}, Entity.new("_:i3") => {}}}
+    s3 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:r") => s1}}
+    s4 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:r") => s2}}
     test_set2 = Xset.new do |s|
-      s.extension = {
-        Entity.new("_:p4") => {
-          Entity.new("r")=> {
-            Entity.new("_:i1") => {},
-            Entity.new("_:i2") => {}
-          }
-        },
-        Entity.new("_:p2") => {
-          Entity.new("r")=> {
-            Entity.new("_:i1") => {},
-            Entity.new("_:i2") => {},
-            Entity.new("_:i3") => {}
-          }
-        },
-      }
-      s.relation_index ={
-        Entity.new("_:p4") => {
-          Xsubset.new(test_set2, 0) do |ss|
-            ss.extension = {
-              Entity.new("r")=> {
-                Entity.new("_:i1") => {},
-                Entity.new("_:i2") => {},
-
-              }
-            }
-          end => {}
-        },
-        Entity.new("_:p2") => {
-          Xsubset.new(test_set2, 0) do |ss|
-            ss.extension = {
-              Entity.new("r")=> {
-                Entity.new("_:i1") => {},
-                Entity.new("_:i2") => {},
-                Entity.new("_:i3") => {}
-              }
-            }
-          end => {}
-        },        
+      s.extension ={
+        Entity.new("_:p4") => s3,
+        Entity.new("_:p2") => s4
       } 
       s.resulted_from = test_set1
     end
@@ -204,36 +155,251 @@ class CompositionsTest < XpairUnitTest
       Entity.new("_:p4") => {}
     }
 
-    assert_equal expected_extension, test_set1.rank{|rf| rf.by_relation([test_set1.map{|mf| mf.image_count([test_set2])}])}.extension
+    assert_equal expected_extension, test_set1.rank{|rf| rf.by_relation(relations: [test_set1.map{|mf| mf.image_count([test_set2])}])}.extension
 
     
   end
   def test_group_by_twice_map_refine
     set = Xset.new do |s|
       s.extension = {
-        Entity.new("_:p2")=>{}
-        Entity.new("_:p3")=>{}
-        Entity.new("_:p5")=>{}
+        Entity.new("_:p2")=>{},
+        Entity.new("_:p5")=>{},
         Entity.new("_:p6")=>{}
       }
     end
+    set.server = @papers_server
+    set.save
 
-    s1 = set.group{|gf| gf.by_relation(Relation.new("_:author"))}
+    s1 = set.group{|gf| gf.by_relation(relations: [Relation.new("_:author")])}
+    s1.save
     # s2 = s.group(level: 2){|gf| gf.by_relation(Relation.new("_:keywords"))}
-    maps = s1.map(level: 2){|mf| mf.count}
-    s3 = s2.refine(level: 2){|f| f.image_equals([maps], Literal.new(2))}
+
+    maps = s1.map{|mf| mf.count}
+    maps.save
+
+
+
+    s3 = s1.refine{|f| f.image_equals(relations: [maps], values: Xpair::Literal.new(9))}
+
   end
-  def test_pivot_map_rank2
-    test_set1 = Xset.new do |s|
+  
+  def test_pivot_trace
+    s = Xset.new{|s| s.extension = {Entity.new('_:p2') => {}, Entity.new('_:paper1') => {}}}
+    s.server = @papers_server
+    p = s.pivot_forward([Relation.new("_:cite")])
+    s = p.each_image[0]
+    domains = p.trace_domains(s)
+
+
+  end
+  
+  def test_pivot_map_trace
+    s = Xset.new{|s| s.extension = {Entity.new('_:p6') => {}, Entity.new('_:paper1') => {}}}
+    s.id = "s1"
+    s.server = @papers_server
+    p1 = s.pivot_forward([Relation.new("_:cite")])
+    p1.id = "p1"
+    p2 = p1.map{|m| m.count}
+    p2.id = "p2"
+    i = p2.each_image[0]
+    domains = p2.trace_domains(i)
+    
+    domains
+
+
+  end
+  
+  def test_group_by_twice_map_trace_image
+    set = Xset.new do |s|
       s.extension = {
-        Entity.new("_:p4") => {},
-        Entity.new("_:p2") => {}
+        Entity.new("_:p2")=>{},
+        Entity.new("_:p3")=>{},
+        Entity.new("_:p5")=>{},
+        Entity.new("_:p6")=>{}
+      }
+      s.id = "setOrigin"
+    end
+    set.server = @papers_server
+    set.save
+
+    s1 = set.group{|gf| gf.by_relation(relations: [Relation.new("_:author")])}
+    s1.id = "s1"
+    s1.save
+
+
+    s2 = s1.group(level: 2){|gf| gf.by_relation(relations: [Relation.new("_:keywords")])}
+    s2.id = "s2"
+
+    maps = s2.map{|mf| mf.count}
+
+
+
+    maps.id = "map"
+    maps.save
+    rs = maps.trace_domains(maps.each_image.first)
+
+
+
+
+
+
+
+
+
+    
+
+
+    
+
+  end
+  
+  def test_pivot_flatten_get_item
+    set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:p2")=>{},
+        Entity.new("_:p3")=>{},
+        Entity.new("_:p5")=>{},
+        Entity.new("_:p6")=>{}
+      }
+      s.id = "setOrigin"
+    end
+    set.server = @papers_server
+    rs = set.pivot_forward([Relation.new("_:author")]).flatten
+    item = rs.get_item("_:a2")
+
+
+    
+  end
+  def test_pivot_map_refine
+    set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:p6")=>{},
+        Entity.new("_:p7")=>{},
+      }
+      s.server = @papers_server
+    end
+    set.save
+    
+    s1 = set.pivot_forward([Relation.new("_:cite")])
+    s1.save
+
+
+    s2 = s1.map{|mf| mf.count}
+    s2.save
+
+
+    rs = set.refine{|rf| rf.image_equals(relations: [s2], values: Xpair::Literal.new(3))}
+    expected_extension = {
+      Entity.new("_:p6")=>{}
+    }
+    assert_equal expected_extension, rs.extension
+  end
+  
+  def test_pivot_paginate
+    set = Xset.new do |s|
+      s << Entity.new("_:paper1")
+      s << Entity.new("_:p6")
+    end
+    set.server = @papers_server
+    subset1 = Xsubset.new("key") do |s|
+      s.extension = {
+        Entity.new("_:a1")=>{},
+        Entity.new("_:a2")=>{}
       }
     end
-    test_set1.server = @papers_server
+    subset2 = Xsubset.new("key") do |s|
+      s.extension = {
+        Entity.new("_:p2")=>{},
+        Entity.new("_:p3")=>{},
+        Entity.new("_:p4")=>{}
+      }
+    end
+    
+    subset4 = Xsubset.new("key") do |s|
+      s.extension = {
+        Entity.new("_:a2")=>{}
+      }
+    end
+    subset8 = Xsubset.new("key") do |s|
+      s.extension = {
+        Entity.new("_:journal1")=>{}
+      }
+    end
+    
+    subset5 = Xsubset.new("key") do |s|
+      s.extension = {
+        Entity.new("_:p2")=>{},
+        Entity.new("_:p3")=>{},
+        Entity.new("_:p5")=>{}
+      }
+    end
+    subset7 = Xsubset.new("key") do |s|
+      s.extension = {
+        Entity.new("_:k1")=>{},
+        Entity.new("_:k2")=>{},
+        Entity.new("_:k3")=>{}
+      }
+    end
+    
+    subset6 = Xsubset.new("key") do |s|
+      s.extension = {
+        Relation.new("_:author")=>subset4,
+        Relation.new("_:cite")=> subset5,        
+      }
+    end
+    subset3 = Xsubset.new("key") do |s|
+      s.extension = {
+        Relation.new("_:author")=>subset1,
+        Relation.new("_:cite")=> subset2,
+        Relation.new("_:keywords")=> subset7,
+        Relation.new("_:submittedTo")=> subset8,
+      }
+    end
+
+    expected_extension = {
+      Entity.new("_:paper1")=> subset3,
+      Entity.new("_:p6")=> subset6
+    }
+    rs = set.pivot()
+    assert_equal expected_extension, rs.extension
+
+    rs.each_image{|i| HashHelper.print_hash(i.extension)}
+    assert_equal Set.new([subset1, subset2, subset4, subset5, subset7, subset8]), Set.new(rs.each_image)
+    
+  end
+  
+  def test_pivot_map_average
+    set = Xset.new do |s|
+      s << Entity.new("_:p6")
+    end
+    set.server = @papers_server
+    subset2 = Xsubset.new("key") do |s|
+      s.extension = {
+        Entity.new("_:p2")=>{},
+        Entity.new("_:p3")=>{},
+        Entity.new("_:p5")=>{}
+      }
+    end
+    subset3 = Xsubset.new("key") do |s|
+      s.extension = {
+        Relation.new("_:cite")=> subset2,
+      }
+    end
+    expected_extension1 = {
+      Entity.new("_:p6")=> subset3
+    }
+    
+    expected_extension3 = {
+    }
+    
+    rs1 = set.pivot_forward([Relation.new("_:cite")])
+    rs2 = rs1.pivot_forward([Relation.new("_:publicationYear")])
+    rs3 = rs2.map{|mf| mf.avg}
+
+
+    assert_equal expected_extension3, rs3.extension
     
     
   end
-    
 
 end

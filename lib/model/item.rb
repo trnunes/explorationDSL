@@ -3,7 +3,7 @@ class Item
   attr_accessor :servers, :id, :text
   
   def initialize(id)
-    @id = id
+    @id = Xpair::Namespace.expand_uri(id)
     @servers = []
   end 
   
@@ -32,9 +32,10 @@ class Item
   end
   
   def text
-    if @text.nil?
-      return Xpair::Namespace.colapse_uri(id)
+    if @text.to_s.empty?
+      @text = Xpair::Namespace.colapse_uri(id)
     end
+    @text
   end
   
   def eql?(item)

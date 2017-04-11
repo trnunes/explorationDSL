@@ -1,12 +1,14 @@
+require "pry"
 require "test/unit"
 require "rdf"
-
+require 'linkeddata'
 require './mixins/xpair'
 require './mixins/hash_explorable'
 require './mixins/auxiliary_operations'
 require './mixins/enumerable'
 require './mixins/persistable'
 require './mixins/graph'
+
 
 require './filters/filtering'
 require './filters/contains'

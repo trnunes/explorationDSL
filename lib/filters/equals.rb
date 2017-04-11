@@ -16,14 +16,16 @@ module Filtering
     
     def eval(set)
       extension = set.extension_copy
+      set_copy = Xset.new{|s| s.extension = extension}
       if(@relations.nil?)
-          set.each.select{|item| !(item.eql?(@value))}.each do |removed_item|
-            extension.delete(removed_item)
+          set_copy.each_item.select{|item| !(item.eql?(@value))}.each do |removed_item|
+            set_copy.remove_item(removed_item)
           end
+          set_copy.extension
       else        
-        build_query_filter(set).relation_equals(@relations, @value)        
+        build_query_filter(set).relation_equals(@relations, @value)
+        super(extension, set)
       end
-      super(extension, set)
     end
     
     def expression

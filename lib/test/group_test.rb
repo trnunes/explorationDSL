@@ -99,42 +99,30 @@ class GroupTest < XpairUnitTest
     
     test_set.server = @server
     
-    rs = test_set.group{|gf| gf.by_relation(Relation.new("_:r1"))}
+    rs = test_set.group{|gf| gf.by_relation(relations: [Relation.new("_:r1")])}
     
     expected_set = Xset.new do |s|
       s.extension = {
-        Entity.new("_:o1") => {
-          Entity.new("_:p1")=>{}
+        Entity.new("_:o1") => Xsubset.new("key"){|s|
+          s.extension = {
+            Entity.new("_:p1")=>{}
+          }
         },
-        Entity.new("_:o2") => {
-          Entity.new("_:p1")=>{},
-          Entity.new("_:p2")=>{}
+        Entity.new("_:o2") => Xsubset.new("key"){|s|
+          s.extension = {
+            Entity.new("_:p1")=>{},
+            Entity.new("_:p2")=>{}
+          }
         },
-        Entity.new("_:o3") => {
-          Entity.new("_:p3")=>{}
+        Entity.new("_:o3") => Xsubset.new("key"){|s|
+          s.extension = {
+            Entity.new("_:p3")=>{}
+          }
         },
       }
     end
-    expected_index = {
-      Entity.new("_:p1")=>{
-        Entity.new("_:o1") => {
-          
-        },
-        Entity.new("_:o2") => {
-        }
-      },
-      Entity.new("_:p2")=>{
-        Entity.new("_:o2") => {
-        },
-      },
-      Entity.new("_:p3")=>{
-        Entity.new("_:o3") => {
-        }
-      }
-    }
-    
     assert_equal expected_set.extension, rs.extension
-    assert_equal expected_index, rs.relation_index
+
   end
   
   def test_group_by_keep_structure
@@ -146,103 +134,106 @@ class GroupTest < XpairUnitTest
     
     test_set.server = @server
     
-    rs1 = test_set.group{|gf| gf.by_relation(Relation.new("_:r1"))}
+    rs1 = test_set.group{|gf| gf.by_relation(relations: [Relation.new("_:r1")])}
 
-    expected_extension = {
-      Entity.new("_:o1") => {
+    expected_set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:o1") => Xsubset.new("key"){|s|
+          s.extension = {
+            Entity.new("_:p1")=>{}
+          }
+        },
+        Entity.new("_:o2") => Xsubset.new("key"){|s|
+          s.extension = {
+            Entity.new("_:p1")=>{},
+            Entity.new("_:p2")=>{}
+          }
+        },
+        Entity.new("_:o3") => Xsubset.new("key"){|s|
+          s.extension = {
+            Entity.new("_:p3")=>{}
+          }
+        },
+      }
+    end
+    expected_set.server = @server
+    
+    assert_equal expected_set.extension, rs1.extension
+    
+    rs = rs1.group{|gf| gf.by_relation(relations: [Relation.new("_:year")])}
+    
+    key1 = Xsubset.new("key"){|s|
+      s.extension = {
         Entity.new("_:p1")=>{}
-      },
-      Entity.new("_:o2") => {
-        Entity.new("_:p1")=>{}, 
-        Entity.new("_:p2")=>{}
-      },
-      Entity.new("_:o3") => {
-        Entity.new("_:p3")=>{}
-      },
+      }
     }
+    key2 = Xsubset.new("key"){|s|
+      s.extension = {
+        Entity.new("_:p1")=>{},
+        Entity.new("_:p2")=>{}
+      }
+    }
+    key3 =  Xsubset.new("key"){|s|
+      s.extension = {
+        Entity.new("_:p3")=>{}
+      }
+    }
+    group1 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:p1")=>{}}}
+    group2 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:p1")=>{}, Entity.new("_:p2")=>{}}}
+    group3 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:p3")=>{}}}
     
-    assert_equal expected_extension, rs1.extension
-    
-    rs = rs1.group(level: 2){|gf| gf.by_relation(Relation.new("_:year"))}
-    
-    
+    group4 = Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(2005)=>group1}}
+    group5 = Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(2005)=>group2}}
+    group6 = Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(2010)=>group3}}
     expected_extension = {
-      Entity.new("_:o1") => {        
-        Xpair::Literal.new(2005) => {
+      Xsubset.new("key"){|s|
+        s.extension = {
           Entity.new("_:p1")=>{}
-        }        
-      },
-      Entity.new("_:o2") => {        
-        Xpair::Literal.new(2005) => {
+        }
+      } => group4,
+      Xsubset.new("key"){|s|
+        s.extension = {
           Entity.new("_:p1")=>{},
           Entity.new("_:p2")=>{}
-        }        
-      },
-      Entity.new("_:o3") => {
-        Xpair::Literal.new(2010) => {
+        }
+      } => group5,
+      Xsubset.new("key"){|s|
+        s.extension = {
           Entity.new("_:p3")=>{}
         }
-      },
+      }=> group6
     }
     
-    expected_index = {
-      Xsubset.new(rs1, 1) do |s|
-        s.extension = {
 
-            Entity.new("_:p1")=>{}
+    rs.extension.each do |key, values|
 
-        }        
-      end => 
-        Xsubset.new(rs, 1) do |s|
-          s.extension = {
-            Xpair::Literal.new(2005) => {
-              Entity.new("_:p1")=>{}
-            }
-          }
-        end,
-      Xsubset.new(rs1, 1) do |s|
-        s.extension = {
 
-            Entity.new("_:p1")=>{}, 
-            Entity.new("_:p2")=>{}
+      HashHelper.print_hash key.extension
 
-        }        
-      end => Xsubset.new(rs, 1) do |s|
-          s.extension = {
-            Xpair::Literal.new(2005) => {
-              Entity.new("_:p1")=>{},
-              Entity.new("_:p2")=>{}
-            }
-          }
-        end,
-      Xsubset.new(rs1, 1) do |s|
-        s.extension = {
 
-            Entity.new("_:p3")=>{}
+      values.extension.each do |key, values|
 
-        }        
-      end => Xsubset.new(rs, 1) do |s|
-          s.extension ={
-            Xpair::Literal.new(2010) => {
-              Entity.new("_:p3")=>{}
-            }
-          }
-        end
+
+        HashHelper.print_hash values.extension
+      end
+        
       
-    }
-    
-    HashHelper.print_hash(rs.extension)
-    assert_equal expected_extension, rs.extension
-    puts "RELATION INDEX"
-    rs.relation_index.each do |key, values|
-      puts "KEY:"
-      HashHelper.print_hash(key.extension)
-      puts "VALUES: "
-      HashHelper.print_hash(values.extension)
+    end
+
+    rs.extension.keys.each do |key|
+
+      HashHelper.print_hash key.extension
+    end
+
+    expected_extension.keys.each do |key|
+
+      HashHelper.print_hash key.extension
     end
     
-    assert_equal expected_index, rs.relation_index
-    
+    assert_equal Set.new(rs.extension.keys), Set.new(expected_extension.keys)
+    assert_equal rs.extension[key1], expected_extension[key1]
+
+    assert_equal expected_extension, rs.extension
   end
   
 end

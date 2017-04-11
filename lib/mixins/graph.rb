@@ -1,9 +1,9 @@
 module Xpair::Graph
   attr_accessor :children, :parents
   def add_child(child)
-    @children ||= Set.new
-    children << child
-    child.add_parent(self)
+    # @children ||= Set.new
+    # children << child
+    # child.add_parent(self)
   end
 
   def set_children(children)

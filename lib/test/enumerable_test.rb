@@ -88,19 +88,91 @@ class MergeTest < XpairUnitTest
       
   end
   
-  def test_update_level
-    set1 = Xset.new do |s|
+  def test_domain
+    set2 = Xset.new do |s|
       s.extension = {
-        Entity.new("_:paper1") => {Entity.new("_:p3")=>{Entity.new("_:p4")=>{}}}
+        Entity.new("_:paper1") => Xsubset.new("key"){|s| s.extension = {Entity.new("_:journal1")=>{}}}
       }
       s.server = @papers_server
+      s.id = "s2"
     end
-    set1.entities_of_level(1).first.delete(Entity.new("_:paper1"))
-    expected_rs = {
-      
-    }
-    assert_equal expected_rs, set1.extension
+    assert_equal [Entity.new("_:paper1")], set2.domain(Entity.new("_:journal1"))
+  end
+
+  def test_domain_two_levels
+
+    set2 = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:paper1") => Xsubset.new("key"){|s| s.extension = {Entity.new("_:journal1")=>Xsubset.new("key"){|ss| ss.extension = {Entity.new("e")=>{}}}}},
+        Entity.new("_:paper2") => Xsubset.new("key"){|s| s.extension = {Entity.new("_:journal1")=>Xsubset.new("key"){|ss| ss.extension = {Entity.new("e")=>{}}}}}
+      }
+      s.server = @papers_server
+      s.id = "s2"
+    end
+    assert_equal [Entity.new("_:paper1"), Entity.new("_:paper2")], set2.domain(Entity.new("e"))
+  end
+
+  def test_trace_subsets
     
+    set1 = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:paper1") => Xsubset.new("key"){|s| s.extension = {Entity.new("_:journal1")=>{}}},
+        Entity.new("_:paper2") => Xsubset.new("key"){|s| s.extension = {Entity.new("_:journal2")=>{}}}
+      }
+      s.id = "set1"
+    end
+
+    set2 = Xset.new do |s|
+      s.extension = {
+         Xsubset.new("key"){|s| s.extension = {Entity.new("_:journal1")=>{}}}=>Xsubset.new("key"){|ss| ss.extension = {Entity.new("e")=>{}}},
+
+      }
+      s.server = @papers_server
+      s.id = "set2"
+      s.resulted_from = set1
+    end
+    assert_equal [["set1", Entity.new("_:paper1")], ["set2", Xsubset.new("key"){|s| s.extension = {Entity.new("_:journal1")=>{}}}]], set2.trace_domains(Entity.new("e"))
+  end
+  
+  def test_trace
+    set1 = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:paper1") => {}
+      }
+      s.server = @papers_server
+      s.id = "s1"
+    end
+    
+    set2 = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:paper1") => Xsubset.new("key"){|s| s.extension = {Entity.new("_:journal1")=>{}}}
+      }
+      s.server = @papers_server
+      s.id = "s2"
+    end
+    
+    set3 = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:journal1") => Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(2000) => {}}}
+      }
+      s.server = @papers_server
+      s.id = "s3"
+    end
+    
+    set2.resulted_from = set1
+    set3.resulted_from = set2
+
+    expected_rs = [["s1", Entity.new("_:paper1")], ["s2", Entity.new("_:paper1")], ["s3", Entity.new("_:journal1")]]
+    assert_equal expected_rs, set3.trace_domains(Xpair::Literal.new(2000))
+    
+  end
+  
+  def test_each_image_empty
+    set1 = Xset.new do |s|
+      s.extension = {}
+      s.server = @papers_server
+    end
+    assert_equal [], set1.each_image
   end
   
   def test_trace_image_single
@@ -112,14 +184,11 @@ class MergeTest < XpairUnitTest
     end
     set2 = Xset.new do |s|
       s.extension = {
-        Entity.new("_:journal1") => {}
-      }
-      s.relation_index = {
         Entity.new("_:paper1") => {Entity.new("_:journal1")=>{}}
       }
       s.server = @papers_server
     end
-    expected_rs = {Entity.new("_:journal1")=>{}}
+    expected_rs = Set.new([Entity.new("_:journal1")])
     assert_equal expected_rs, set1.trace_image(Entity.new("_:paper1"), [set2])
   end
   
@@ -132,24 +201,18 @@ class MergeTest < XpairUnitTest
     end
     set2 = Xset.new do |s|
       s.extension = {
-        Entity.new("_:journal1") => {}
-      }
-      s.relation_index = {
         Entity.new("_:paper1") => {Entity.new("_:journal1")=>{}}
       }
       s.server = @papers_server
     end
     set3 = Xset.new do |s|
       s.extension = {
-        Xpair::Literal.new(2000) => {}
-      }
-      s.relation_index = {
         Entity.new("_:journal1") => {Xpair::Literal.new(2000) => {}}
       }
       s.server = @papers_server
     end
 
-    expected_rs = {Entity.new("_:journal1")=>{Xpair::Literal.new(2000) => {}}}
+    expected_rs = Set.new([Xpair::Literal.new(2000)])
     assert_equal expected_rs, set1.trace_image(Entity.new("_:paper1"), [set2, set3])
   end
   
@@ -163,64 +226,51 @@ class MergeTest < XpairUnitTest
     end
     set2 = Xset.new do |s|
       s.extension = {
-        Entity.new("_:journal1") => {},
-        Entity.new("_:journal2") => {},
-        Entity.new("_:journal3") => {}
-      }
-      s.relation_index = {
-        Entity.new("_:paper1") => {
-          Xsubset.new(set2, 1){|ss|
+        Entity.new("_:paper1") => 
+          Xsubset.new("key"){|ss|
             ss.extension = {
               Entity.new("_:journal1")=>{},
               Entity.new("_:journal2")=>{}
             }
-          } => {}
-        },
-        Entity.new("_:paper2") => {
-          Xsubset.new(set2, 1){|ss|
+          },
+        Entity.new("_:paper2") => 
+          Xsubset.new("key"){|ss|
             ss.extension = {
               Entity.new("_:journal2")=>{},
               Entity.new("_:journal3")=>{}
             }
-          } => {}
-        }
-        
+          }
       }
+      
       s.server = @papers_server
     end
+    
     set3 = Xset.new do |s|
       s.extension = {
-        Xpair::Literal.new(2000) => {}
-      }
-      s.relation_index = {
-        Xsubset.new(set2, 1){|ss|
+        Xsubset.new("key"){|ss|
           ss.extension = {
             Entity.new("_:journal1")=>{},
             Entity.new("_:journal2")=>{}
           }
         } => {Xpair::Literal.new(2000) => {}},
-        Xsubset.new(set2, 1){|ss|
+        Xsubset.new("key"){|ss|
           ss.extension = {
             Entity.new("_:journal2")=>{},
             Entity.new("_:journal3")=>{}
           }
-        } => {Xpair::Literal.new(2001) => {}}
+        } => {Xpair::Literal.new(2001)=>{}}
         
       }
       s.server = @papers_server
     end
-    expected_rs = {
-      Xsubset.new(set2, 1){|ss|
-        ss.extension = {
-          Entity.new("_:journal1")=>{},
-          Entity.new("_:journal2")=>{}
-        }
-      } => {Xpair::Literal.new(2000) => {}}
-    }
+    set3.resulted_from= set2
+    set2.resulted_from= set1
+    expected_rs = Set.new([Xpair::Literal.new(2000)])
+
     assert_equal expected_rs, set1.trace_image(Entity.new("_:paper1"), [set2, set3])
   end
   
-  def test_trace_image_aggregator
+  def test_trace_image_aggregator2
     set1 = Xset.new do |s|
       s.extension = {
         Entity.new("_:paper1") => {},
@@ -230,48 +280,71 @@ class MergeTest < XpairUnitTest
     end
     set2 = Xset.new do |s|
       s.extension = {
-        Entity.new("_:journal1") => {},
-        Entity.new("_:journal2") => {},
-        Entity.new("_:journal3") => {}
-      }
-      s.relation_index = {
-        Entity.new("_:paper1") => {
-          Xsubset.new(set2, 1){|ss|
+        Entity.new("_:paper1") => 
+          Xsubset.new("key"){|ss|
             ss.extension = {
               Entity.new("_:journal1")=>{},
               Entity.new("_:journal2")=>{}
             }
-          } => {}
-        },
-        Entity.new("_:paper2") => {
-          Xsubset.new(set2, 1){|ss|
+          },
+        Entity.new("_:paper2") => 
+          Xsubset.new("key"){|ss|
             ss.extension = {
               Entity.new("_:journal2")=>{},
               Entity.new("_:journal3")=>{}
             }
-          } => {}
-        }
-        
+          }
       }
       s.server = @papers_server
     end
     set3 = Xset.new do |s|
       s.extension = {
-        Xpair::Literal.new(2000) => {},
-        Xpair::Literal.new(2001) => {},
-        Xpair::Literal.new(2002) => {}
-      }
-      s.relation_index = {
-        Entity.new("_:journal1")=>{Xpair::Literal.new(2001) => {}},
-        Entity.new("_:journal2") => {Xpair::Literal.new(2000) => {}},
-        Entity.new("_:journal3")=>{Xpair::Literal.new(2002) => {}}
+        Xsubset.new("key"){|ss|
+          ss.extension = {
+            Entity.new("_:journal1")=>{},
+            Entity.new("_:journal2")=>{}
+          }
+        } => {Xpair::Literal.new(2000)=>{}},
+        Xsubset.new("key"){|ss|
+          ss.extension = {
+            Entity.new("_:journal2")=>{},
+            Entity.new("_:journal3")=>{}
+          }
+        } => Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(2001)=>{},Xpair::Literal.new(2002)=>{} }}
+        
       }
       s.server = @papers_server
     end
-    expected_rs = {
-      Entity.new("_:journal1")=>{Xpair::Literal.new(2001) => {}},
-      Entity.new("_:journal2") => {Xpair::Literal.new(2000) => {}}
-    }
-    assert_equal expected_rs, set1.trace_image(Entity.new("_:paper1"), [set2, set3])
+    expected_rs = Set.new([Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(2001)=>{},Xpair::Literal.new(2002)=>{} }}])
+
+    assert_equal expected_rs, set1.trace_image(Entity.new("_:paper2"), [set2, set3])
   end
+  
+  def test_paginate
+    s = Xset.new do |s|
+      s << Entity.new("_:paper1")
+      s << Entity.new("_:p2")
+      s << Entity.new("_:p3")
+      s << Entity.new("_:p4")
+      s << Entity.new("_:p5")
+      s << Entity.new("_:p6")
+      s << Entity.new("_:p7")
+      s << Entity.new("_:p8")
+      s << Entity.new("_:p9")
+      s << Entity.new("_:p10")
+    end
+    s.server = @papers_server
+    s.paginate(3)
+    assert_equal 4, s.count_pages
+    
+    assert_equal Set.new([Entity.new("_:paper1"), Entity.new("_:p2"), Entity.new("_:p3")]), Set.new(s.each_image(page: 1))
+    assert_equal Set.new([Entity.new("_:p4"), Entity.new("_:p5"), Entity.new("_:p6")]), Set.new(s.each_image(page: 2))
+    assert_equal Set.new([Entity.new("_:p7"), Entity.new("_:p8"), Entity.new("_:p9")]), Set.new(s.each_image(page: 3))
+    assert_equal Set.new([Entity.new("_:p10")]), Set.new(s.each_image(page: 4))
+    
+  end
+  
+  
+  
+
 end

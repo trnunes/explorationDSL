@@ -80,6 +80,19 @@ class EvalPapersFunctionalTest < XpairUnitTest
   
   def test_task_eval_paper
     papers_set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:paper1") => {},
+        Entity.new("_:p2") => {},
+        Entity.new("_:p3") => {},
+        Entity.new("_:p4") => {},
+        Entity.new("_:p5") => {},
+        Entity.new("_:p6") => {},
+        Entity.new("_:p7") => {},
+        Entity.new("_:p8") => {},
+        Entity.new("_:p9") => {},
+        Entity.new("_:p10") => {},
+        
+      }
       s.server = @papers_server
     end
     
@@ -92,26 +105,32 @@ class EvalPapersFunctionalTest < XpairUnitTest
     
     #CALCULANDO o ano médio das referências
     citations = s0.pivot_forward(["_:cite"])
-
+    subset1 = Xsubset.new do |s|
+      s.extension = {
+        Entity.new("_:p2") => {},
+        Entity.new("_:p3") => {},
+        Entity.new("_:p4") => {}
+      }
+    end
     expected_extension = {
-      Entity.new("_:p2") => {},
-      Entity.new("_:p3") => {},
-      Entity.new("_:p4") => {}
+      Entity.new("_:paper1") => subset1
     }
     assert_equal citations.extension, expected_extension
     
     publication_years = citations.pivot_forward(["_:publicationYear"])
     expected_extension = {
-      Xpair::Literal.new(2000) => {},
-      Xpair::Literal.new(1998) => {},
-      Xpair::Literal.new(2010) => {}
+      Entity.new("_:p2")=>Xsubset.new(){|s| s.extension = {Xpair::Literal.new(2000) => {}}},
+      Entity.new("_:p3")=>Xsubset.new(){|s| s.extension = {Xpair::Literal.new(1998) => {}}},
+      Entity.new("_:p4")=>Xsubset.new(){|s| s.extension = {Xpair::Literal.new(2010) => {}}}
     }
 
     assert_equal expected_extension, publication_years.extension
     
-    meanYear = publication_years.map{|mf| mf.avg}
+    meanYear = publication_years.flatten.map{|mf| mf.avg}
     expected_extension = {
-      Xpair::Literal.new(2002) => {}
+      Xsubset.new() do |s| 
+        s.extension = {Xpair::Literal.new(2000) => {}, Xpair::Literal.new(1998) => {}, Xpair::Literal.new(2010) => {}}
+      end => {Xpair::Literal.new(2002) => {}}
     }
     assert_equal expected_extension, meanYear.extension
     
@@ -119,9 +138,7 @@ class EvalPapersFunctionalTest < XpairUnitTest
     keywords = s0.pivot_forward(["_:keywords"])
     
     expected_extension = {
-      Entity.new("_:k1") => {},
-      Entity.new("_:k2") => {},
-      Entity.new("_:k3") => {}
+      Entity.new("_:paper1") => Xsubset.new{|s| s.extension = {Entity.new("_:k1") => {},Entity.new("_:k2") => {},Entity.new("_:k3") => {}}}
     }
     
     assert_equal expected_extension, keywords.extension
@@ -143,17 +160,14 @@ class EvalPapersFunctionalTest < XpairUnitTest
     
     related_papers_citations = papers_with_keywords.pivot_backward(["_:cite"])
     expected_extension = {
-      Entity.new("_:paper1") => {},
-      Entity.new("_:p6") => {},
-      Entity.new("_:p7") => {},
-      Entity.new("_:p8") => {},
-      Entity.new("_:p9") => {},
-      Entity.new("_:p10") => {}     
+      Entity.new("_:p2") => Xsubset.new{|s| s.extension = {Entity.new("_:paper1")=>{}, Entity.new("_:p6")=>{}}},
+      Entity.new("_:p3") => Xsubset.new{|s| s.extension = {Entity.new("_:paper1")=>{}, Entity.new("_:p6")=>{},Entity.new("_:p7")=>{}, Entity.new("_:p8")=>{}}},
+      Entity.new("_:p5") => Xsubset.new{|s| s.extension = {Entity.new("_:p7")=>{}, Entity.new("_:p6")=>{}, Entity.new("_:p8")=>{}, Entity.new("_:p9")=>{}, Entity.new("_:p10")=>{}}}
     }
     
     assert_equal expected_extension, related_papers_citations.extension
     
-    ranked_papers = papers_with_keywords.rank{|f| f.by_relation([papers_with_keywords.map{|mf| mf.image_count(related_papers_citations)}])}
+    ranked_papers = papers_with_keywords.rank{|f| f.by_relation([papers_with_keywords.map{|mf| mf.image_count([related_papers_citations])}])}
     
     expected_extension = {
       Entity.new("_:p5") => {}, 
@@ -176,8 +190,7 @@ class EvalPapersFunctionalTest < XpairUnitTest
     authors = s0.pivot_forward(["_:author"])
     
     expected_extension = {
-      Entity.new("_:a1") => {},
-      Entity.new("_:a2") => {}
+      Entity.new("_:paper1") => Xsubset.new{|s| s.extension = {Entity.new("_:a1") => {}, Entity.new("_:a2") => {}}}
     }
     
     assert_equal expected_extension, authors.extension
@@ -185,10 +198,8 @@ class EvalPapersFunctionalTest < XpairUnitTest
     papers_of_authors = authors.pivot_backward(["_:author"])
     
     expected_extension = {
-      Entity.new("_:paper1") => {},
-      Entity.new("_:p2") => {},
-      Entity.new("_:p3") => {},
-      Entity.new("_:p5") => {}
+      Entity.new("_:a1") => Xsubset.new{|s| s.extension = {Entity.new("_:paper1") => {}, Entity.new("_:p2") => {}, Entity.new("_:p5")=>{}}},
+      Entity.new("_:a2") => Xsubset.new{|s| s.extension = {Entity.new("_:paper1") => {}, Entity.new("_:p5") => {}, Entity.new("_:p3") => {}}}
     }
     
     assert_equal expected_extension, papers_of_authors.extension
@@ -204,22 +215,27 @@ class EvalPapersFunctionalTest < XpairUnitTest
     missing_papers_count = intersection.map{|m| m.count}
     
     expected_extension = {
-      2 => {}
+       intersection => {Xpair::Literal.new(2)=>{}}
     }
     
     #Avaliando quantas citações foram também publicadas no mesmo journal
     submitted_journal = s0.pivot_forward(["_:submittedTo"])
     
     expected_extension = {
-      Entity.new("_:journal1") => {}
+      Entity.new("_:paper1") => Xsubset.new{|s| s.extension = {Entity.new("_:journal1") => {}}}
     }
     assert_equal expected_extension, submitted_journal.extension
     
-    citations_published_same_journal = citations.refine{|f| f.equals(relations: [Relation.new("_:publishedOn")], values: submitted_journal.first)} 
+    citations_published_same_journal = citations.refine{|f| f.equals(relations: [Relation.new("_:publishedOn")], values: submitted_journal.first.first)} 
     
+    subset2 = Xsubset.new do |s|
+      s.extension = {
+        Entity.new("_:p2") => {},
+        Entity.new("_:p4") => {}
+      }
+    end
     expected_extension = {
-      Entity.new("_:p2") => {},
-      Entity.new("_:p4") => {}
+      subset1 => subset2
     }
     
     assert_equal expected_extension, citations_published_same_journal.extension

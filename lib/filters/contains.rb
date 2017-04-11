@@ -15,7 +15,7 @@ module Filtering
     def eval(set)
       count = 0
       f = build_query_filter(set)
-      
+
       f.union do |u|
         @values.each do |value|
           u.relation_equals(@relations, value) 

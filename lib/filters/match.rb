@@ -18,7 +18,7 @@ module Filtering
       extension = set.extension_copy
       
       if(@relations.nil?)
-        set.each.select{|item| item.to_s.match(/#{@pattern}/).nil?}.each do |removed_item|        
+        set.each_item.select{|item| item.to_s.match(/#{@pattern}/).nil?}.each do |removed_item|        
           extension.delete(removed_item) 
         end          
       else        

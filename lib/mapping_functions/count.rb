@@ -9,13 +9,16 @@ module Mapping
     
     def map(xset)
       @count = 0
-      xset.each do |item|
+      xset.each_item do |item|
         @count += 1
       end
-      mappings = {Xpair::Literal.new(@count) => {}}
-      result_index[xset] = {Xpair::Literal.new(@count)=>{}}
-
-      [mappings, result_index]
+      if xset.is_a? Xsubset
+        mappings = {xset => Xsubset.new(xset.key){|s| s.extension = {Xpair::Literal.new(@count) => {}}}}
+      else
+        mappings = {xset=>Xpair::Literal.new(@count)}
+      end
+      
+      mappings
     end
   end
 

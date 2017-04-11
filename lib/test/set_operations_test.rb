@@ -87,25 +87,88 @@ class SetOperationsTest < XpairUnitTest
       
   end
   def test_union
-    set1 = Xset.new do |s|
+    set1 = Xsubset.new("key") do |s|
+      s.extension = {
+        Entity.new("_:u2")=>{}
+      }
+    end
+    set2 = Xsubset.new("key") do |s|
+      s.extension = {
+        Entity.new("_:u1")=>{},
+      }
+    end
+    
+    set3 = Xsubset.new("key") do |s|
+      s.extension = {
+        Relation.new("_:r")=> set1,
+      }
+    end
+    
+    set4 = Xsubset.new("key") do |s|
+      s.extension = {
+        Relation.new("_:r")=> set2,
+      }
+    end
+
+    
+    setA = Xset.new do |s|
       
-      s.extension[Entity.new("_:t1")]= {Relation.new("_:r")=>{Entity.new("_:u1")=>{}}}
-      s.extension[Entity.new("_:t2")]= {Relation.new("_:r")=>{Entity.new("_:u2")=>{}}}
+      s.extension[Entity.new("_:t1")]= set3
+      s.extension[Entity.new("_:t2")]= set4
       s.id = "target set"
     end
     
-    set2 = Xset.new do |s|
-      s.extension[Entity.new("_:t1")]= {Relation.new("_:r")=>{Entity.new("_:e1")=>{}}}
-      s.extension[Entity.new("_:i2")]= {Relation.new("_:r")=>{Entity.new("_:t2")=>{}}}
+    setB1 = Xsubset.new("key") do |s|
+      s.extension = {
+        Entity.new("_:e1")=>{}
+      }
+    end
+    setB2 = Xsubset.new("key") do |s|
+      s.extension = {
+        Entity.new("_:t2")=>{},
+      }
+    end
+    
+    setB3 = Xsubset.new("key") do |s|
+      s.extension = {
+        Relation.new("_:r")=> setB1,
+      }
+    end
+    
+    setB4 = Xsubset.new("key") do |s|
+      s.extension = {
+        Relation.new("_:r")=> setB2,
+      }
+    end
+    
+    
+    setB = Xset.new do |s|
+      s.extension[Entity.new("_:t1")]= setB3
+      s.extension[Entity.new("_:i2")]= setB4
       s.id = "mid_set"
     end
+    
+    set2U1 = Xsubset.new("key") do |s|
+      s.extension = {
+        Entity.new("_:e1")=>{},
+        Entity.new("_:u2")=>{},
+      }
+    end
+    
+    setr = Xsubset.new("key") do |s|
+      s.extension = {
+        Relation.new("_:r")=> set2U1,
+      }
+    end
+    
     expected_extension = {}
 
-    expected_extension[Entity.new("_:t1")]= {Relation.new("_:r")=>{Entity.new("_:e1")=>{}, Entity.new("_:u1")=>{}}}
-    expected_extension[Entity.new("_:t2")]= {Relation.new("_:r")=>{Entity.new("_:u2")=>{}}}
-    expected_extension[Entity.new("_:i2")]= {Relation.new("_:r")=>{Entity.new("_:t2")=>{}}}
+    expected_extension[set1]= set1
+    expected_extension[set2]= set2
+    expected_extension[setB1]= setB1
+    expected_extension[setB2]= setB2
     
-    rs = set1.union(set2)
+    rs = setA.union(setB)
 
     assert_equal expected_extension, rs.extension
 

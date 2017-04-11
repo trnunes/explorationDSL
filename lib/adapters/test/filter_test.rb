@@ -70,6 +70,13 @@ class FilterTest < Test::Unit::TestCase
   
   def test_relation_filter
     filter = @server.begin_filter do |f|
+      f.union do |u|
+        u.equals(Entity.new("_:p1"))
+        u.equals(Entity.new("_:p2"))
+        u.equals(Entity.new("_:p3"))
+        u.equals(Entity.new("_:p4"))
+        
+      end
       f.relation_equals([Entity.new("_:r1")], Entity.new("_:o1"))
     end
     expected_results = Set.new([Entity.new("_:p1")])
@@ -86,6 +93,7 @@ class FilterTest < Test::Unit::TestCase
   
   def test_relation_path_filter
     filter = @server.begin_filter do |f|
+
       f.relation_equals([Entity.new("_:r6"), Entity.new("_:r7")], Xpair::Literal.new("path"))
     end
   end

@@ -14,7 +14,8 @@ module Ranking
     def score(item)
       relation_set = self.get_relation_set()
       
-      sort_value = HashHelper.leaves(self.source_set.trace_image(item, relation_set.dup)).first
+      sort_value = self.source_set.trace_image_items(item, relation_set.dup).first
+      # binding.pry
       if sort_value.nil?
         return -Float::INFINITY
       end
@@ -25,7 +26,6 @@ module Ranking
       else
         sort_value.to_s
       end
-      
     end    
     
     
@@ -45,7 +45,7 @@ module Ranking
     end
   end
   
-  def self.by_relation(relations)
-    ByRelation.new(relations)
+  def self.by_relation(args={})
+    ByRelation.new(args[:relations])
   end
 end

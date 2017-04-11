@@ -20,7 +20,9 @@ module Xpair
         @@namespace_map.values.each do |namespace|
           if(uri.include?(namespace.uri))
             prefix = namespace.prefix 
-            return prefix +":"+ uri.split(namespace.uri)[1]
+            if uri.split(namespace.uri).size > 1
+              return prefix +":"+ uri.split(namespace.uri)[1]
+            end
           end
         end
         return uri

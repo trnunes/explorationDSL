@@ -10,7 +10,21 @@ module AuxiliaryOperations
   end
   
   def project(relation)
-    @projections
+    items_hash = {}
+    self.each_item do |item|
+      items_hash[item.id] = item
+    end
+    
+    self.pivot_forward([relation]).extension.each do |item, values|
+      literal = ""
+      labels = []
+      values.each_item do |label|
+        labels << label
+      end
+      
+      items_hash[item.id].text = labels.join " | "
+    end
+    self    
   end
 
   def group_by_image_and_relation

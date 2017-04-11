@@ -12,14 +12,13 @@ module Mapping
     
     def map(xset)
       if self.relations.nil?
-        xset.each do |item|
+        xset.flatten.each_item do |item|
           @sum += item.value
           @count += 1
         end
-        avg = Xpair::Literal.new(@sum/@count)
-        mappings[avg] = {}
-        result_index[xset] = {avg=>{}}
-        [mappings, result_index]        
+        avg = Xpair::Literal.new(@sum.to_f/@count.to_f)
+        mappings[xset] = avg
+        mappings
       else
         self.relations_map(xset)
       end
@@ -33,12 +32,12 @@ module Mapping
       else
         relation_sets = self.relations
       end
-      xset.each do |item|
-        leaves = HashHelper.leaves(xset.trace_image(item, relation_sets.dup))
+      xset.each_image do |item|
+        leaves = xset.trace_image_items(item, relation_sets.dup)
         avg = Xpair::Literal.new(leaves.inject{ |sum, literal| sum.value + literal.value }.to_f/leaves.size.to_f)
-        mappings[item] = {avg => {}}
+        mappings[item] = avg
       end        
-      [mappings, HashHelper.copy(mappings)]
+      mappings
     end
   end
 

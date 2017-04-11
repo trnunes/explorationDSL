@@ -151,7 +151,7 @@ class RankTest < XpairUnitTest
       Entity.new("_:p4") => {}
     }
     
-    assert_equal expected_extension, test_set1.rank{|rf| rf.by_relation([test_set2])}.extension
+    assert_equal expected_extension, test_set1.rank{|rf| rf.by_relation(relations: [test_set2])}.extension
     
   end
   
@@ -171,8 +171,22 @@ class RankTest < XpairUnitTest
       Entity.new("_:p4") => {}
     }
     
-    assert_equal expected_extension, test_set1.rank{|rf| rf.by_relation([Relation.new("_:publicationYear")])}.extension
+    assert_equal expected_extension, test_set1.rank{|rf| rf.by_relation(relations: [Relation.new("_:publicationYear")])}.extension
     
+  end
+  
+  def test_rank_empty_images
+    test_set1 = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:paper1") => {},
+        Entity.new("_:p4") => {},
+        Entity.new("_:p2") => {},
+        Entity.new("_:p3") => {}
+      }
+      s.server = @papers_server
+    end
+    rs = test_set1.rank{|gf| gf.by_relation(relations: [Relation.new("_:publishedOn")])}
+
   end
   
   def test_rank_by_two_steps
@@ -194,9 +208,52 @@ class RankTest < XpairUnitTest
     
     set1 = test_set1.pivot_forward([Relation.new("_:publishedOn")])
     set2 = set1.pivot_forward([Relation.new("_:releaseYear")])
-    rs = test_set1.rank{|gf| gf.by_relation([set2, set1])}
+    rs = test_set1.rank{|gf| gf.by_relation(relations: [set2, set1])}
     HashHelper.print_hash(rs.extension)
     assert_equal expected_extension, rs.extension
+  end
+  
+  def test_pivot_map_rank
+    test_set1 = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:p7") => {},
+        Entity.new("_:paper1") => {},
+        Entity.new("_:p9") => {}
+
+      }
+      s.server = @papers_server
+    end
+    expected_extension = {
+      Entity.new("_:paper1") => {},
+      Entity.new("_:p7") => {},
+      Entity.new("_:p9") => {}
+    }
+    
+    set1 = test_set1.pivot_forward([Relation.new("_:cite")])
+    set2 = set1.map{|mf| mf.count}
+    rs = test_set1.rank{|gf| gf.by_relation(relations: [set2])}
+    HashHelper.print_hash(rs.extension)
+    assert_equal expected_extension, rs.extension
+    
+  end
+  
+  def test_group_by_rank
+    test_set1 = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:paper1") => {},
+        Entity.new("_:p8") => {},
+        Entity.new("_:p7") => {}
+
+      }
+      s.server = @papers_server
+    end
+    
+    set1 = test_set1.group{|g| g.by_relation(relations: [Relation.new("_:cite")])}
+    set2 = set1.map{|mf| mf.count}
+    rs = set1.rank{|gf| gf.by_relation(relations: [set2])}
+    HashHelper.print_hash(rs.extension)
+    assert_equal [Entity.new("_:p5"), Entity.new("_:p3"), Entity.new("_:p2")], rs.extension.keys.to_a
+    
   end
   
     

@@ -68,8 +68,8 @@ class RefineTest < XpairUnitTest
       graph << [RDF::URI("_:p3"),  RDF::URI("_:publishedOn"), RDF::URI("_:journal2")]
       graph << [RDF::URI("_:p4"),  RDF::URI("_:publishedOn"), RDF::URI("_:journal1")]
       
-      graph << [RDF::URI("_:journal1"),  RDF::URI("_:releaseYear"), 2005]
-      graph << [RDF::URI("_:journal2"),  RDF::URI("_:releaseYear"), 2010]
+      graph << [RDF::URI("_:journal1"),  RDF::URI("_:releaseYear"), RDF::Literal.new(2005)]
+      graph << [RDF::URI("_:journal2"),  RDF::URI("_:releaseYear"), RDF::Literal.new(2010)]
       
       graph << [RDF::URI("_:paper1"),  RDF::URI("_:keywords"), RDF::URI("_:k1")]
       graph << [RDF::URI("_:paper1"),  RDF::URI("_:keywords"), RDF::URI("_:k2")]
@@ -79,15 +79,25 @@ class RefineTest < XpairUnitTest
       graph << [RDF::URI("_:p3"),  RDF::URI("_:keywords"), RDF::URI("_:k2")]
       graph << [RDF::URI("_:p5"),  RDF::URI("_:keywords"), RDF::URI("_:k1")]
       
-      graph << [RDF::URI("_:p2"),  RDF::URI("_:publicationYear"), 2000]
-      graph << [RDF::URI("_:p3"),  RDF::URI("_:publicationYear"), 1998]
-      graph << [RDF::URI("_:p4"),  RDF::URI("_:publicationYear"), 2010]     
+      graph << [RDF::URI("_:p2"),  RDF::URI("_:publicationYear"), RDF::Literal.new(2000)]
+      graph << [RDF::URI("_:p3"),  RDF::URI("_:publicationYear"), RDF::Literal.new(1998)]
+      graph << [RDF::URI("_:p4"),  RDF::URI("_:publicationYear"), RDF::Literal.new(2010)]     
     end
 
     @papers_server = RDFDataServer.new(papers_graph)
       
   end
   
+  def test_refine_empty
+    set = Xset.new
+    set.server = @papers_server
+    
+    assert_true set.refine{|f| f.equals(values: [Entity.new("_:p2")])}.empty?
+    assert_true set.refine{|rf| rf.image_equals(relations: [Xset.new], values: [Entity.new("_:a1")])}.empty?
+    assert_true set.refine{|f| f.match(values: "_:p")}.empty?
+    assert_true set.refine{|f| f.keyword_match(keywords: ['journal',])}.empty?
+    assert_true set.select_items([Entity.new("_:a1"), Relation.new("_:author")]).empty?
+  end
   
   def test_refine_equal
     set = Xset.new do |s| 
@@ -115,10 +125,7 @@ class RefineTest < XpairUnitTest
     end
     
     set2 = Xset.new do |s| 
-      s << Entity.new("_:a1")
-      s << Entity.new("_:a2")
-      
-      s.relation_index = {
+      s.extension = {
         Entity.new("_:p1") => {Entity.new("_:a1")=>{}},
         Entity.new("_:p2") => {Entity.new("_:a1")=>{}},
         Entity.new("_:p3") => {Entity.new("_:a2")=>{}}
@@ -141,49 +148,82 @@ class RefineTest < XpairUnitTest
       s << Entity.new("_:p2")
       s << Entity.new("_:p3")
     end
-    
+    set.save
     set2 = Xset.new do |s| 
-      s << Entity.new("_:a1")
-      s << Entity.new("_:a2")
-      s << Entity.new("_:a3")
-      s << Entity.new("_:a4")
-      
-      s.relation_index = {
-        Entity.new("_:p1") => {Xsubset.new(set, 1){|s| s.extension = {Entity.new("_:a1")=>{}, Entity.new("_:a2")=>{}}}=>{}},
-        Entity.new("_:p2") => {Xsubset.new(set, 1){|s| s.extension = {Entity.new("_:a1")=>{}, Entity.new("_:a3")=>{}}}=>{}},
-        Entity.new("_:p3") => {Xsubset.new(set, 1){|s| s.extension = {Entity.new("_:a4")=>{}}}=>{}}
+      s.extension = {
+        Entity.new("_:p1") => Xsubset.new("key"){|s| s.extension = {Entity.new("_:a1")=>{}, Entity.new("_:a2")=>{}}},
+        Entity.new("_:p2") => Xsubset.new("key"){|s| s.extension = {Entity.new("_:a1")=>{}, Entity.new("_:a3")=>{}}},
+        Entity.new("_:p3") => Xsubset.new("key"){|s| s.extension = {Entity.new("_:a4")=>{}}}
       }
       s.resulted_from = set
     end
+    set2.save
     
-    set3 = Xset.new do |s| 
-      s << Xpair::Literal.new(2)
-      s << Xpair::Literal.new(2)
-      s << Xpair::Literal.new(1)
-      
-      s.relation_index = {
-        Xsubset.new(set2, 1) do |s|
+    set3 = Xset.new do |s|       
+      s.extension = {
+        Xsubset.new("key") do |s|
           s.extension = {Entity.new("_:a1")=>{}, Entity.new("_:a2")=>{}} 
         end => {Xpair::Literal.new(2)=>{}},
-        Xsubset.new(set2, 1) do |s|
+        Xsubset.new("key") do |s|
           s.extension = {Entity.new("_:a1")=>{}, Entity.new("_:a3")=>{}}
         end => {Xpair::Literal.new(2)=>{}},
-        Xsubset.new(set2, 1) do |s|
+        Xsubset.new("key") do |s|
           s.extension = {Entity.new("_:a4")=>{}}
         end => {Xpair::Literal.new(1)=>{}},
       }
       s.resulted_from = set2
     end
+    set3.save
 
     expected_extension = {
-      Entity.new("_:p1") => {},
-      Entity.new("_:p2") => {}
+    Entity.new("_:p1") => {}, 
+    Entity.new("_:p2") => {}
     }
     
     rs = set.refine{|rf| rf.image_equals(relations: [set2, set3], values: Xpair::Literal.new("2"))}
     assert_equal expected_extension, rs.extension
   end
 
+  def test_refine_subsets
+    set = Xset.new do |s| 
+      s << Entity.new("_:p1") 
+      s << Entity.new("_:p2")
+      s << Entity.new("_:p3")
+    end
+    set.save
+    set2 = Xset.new do |s| 
+      s.extension = {
+        Entity.new("_:p1") => Xsubset.new("key"){|s| s.extension = {Entity.new("_:a1")=>{}, Entity.new("_:a2")=>{}}},
+        Entity.new("_:p2") => Xsubset.new("key"){|s| s.extension = {Entity.new("_:a1")=>{}, Entity.new("_:a3")=>{}}},
+        Entity.new("_:p3") => Xsubset.new("key"){|s| s.extension = {Entity.new("_:a4")=>{}}}
+      }
+      s.resulted_from = set
+    end
+    set2.save
+    
+    set3 = Xset.new do |s|       
+      s.extension = {
+        Xsubset.new("key") do |s|
+          s.extension = {Entity.new("_:a1")=>{}, Entity.new("_:a2")=>{}} 
+        end => {Xpair::Literal.new(2)=>{}},
+        Xsubset.new("key") do |s|
+          s.extension = {Entity.new("_:a1")=>{}, Entity.new("_:a3")=>{}}
+        end => {Xpair::Literal.new(2)=>{}},
+        Xsubset.new("key") do |s|
+          s.extension = {Entity.new("_:a4")=>{}}
+        end => {Xpair::Literal.new(1)=>{}},
+      }
+      s.resulted_from = set2
+    end
+    set3.save
+
+    expected_extension = {
+      Entity.new("_:p1") => Xsubset.new("key"){|s| s.extension = {Entity.new("_:a1")=>{}, Entity.new("_:a2")=>{}}},
+      Entity.new("_:p2") => Xsubset.new("key"){|s| s.extension = {Entity.new("_:a1")=>{}, Entity.new("_:a3")=>{}}},
+    }    
+    rs = set2.refine{|rf| rf.image_equals(relations: [set3], values: Xpair::Literal.new("2"))}
+    assert_equal expected_extension, rs.extension
+  end
   
   def test_refine_equal_literal
     set = Xset.new do |s| 
@@ -264,6 +304,45 @@ class RefineTest < XpairUnitTest
     assert_equal expected_extension, relation.extension
   end
   
+  def test_refine_relation_equal_AND
+    set = Xset.new do |s| 
+      s << Entity.new("_:paper1")
+      s << Entity.new("_:p2")
+      s << Entity.new("_:p5")
+    end
+    
+    set.server = @papers_server
+    
+    relation = set.refine{|f| f.image_equals(relations: [set.pivot_forward([Relation.new("_:author")])], values: [Entity.new("_:a1"), Entity.new("_:a2")])}
+    
+    expected_extension = { 
+     Entity.new("_:paper1") => {},
+     Entity.new("_:p5") => {}      
+    }    
+    
+    assert_equal expected_extension, relation.extension
+  end
+
+  def test_refine_relation_equal_OR
+    set = Xset.new do |s| 
+      s << Entity.new("_:paper1")
+      s << Entity.new("_:p10")
+      s << Entity.new("_:p5")
+    end
+    
+    set.server = @papers_server
+    
+    relation = set.refine{|f| f.image_equals(relations: [set.pivot_forward([Relation.new("_:author")])], values: [Entity.new("_:a1"), Entity.new("_:a2")], connector: "OR")}
+    
+    expected_extension = { 
+     Entity.new("_:paper1") => {},
+     Entity.new("_:p5") => {}      
+    }    
+    
+    assert_equal expected_extension, relation.extension
+  end
+  
+  
   def test_refine_relation_match
     set = Xset.new do |s| 
       s << Entity.new("_:p1")
@@ -296,7 +375,6 @@ class RefineTest < XpairUnitTest
     
     expected_extension = { 
       Entity.new("_:p2") => {},
-      Entity.new("_:journal1") => {},
       Entity.new("_:journal2") => {}      
     }    
     assert_equal expected_extension, relation.extension
@@ -317,11 +395,11 @@ class RefineTest < XpairUnitTest
   def test_select
     set = Xset.new do |s|
       s.extension = {
-        Relation.new("_:author") => {Entity.new("_:a1")=>{}},
-        Relation.new("_:publishedOn") => {Entity.new("_:journal1")=>{}},
-        Relation.new("_:publicationYear") => {Xpair::Literal.new(2000)=>{}},
-        Relation.new("_:keywords") => {Entity.new("_:k3")=>{}},
-        Relation.new("_:cite", true) => {Entity.new("_:paper1")=>{}, Entity.new("_:p6")=>{}}
+        Relation.new("_:author") =>          Xsubset.new("key"){|s| s.extension = {Entity.new("_:a1")=>{}}},
+        Relation.new("_:publishedOn") =>     Xsubset.new("key"){|s| s.extension = {Entity.new("_:journal1")=>{}}},
+        Relation.new("_:publicationYear") => Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(2000)=>{}}},
+        Relation.new("_:keywords") =>        Xsubset.new("key"){|s| s.extension = {Entity.new("_:k3")=>{}}},
+        Relation.new("_:cite", true) =>      Xsubset.new("key"){|s| s.extension = {Entity.new("_:paper1")=>{}, Entity.new("_:p6")=>{}}}
       }      
     
     end
@@ -329,13 +407,13 @@ class RefineTest < XpairUnitTest
       Entity.new("_:a1") => {},
       Relation.new("_:author") => {}
     }
-    assert_equal expected_extension, set.select([Entity.new("_:a1"), Relation.new("_:author")]).extension
+    assert_equal expected_extension, set.select_items([Entity.new("_:a1"), Relation.new("_:author")]).extension
     expected_extension = {
       Relation.new("_:cite", true) => {},
     }
-    assert_equal expected_extension, set.select([Relation.new("_:cite", true)]).extension
+    assert_equal expected_extension, set.select_items([Relation.new("_:cite", true)]).extension
     expected_extension = { }
-    assert_equal expected_extension, set.select([Entity.new("strange_item")]).extension
+    assert_equal expected_extension, set.select_items([Entity.new("strange_item")]).extension
     
   end
   def test_select_2
@@ -351,9 +429,59 @@ class RefineTest < XpairUnitTest
       }
     end
     set.server = @papers_server
-    assert_equal set.group{|gf| gf.by_relation(Relation.new("_:author"))}.extension.keys.size, 2
-    assert !set.group{|gf| gf.by_relation(Relation.new("_:author"))}.select([Entity.new("_:p2")]).extension.empty?
+    assert_equal set.group{|gf| gf.by_relation(relations: [Relation.new("_:author")])}.extension.keys.size, 2
+    assert !set.group{|gf| gf.by_relation(relations: [Relation.new("_:author")])}.select_items([Entity.new("_:p2")]).extension.empty?
   end
+  
+  def test_union_image_equals
+    set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:p1") => {},
+        Entity.new("_:p2") => {},
+        Entity.new("_:p3") => {},
+        Entity.new("_:p4") => {},
+        Entity.new("_:p5") => {},
+        Entity.new("_:p6") => {},
+        Entity.new("_:paper1") => {}                        
+      }
+    end
+    set.server = @papers_server
+    s1 = set.select_items([Entity.new("_:p3")])
+    s2 = set.select_items([Entity.new("_:p2")])
+    union = s1.union(s2)
+    p = union.pivot_forward([Relation.new('_:publicationYear')])
+    
+    rs = union.refine{|f| f.image_equals(relations: [p],values: Xpair::Literal.new('2000', 'http://www.w3.org/2001/XMLSchema#integer'),)}
+    expected_extension = {
+      Entity.new("_:p2") => {}
+    }
+    assert_equal expected_extension, rs.extension
+  end  
+  
+  def test_union_equals
+    set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:p1") => {},
+        Entity.new("_:p2") => {},
+        Entity.new("_:p3") => {},
+        Entity.new("_:p4") => {},
+        Entity.new("_:p5") => {},
+        Entity.new("_:p6") => {},
+        Entity.new("_:paper1") => {}                        
+      }
+    end
+    set.server = @papers_server
+    s1 = set.select_items([Entity.new("_:p3")])
+    s2 = set.select_items([Entity.new("_:p2")])
+    union = s1.union(s2)
+    p = union.pivot_forward([Relation.new('_:publicationYear')])
+    
+    rs = union.refine{|f| f.equals(relations: [Relation.new("_:publicationYear")],values: Xpair::Literal.new('2000', 'http://www.w3.org/2001/XMLSchema#integer'),)}
+    expected_extension = {
+      Entity.new("_:p2") => {}
+    }
+    assert_equal expected_extension, rs.extension
+  end  
   
   # def test_get_item
   #   set = Xset.new do |s|
@@ -373,5 +501,27 @@ class RefineTest < XpairUnitTest
   #
   # end
    
-  
+  def test_pivot_flatten_refine
+    set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:p1") => Entity.new("_:p1"),
+        Entity.new("_:p2") => Entity.new("_:p2"),
+        Entity.new("_:p3") => Entity.new("_:p3"),
+        Entity.new("_:p4") => Entity.new("_:p4"),
+        Entity.new("_:p5") => Entity.new("_:p5"),
+        Entity.new("_:p6") => Entity.new("_:p6"),
+        Entity.new("_:paper1") => Entity.new("_:paper1")
+      }
+    end
+    set.server = @papers_server
+    set.id= "sorigin"
+    
+    s1 = set.pivot_forward([Relation.new("_:publicationYear")]);
+    s1.id = "s1"
+    s2 = s1.flatten
+    s2.id = "flatten"
+    s3 = set.refine{|f| f.image_equals(relations: [s2], values: Xpair::Literal.new("1998"))}
+
+
+  end
 end

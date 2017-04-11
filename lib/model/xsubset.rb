@@ -1,11 +1,11 @@
 class Xsubset < Xset
-  attr_accessor :level, :subset_of
+  attr_accessor :level, :subset_of, :key
   
-  def initialize(parent_set, level, &block)
+  def initialize(key, &block)
     super(&block)
-    @subset_of = parent_set
-    @level = level
+    @key = key
     yield(self) if block_given?
+    @id ||= SecureRandom.uuid
     self
   end
   

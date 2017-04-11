@@ -79,7 +79,14 @@ module HashHelper
   end
   
   def self.empty_values?(hash)
-    hash.values.select{|v| !v.empty?}.empty?
+
+    hash.values.select do |v| 
+      if v.is_a? Hash
+        !v.empty?
+      else
+        !v.nil?
+      end
+    end.empty?
   end
   
   def self.append_leaf_children(hash, parents_hash, items)
@@ -99,13 +106,15 @@ module HashHelper
     hash.each do |key, values|
       level_str = ""
       level.times{|t| level_str << " "}
-      puts level_str + key.to_s
+
+      puts level_str << key.to_s
 
       if values.is_a? Hash
         print_hash(values, level+1)
       else
         values.each do |value|
-          puts level_str + " " + value.to_s
+          puts level_str << value.to_s
+
         end
       end        
     end
