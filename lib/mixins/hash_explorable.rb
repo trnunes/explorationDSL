@@ -12,7 +12,7 @@ module HashExplorable
     keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
     
     mappings = {}
-    result_relation_index = {}
+    
     query = @server.begin_nav_query do |q|
       each_entity do |item|
         q.on(item)      
@@ -20,11 +20,9 @@ module HashExplorable
       q.find_relations
     end
     query.execute.each do |item, relations_hash|
-      result_relation_index[item] = {}
-      mappings[item] = Xsubset.new(item){|s| s.server = self.server}
+      mappings[item] = {}
       relations_hash.each do |relation, values|
-        mappings[item] << relation
-        item.add_child(relation)
+        mappings[item][relation] = {}
       end
     end
     
@@ -35,172 +33,108 @@ module HashExplorable
       q.find_backward_relations
     end
     query.execute.each do |item, relations_hash|
-      mappings[item] ||= Xsubset.new(item){|s| s.server = self.server}
+      mappings[item] ||= {}
       relations_hash.each do |relation, values|
         r = Relation.new(relation.id)
         r.servers = relation.servers
         r.inverse = true
         r.text += " of"
-
-        mappings[item] << r
+        mappings[item][r] = {}
       end
     end
     finish_time = Time.now
 
 
-    mount_result_set("#{self.intention}.relations()", mappings, result_relation_index)
+    mount_result_set("#{self.intention}.relations()", mappings)
+  end
+  def pivot_forward(relations)
+    pivot({relations: relations})
   end
   
-
   def pivot(args={})
-    start_time = Time.now
-    
-    self.save
-    level = args[:level].nil? ? 1 : args[:level]
-    keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
-    backward_relations = []
-    forward_relations = []
-    mappings = {}
-    self.relations.each do |relation|
-      if relation.inverse
-        backward_relations << relation 
-      else
-        forward_relations << relation
-      end
+    relations = args[:relations]
+    direction = args[:direction]
+    start_time  = Time.now
+    if relations.nil?
+      relations = self.relations
     end
-    forward_pivot = pivot_forward(forward_relations, args)
-    backward_pivot = pivot_backward(backward_relations, args)
-    if !forward_pivot.nil? && !forward_pivot.empty?
-      mappings.merge!(forward_pivot.extension)
-    end
-    if !backward_pivot.nil? && !backward_pivot.empty?
-      mappings.merge!(backward_pivot.extension){|item, subset1, subset2| subset1.extension.merge!(subset2.extension); subset1 }
-    end
-    finish_time = Time.now
-
-
-
-    mount_result_set("#{self.intention}.pivot", mappings)
-  end
-  
-  def pivot_backward(relations, args={})
-    start_time = Time.now
-    self.save
-    level = args[:level].nil? ? 1 : args[:level]
-    keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
     mappings = {}
     results_hash = {}
+    partial_values_set = Set.new
+    
     relations.each do |relation|
       if !path?(relation)
         relation = [relation]
       end
 
       source_items = each_item
-      
+      puts "SOURCE ITEMS: " << source_items.inspect
       relation_mappings = {}
-      local_inverted_mappings = {}
-      relation.each do |path_relation|        
+
+      relation.each do |path_relation|
+
+
         query = @server.begin_nav_query do |q|
           source_items.each do |item|
             q.on(item)
+
           end
-          q.restricted_domain(path_relation)
+          if direction == "backward"
+            q.restricted_domain(path_relation)
+          else
+            q.restricted_image(path_relation)
+          end
         end
         partial_values_set = Set.new
-        
+        local_mappings = {}
         partial_path_results = query.execute
-        
-        partial_path_results.each do |item, relations_hash|
-          relations_hash.each do |relation, values|
-            inverse_relation = Relation.new(relation.id, true);
-            inverse_relation.text = relation.text + " of"
-            values.each do |value|
-              if local_inverted_mappings[value].nil?
-                local_inverted_mappings[value] = {inverse_relation => {}}
+        if(direction == "backward")
+          local_inverted_mappings = {}
+          partial_path_results.each do |item, relations_hash|
+            relations_hash.each do |relation, values|
+              inverse_relation = Relation.new(relation.id, true);
+              inverse_relation.text = relation.text + " of"
+              values.each do |value|
+                if local_inverted_mappings[value].nil?
+                  local_inverted_mappings[value] = {inverse_relation => {}}
+                end
+                local_inverted_mappings[value][inverse_relation][item] = {}
               end
-              local_inverted_mappings[value][inverse_relation][item] = {}
+              partial_values_set << item
+            end  
+          end
+          partial_path_results = local_inverted_mappings
+        else
+          partial_path_results.each do |item, relations_hash|
+            relations_hash.each do |key, values|
+              relations_hash[key] = {}
+              values.each do |v|
+                relations_hash[key][v] = {}
+              end
+              if values.empty?
+                partial_path_results.delete(item)
+              end
+              partial_values_set += values
             end
-            partial_values_set << item
-          end  
+          end
         end
-        relation_mappings = HashHelper.join(relation_mappings, local_inverted_mappings)        
+
+        relation_mappings = HashHelper.join(relation_mappings, partial_path_results)
         source_items = partial_values_set
       end
       HashHelper.unite(mappings, relation_mappings)
     end
-    pivot_mappings, result_relation_index = build_pivot_result_set(mappings, level, relations.size > 1, keep_structure)
-    
-    finish_time = Time.now
-    puts "EXECUTED PIVOT BACKWARD: " << (finish_time - start_time).to_s
-
-    mount_result_set("pivot_backward", pivot_mappings, result_relation_index, {:relations => relations.inspect})
-  end  
-    
-  def pivot_forward(relations, args={})
-    start_time  = Time.now
-    self.save
-    level = args[:level].nil? ? 1 : args[:level]
-    
-    keep_structure = args[:keep_structure].nil? ? false : args[:keep_structure]
-    mappings = {}
-    results_hash = {}
-    partial_values_set = Set.new
-
-
-    
-    relations.each do |relation|
-      if !path?(relation)
-        relation = [relation]
-      end
-
-      source_items = each_item
-      
-
-
-
-
-      relation_mappings = {}
-
-      relation.each do |path_relation|        
-
-        query = @server.begin_nav_query do |q|
-          source_items.each do |item|
-            q.on(item)
-          end
-          q.restricted_image(path_relation)
-        end
-        partial_values_set = Set.new
-        
-        partial_path_results = query.execute
-        
-        partial_path_results.each do |item, relations_hash|
-          relations_hash.each do |key, values|
-            relations_hash[key] = {}
-            values.each do |v|
-              relations_hash[key][v] = {}
-            end
-            if values.empty?
-              partial_path_results.delete(item)
-            end
-            partial_values_set += values
-          end
-        end
-
-        relation_mappings = partial_path_results
-        source_items = partial_values_set
-      end
-      mappings.merge!(relation_mappings){|item, relation1, relation2| relation1.merge(relation2)}
-    end
-    pivot_mappings, result_relation_index = build_pivot_result_set(mappings, level, relations.size > 1, keep_structure)   
-
+    pivot_mappings = build_pivot_result_set(mappings)   
+    puts "RESULTS"
     finish_time = Time.now
     puts "EXECUTED PIVOT FORWARD: " << (finish_time - start_time).to_s
-
-
-    mount_result_set("#{self.intention}.pivot_forward(\"#{relations.to_s}\")", pivot_mappings, result_relation_index, {:relation => relations.to_s})
+    HashHelper.print_hash(pivot_mappings) 
+    mount_result_set("#{self.intention}.pivot_forward(\"#{relations.to_s}\")", pivot_mappings)
+  
   end
   
-  def build_pivot_result_set(mappings, level, is_multiple, keep_structure)
+  
+  def build_pivot_result_set(mappings)
     item_relation_index = {}
     self_copy = Xset.new{|s| s.extension = self.extension_copy}
 
@@ -208,26 +142,19 @@ module HashExplorable
 
     # HashHelper.print_hash(mappings)
     mappings.each do |item, relations|
-      item_subset = Xsubset.new(item){|s| s.server = self.server}
+      item_subset = {}
       pivot_mappings[item] = item_subset
       relations.each do |relation, values|
         # item.add_child(relation)
-        item_subset[relation] = Xsubset.new(relation){|s| s.server = self.server}
-        # HashHelper.leaves(values).each do |result_item|
-        #   item_subset[relation][result_item] = {}
-        #   # relation.add_child(result_item);
-        # end
-        values.keys.each do |result_item|
-          item_subset[relation][result_item] = {}
+
+        HashHelper.leaves(values).each do |result_item|
+          item_subset[result_item] = {}
           # relation.add_child(result_item);
         end
-        
       end
     end
-    [pivot_mappings, item_relation_index]
-      
-  end
-  
+    pivot_mappings
+  end  
     
   def select_items(items)
     start_time = Time.now

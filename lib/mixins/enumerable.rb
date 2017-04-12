@@ -98,6 +98,7 @@ module Xenumerable
       extension[item]
     end    
   end
+  
   def trace_image_items(item, target_sets)
     image_set = trace_image(item, target_sets)
     image_set.map do |image|
