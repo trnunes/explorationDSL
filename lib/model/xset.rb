@@ -1,17 +1,19 @@
 
 class Xset
   include Xenumerable
-  include HashExplorable
+  include Explorable
   include Persistable::Writable
   extend Persistable::Readable
-  attr_accessor :server, :extension, :intention, :resulted_from, :generates, :id, :projection, :relation_index, :subset_of
+  attr_accessor :server, :extension, :intention, :resulted_from, :generates, :id, :title, :projection, :relation_index, :subset_of, :sessions
 
   def initialize(&block)
     @bindings = {}
     @extension = {}      
     @generates = []
+    @sessions = []
     @relation_index = {}
     @subset_of = nil
+
     yield(self) if block_given?
     self
   end
@@ -29,11 +31,11 @@ class Xset
     yield(@bindings)
   end
   
-  def intention
-    if root?
+  def expression
+    if @intention.nil?
       "Xset.load(\"#{id}\")"
     else
-      @intention
+      @intention.expression
     end
   end
   

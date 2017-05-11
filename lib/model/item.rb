@@ -3,7 +3,7 @@ class Item
   attr_accessor :servers, :id, :text
   
   def initialize(id)
-    @id = Xpair::Namespace.expand_uri(id)
+    @id = Xpair::Namespace.expand_uri(id.gsub(" ", "%20"))
     @servers = []
   end 
   

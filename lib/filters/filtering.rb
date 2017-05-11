@@ -8,9 +8,9 @@ module Filtering
   def self.eval_filters(set)
     filtered_extension = {}    
     current_set = set
-    begin
+    # begin
       @@filters.each do |filter|
-      
+        # binding.pry
         filtered_extension = filter.eval(current_set)
       
         current_set = Xset.new do |s|
@@ -20,12 +20,17 @@ module Filtering
         end      
           
       end
-    rescue Exception => e
-      self.clear
-      raise "It is not possible to apply the filters due to an internal error: (#{e.to_s})!"
-    end
-
+    # rescue Exception => e
+    #   # binding.pry
+    #   self.clear
+    #   raise "It is not possible to apply the filters due to an internal error: (#{e.to_s})!"
+    # end
+    self.clear
     filtered_extension
+  end
+  
+  def self.expression
+    @@filters.map{|f| f.expression}.join
   end
   
   def self.clear

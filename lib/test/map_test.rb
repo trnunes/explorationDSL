@@ -94,28 +94,28 @@ class MapTest < XpairUnitTest
     set.map{|mf| mf.avg([Xset.new, Xset.new])}.empty?
   end
   
-  def test_map_level3
-    subset1 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:p3") => {},Entity.new("_:p4") => {}}}
-    subset2 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:p2") => {}}}
-    subset3 = Xsubset.new("key"){|s| s.extension = {Relation.new("_:cite") => subset1}}
-    subset4 = Xsubset.new("key"){|s| s.extension = {Relation.new("_:cite") => subset2}}
-    set = Xset.new do |s|
-      s.extension = {
-        Entity.new("_:paper1")=>subset3,
-        Entity.new("_:p5")=>subset4
-      }      
-    
-    end
-    set.server = @papers_server
-    h1 = {
-      subset1=>Xsubset.new("Key"){|s| s.extension = {subset1 => {Xpair::Literal.new(2) => {}}}},
-      subset2=>Xsubset.new("Key"){|s| s.extension = {subset2 => {Xpair::Literal.new(1) => {}}}}
-    }
-    
-    
-    assert_equal h1, set.map{|mf|mf.count}.extension
-    
-  end
+  # def test_map_level3
+  #   subset1 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:p3") => {},Entity.new("_:p4") => {}}}
+  #   subset2 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:p2") => {}}}
+  #   subset3 = Xsubset.new("key"){|s| s.extension = {Relation.new("_:cite") => subset1}}
+  #   subset4 = Xsubset.new("key"){|s| s.extension = {Relation.new("_:cite") => subset2}}
+  #   set = Xset.new do |s|
+  #     s.extension = {
+  #       Entity.new("_:paper1")=>subset3,
+  #       Entity.new("_:p5")=>subset4
+  #     }
+  #
+  #   end
+  #   set.server = @papers_server
+  #   h1 = {
+  #     subset1=>{Xpair::Literal.new(2) => {}},
+  #     subset2=>{Xpair::Literal.new(1) => {}}
+  #   }
+  #
+  #
+  #   assert_equal h1, set.map{|mf|mf.count}.extension
+  #
+  # end
   
   def test_map_image_count
 
@@ -163,92 +163,49 @@ class MapTest < XpairUnitTest
       s.server = @papers_server
     end
     rs = set.map{|mf| mf.avg}    
-    expected_extension = {set => {Xpair::Literal.new(2.5)=>{}}}
+    expected_extension = {Xpair::Literal.new(2.5)=>{}}
     assert_equal expected_extension, rs.extension
   end
   
   def test_average_relations
-    subset1 = Xsubset.new("key") do |s|
+    subset1 = Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(20)=>{}, Xpair::Literal.new(30)=>{}}}
+    subset2 = Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(40)=>{}, Xpair::Literal.new(50)=>{}}}
+    
+    s1 = Xset.new() do |s|
       s.extension = {
-        Entity.new("_:o1") =>Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(20)=>{}}},
-        Entity.new("_:o2") =>Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(30)=>{}}}
+        Entity.new("_:o1") =>subset1,
+        Entity.new("_:o2") =>subset2
       }
     end
-    subset2 = Xsubset.new("key") do |s|
-      s.extension = {
-        Entity.new("_:o1") =>Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(40)=>{}}},
-        Entity.new("_:o2") =>Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(50)=>{}}}
-      }
-    end
-    subset3 = Xsubset.new("key") do |s|
-      s.extension = {
-        Entity.new("_:r") => subset1
-      }
-    end
-    
-    subset4 = Xsubset.new("key") do |s|
-      s.extension = {
-        Entity.new("_:r") => subset2
-      }
-    end
-    
-    target_set = Xset.new do |s|
-      s.extension[Entity.new("_:t1")]= subset3
-      s.extension[Entity.new("_:t2")]= subset4
-    end
-    
-    subset5 = Xsubset.new("key") do |s|
-      s.extension = {
-        Entity.new("_:t1") => {}
-      }
-    end
-    subset6 = Xsubset.new("key") do |s|
-      s.extension = {
-        Entity.new("_:t2") => {}
-      }
-    end
-    
-    mid_set_1 = Xset.new do |s|
-      s.extension[Entity.new("_:i1")]= subset5
-      s.extension[Entity.new("_:i2")]= subset6
-    end
-    
-    origin_set = Xset.new do |s|
-      s << Entity.new("_:i1")
-      s << Entity.new("_:i2")
-    end
-    
-    rs = origin_set.map{|mf| mf.avg([mid_set_1, target_set])}
-    
+
+    rs = s1.map{|mf| mf.avg}
+
     expected_extension = {
-      Entity.new("_:i1")=>{Xpair::Literal.new(25.0)=>{}},
-      Entity.new("_:i2")=>{Xpair::Literal.new(45.0)=>{}}
+      subset1=>{Xpair::Literal.new(25.0)=>{}},
+      subset2=>{Xpair::Literal.new(45.0)=>{}}
     }
     assert_equal expected_extension, rs.extension
 
   end
-
-end
-
-def test_average_level3
-  expected_index = {
-    Entity.new("_:t1") => {
-      Xsubset.new(target_set) do |s| 
-        s.extension = {
-            Entity.new("_:o1") =>{Xpair::Literal.new(20)=>{}},
-            Entity.new("_:o2") =>{Xpair::Literal.new(30)=>{}}
-        }
-      end => {Xpair::Literal.new(25.0)=>{}}        
-    },
-    Entity.new("_:t2") => {
-      Xsubset.new(target_set) do |s|
-        s.extension = {
-          Entity.new("_:o1") =>{Xpair::Literal.new(40)=>{}},
-          Entity.new("_:o2") =>{Xpair::Literal.new(50)=>{}}
-        }
-      end => {Xpair::Literal.new(45.0)=>{}}
-      
-    },
-  }
   
+  def test_user_defined
+    options = {}
+    options[:initializer] = "@aggregation = Xpair::Literal.new(0)"
+    options[:map] = "@aggregation.value += 1"
+    options[:function_type] = Mapping::Aggregator
+    options[:name] = "count_ud"
+    
+    # binding.pry
+    
+    origin_set = Xset.new do |s|
+      s << Entity.new("_:i1")
+      s << Entity.new("_:i2")
+      s << Entity.new("_:i3")
+      s << Entity.new("_:i4")
+    end
+    expected_rs = {Xpair::Literal.new(4)=>{}} 
+    assert_equal expected_rs, origin_set.map{|mf| mf.count_ud(options)}.extension
+    assert_equal expected_rs, origin_set.map{|mf| mf.count_ud(options)}.extension
+  end
+
 end

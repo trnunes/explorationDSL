@@ -19,7 +19,9 @@ class RDFDataServer
     @content_type = options[:content_type]
     @content_type ||= "application/sparql-results+xml"
     @api_key = options[:api_key]
-    @cache = {}
+    @cache_max_size = options[:cache_limit]
+    @cache_max_size ||= 20000
+    @cache = RDFCache.new(@cache_max_size)
     
     
   end
@@ -103,7 +105,6 @@ class RDFDataServer
     keyword_pattern.each do |pattern|
       filters << "(regex(str(?o), \"#{pattern}\"))"
     end
-
     query = "SELECT distinct ?s WHERE{?s ?p ?o. FILTER(#{filters.join(" && ")}) } "
     execute(query,content_type: content_type ).each do |s|
       item = Entity.new(s[:s].to_s)
@@ -112,6 +113,22 @@ class RDFDataServer
     end
     items
   end
+  
+  def blaze_graph_search(keyword_pattern)
+    filters = []
+    unions = []
+    items = []
+    query = "select ?s ?p ?o where {?o <http://www.bigdata.com/rdf/search#search> \" #{keyword_pattern.join(" ")}\". ?o <http://www.bigdata.com/rdf/search#matchAllTerms> \"true\" . ?s ?p ?o .}"
+
+
+    execute(query,content_type: content_type ).each do |s|
+      item = Entity.new(s[:s].to_s)
+      item.add_server(self)
+      items << item
+    end
+    items
+  end
+  
   
 
   def begin_filter(&block)
@@ -155,43 +172,62 @@ class RDFDataServer
     items
   end
     
-  def image(relation)
-    @select_clauses << "DISTINCT ?o"
-    relation_uri = search_uri(relation)
-    if(relation_uri.nil?)
-      @where_clauses << "?s ?p ?o"
-      @filters << "FILTER regex(str(?p), \"#{relation_uri.to_s}\", \"i\")."
-    else
-      @where_clauses << "?s <#{relation_uri.to_s}> ?o"
+  def image(relation, restriction=[] &block)
+    items = []
+    values_stmt = ""
+    if(!restriction.empty?)
+      values_stmt = "VALUES ?s {#{restriction.map{|item| "<" + Xpair::Namespace.expand_uri(item.id) + ">"}.join(" ")}}"
     end
-    self
+    
+    query_stmt = "SELECT distinct ?o where{#{values_stmt} ?s <#{Xpair::Namespace.expand_uri(relation.id)}> ?o}"
+    query = @graph.query(query_stmt)
+    query.each_solution do |solution|
+      item = Entity.new(solution[:o].to_s)
+      item.add_server(self)  
+      items << item
+      if block_given?
+        block.call(item)
+      end
+    end       
+    items
   end
 
-  def domain(relation)
-    @select_clauses << "DISTINCT ?s"
-    relation_uri = search_uri(relation)
-
-    if(relation_uri.nil?)
-      @where_clauses << "?s ?p ?o"
-      @filters << "FILTER regex(str(?p), \"#{relation.to_s}\", \"i\")."
-    else
-      @where_clauses << "?s <#{relation_uri.to_s}> ?o"
+  def domain(relation, restriction=[], &block)
+    items = []
+    values_stmt = ""
+    if(!restriction.empty?)
+      values_stmt = "VALUES ?o {#{restriction.map{|item| "<" + Xpair::Namespace.expand_uri(item.id) + ">"}.join(" ")}}"
     end
-    self
+    query_stmt = "SELECT distinct ?s where{#{values_stmt} ?s <#{Xpair::Namespace.expand_uri(relation.id)}> ?o.}"
+    query = @graph.query(query_stmt)
+    query.each_solution do |solution|
+      item = Entity.new(solution[:s].to_s)
+      item.add_server(self)  
+      items << item
+      if block_given?
+        block.call(item)
+      end
+    end       
+    items
   end
+  
+  
  
   def execute(query, options = {})
     solutions = []
 
     offset = 0
     rs = [0]
-    if self.cache.has_key? query
-      return @cache[query].results
-    end
+    # if self.cache.has_key? query
+    #   return @cache[query].results
+    # end
+    
+    puts query.to_s
 
-    while(!rs.empty?)
+    # while(!rs.empty?)
 
-      limited_query = query + "limit #{@limit} offset #{offset}"
+      limited_query = query #+ "limit #{@limit} offset #{offset}"
+
 
 
       rs = @graph.query(limited_query, options)      
@@ -199,10 +235,10 @@ class RDFDataServer
       
 
       solutions += rs_a
-      break if rs_a.size < @limit      
-      offset += limit + 1
-    end
-    self.cache[query] = QueryResults.new(solutions)
+    #   break if rs_a.size < @limit
+    #   offset += limit + 1
+    # end
+    # self.cache[query] = QueryResults.new(solutions)
     solutions
   end
   

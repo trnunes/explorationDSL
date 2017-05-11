@@ -52,7 +52,7 @@ module Filtering
     end
     
     def expression
-      "keyword_match"
+      "keyword_match(#{@keyword_pattern.to_s})"
     end
   end
   

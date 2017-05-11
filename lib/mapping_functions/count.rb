@@ -1,29 +1,27 @@
 module Mapping
-  class Count < Function
+  class Count
+    include Mapping::Aggregator
   
     def initialize()
       super("count")
-      @count = 0
-      @mapped_items = []
+      init()
     end
     
-    def map(xset)
-      @count = 0
-      xset.each_item do |item|
-        @count += 1
-      end
-      if xset.is_a? Xsubset
-        mappings = {xset => Xsubset.new(xset.key){|s| s.extension = {Xpair::Literal.new(@count) => {}}}}
-      else
-        mappings = {xset=>Xpair::Literal.new(@count)}
-      end
-      
-      mappings
+    def init(options = {})
+      @aggregation = Xpair::Literal.new(0)
+    end
+    
+    def map(item)
+      @aggregation.value += 1
+    end
+    
+    
+    def expression
+      "count"
     end
   end
 
-  def self.count
-    count = 0    
+  def self.count  
     return Count.new()
   end
 end

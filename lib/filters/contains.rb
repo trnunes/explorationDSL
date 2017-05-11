@@ -26,7 +26,21 @@ module Filtering
     end
     
     def expression
-      ".contains_one"
+      relation_exp = ""
+      relation_exp = "[" << @relations.map{|r| r.is_a?(Xset)? r.id : r.to_s}.join(",") << "]" if(@relations)
+      
+      values_exp = ""
+      if(@values)
+        if(!@values.respond_to? :each)
+          @values = [@values]
+        end
+        values_exp = "[" << @value.map{|r| r.to_s}.join(",") << "]" 
+      end
+      
+
+      
+      "contains(#{relation_exp}, #{values_exp})"
+      
     end
   end
   

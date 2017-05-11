@@ -13,7 +13,7 @@ module Xpair
         if @@namespace_map.has_key?(prefix)
           expanded_uri = @@namespace_map[prefix].uri + suffix
         end
-        expanded_uri
+        expanded_uri.gsub(" ", "%20")
       end
     
       def colapse_uri(uri)

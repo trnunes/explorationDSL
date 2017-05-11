@@ -110,11 +110,17 @@ module Filtering
     end
     
     def expression
-      if(@relation.nil?)
-        ".equals(\"#{@values.to_s}\")"
-      else
-        ".equals(\"#{@relations.to_s}\", \"#{@values.to_s}\")"
+      relation_exp = ""
+      relation_exp = "[" << @relations.map{|r| r.is_a?(Xset)? r.id : r.to_s}.join(",") << "]" if(@relations)
+      
+      values_exp = ""
+      if(@values)
+        if(!@values.respond_to? :each)
+          @values = [@values]
+        end
+        values_exp = "[" << @values.map{|r| r.to_s}.join(",") << "]" 
       end
+      "image_equals(#{relation_exp}, #{values_exp}, #{@connector.to_s})"
     end  
   end
   

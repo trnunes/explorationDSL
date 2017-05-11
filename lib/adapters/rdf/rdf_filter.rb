@@ -1,6 +1,6 @@
 module SPARQLQuery
   module SPARQLFilter   
-    attr_accessor :filters, :where_stmts
+    attr_accessor :filters, :where_stmts, :construct_stmts
 
   
     def self.next_object_index
@@ -69,8 +69,11 @@ module SPARQLQuery
           sparql_entity = convert_literal(item)
         end
       end
+      if(relations.size == 1)
+        @construct_stmts << "#{path_string(relations)} #{sparql_entity}"
+      end
 
-      @construct_stmts << "#{path_string(relations)} #{sparql_entity}"
+      
       @where_stmts << SimpleFilter.new("?s #{path_string(relations)} #{sparql_entity}") 
 
     end
@@ -78,9 +81,7 @@ module SPARQLQuery
     def filter_by_range(relations, min, max)
       object_index = SPARQLFilter.next_object_index
       @construct_stmts << "#{path_string(relations)} ?o#{object_index}"
-      @where_stmts << SimpleFilter.new("?s #{path_string(relations)} ?o#{object_index}")
-      @filters << SimpleFilter.new("?o#{object_index} >= #{min.to_s}")
-      @filters << SimpleFilter.new("?o#{object_index} <= #{max.to_s}")
+      @where_stmts << SimpleFilter.new("?s #{path_string(relations)} ?o#{object_index}. FILTER(xsd:integer(?o#{object_index}) >= #{min.to_s} && xsd:integer(?o#{object_index}) <= #{max.to_s})")
     end
   
     def regex(pattern)
@@ -109,6 +110,7 @@ module SPARQLQuery
       end
       @where_stmts << union_filter
       @filters << union_filter
+      @construct_stmts += union_filter.construct_stmts
     end
   
 
@@ -118,7 +120,12 @@ module SPARQLQuery
       
       @server.execute(build_query).each do |solution|
 
-        result_set << Entity.new(solution[0].to_s)
+        if(solution.is_a? RDF::Query::Solution)
+                  # binding.pry
+          result_set << Entity.new(solution.to_a[0][1].to_s)
+        else
+          result_set << Entity.new(solution[0].to_s)
+        end
       end
       
       result_set
@@ -129,15 +136,20 @@ module SPARQLQuery
       where_stmt = where_expression()
 
       where_stmt = "?s ?p ?o" if where_stmt == "{}"
-      construct_expression = "CONSTRUCT { "
-      # @entities.each do|item_expr|
-        @construct_stmts.each do |construct_stmt|
-          construct_expression += "?s #{construct_stmt}. "
-        end
+      first_stmt = "SELECT ?s"
+      
+      # if(!@construct_stmts.empty?)
+      #   construct_expression = "CONSTRUCT { "
+      #   # @entities.each do|item_expr|
+      #     @construct_stmts.each do |construct_stmt|
+      #       construct_expression += "?s #{construct_stmt}. "
+      #     end
+      #   # end
+      #   construct_expression += "} "
+      #   first_stmt = construct_expression
       # end
-      construct_expression += "} "
     
-      query = "#{construct_expression} WHERE{ #{where_stmt}."      
+      query = "#{first_stmt} WHERE{ #{where_stmt}."      
       query << " FILTER(" + filter_stmt + ")." if !filter_stmt.empty?      
       query << "}"
 

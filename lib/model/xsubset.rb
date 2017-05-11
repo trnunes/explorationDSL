@@ -10,11 +10,12 @@ class Xsubset < Xset
   end
   
   def eql?(obj)
-    self.class == obj.class && self.extension == obj.extension
+    
+    self.class == obj.class && self.id == obj.id
   end
   
   def hash
-    self.extension.hash
+    self.id.hash
   end
   
   def to_s

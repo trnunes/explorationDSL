@@ -99,23 +99,23 @@ class RefineTest < XpairUnitTest
     assert_true set.select_items([Entity.new("_:a1"), Relation.new("_:author")]).empty?
   end
   
-  def test_refine_equal
-    set = Xset.new do |s| 
-      s << Entity.new("_:p1")
-      s << Entity.new("_:p2")
-      s << Entity.new("_:p3")
-    end
-    
-    set.server = @server
-    
-    relation = set.refine{|f| f.equals(values: Entity.new("_:p2"))}
-    
-    expected_extension = { 
-      Entity.new("_:p2") => {}
-    }   
-    
-    assert_equal expected_extension, relation.extension
-  end
+  # def test_refine_equal
+  #   set = Xset.new do |s|
+  #     s << Entity.new("_:p1")
+  #     s << Entity.new("_:p2")
+  #     s << Entity.new("_:p3")
+  #   end
+  #
+  #   set.server = @server
+  #
+  #   relation = set.refine{|f| f.equals(values: Entity.new("_:p2"))}
+  #
+  #   expected_extension = {
+  #     Entity.new("_:p2") => {}
+  #   }
+  #
+  #   assert_equal expected_extension, relation.extension
+  # end
   
   def test_refine_equal_two_steps
     set = Xset.new do |s| 
@@ -313,7 +313,7 @@ class RefineTest < XpairUnitTest
     
     set.server = @papers_server
     
-    relation = set.refine{|f| f.image_equals(relations: [set.pivot_forward([Relation.new("_:author")])], values: [Entity.new("_:a1"), Entity.new("_:a2")])}
+    relation = set.refine{|f| f.image_equals(relations: [set.pivot_forward(relations: [Relation.new("_:author")])], values: [Entity.new("_:a1"), Entity.new("_:a2")])}
     
     expected_extension = { 
      Entity.new("_:paper1") => {},
@@ -332,7 +332,7 @@ class RefineTest < XpairUnitTest
     
     set.server = @papers_server
     
-    relation = set.refine{|f| f.image_equals(relations: [set.pivot_forward([Relation.new("_:author")])], values: [Entity.new("_:a1"), Entity.new("_:a2")], connector: "OR")}
+    relation = set.refine{|f| f.image_equals(relations: [set.pivot_forward(relations: [Relation.new("_:author")])], values: [Entity.new("_:a1"), Entity.new("_:a2")], connector: "OR")}
     
     expected_extension = { 
      Entity.new("_:paper1") => {},
@@ -356,10 +356,80 @@ class RefineTest < XpairUnitTest
     
     expected_extension = { 
      Entity.new("_:p1") => {},
-     Entity.new("_:p2") => {}      
+     Entity.new("_:p2") => {},
+     Entity.new("_:p3") => {}      
     }    
     assert_equal expected_extension, relation.extension
   end
+  
+  def test_refine_equal_disjunctive_values
+    set = Xset.new do |s| 
+      s << Entity.new("_:paper1")
+      s << Entity.new("_:p10")
+      s << Entity.new("_:p5")
+    end
+    
+    set.server = @papers_server
+    
+    relation = set.refine{|f| f.equals(relations: [Relation.new("_:author")], values: [Entity.new("_:a1"), Entity.new("_:a2")], connector: "OR")}
+    
+    expected_extension = { 
+     Entity.new("_:paper1") => {},
+     Entity.new("_:p5") => {}      
+    }    
+    
+    assert_equal expected_extension, relation.extension
+    
+  end
+  
+  def test_refine_equal_conjunctive_values
+    set = Xset.new do |s| 
+      s << Entity.new("_:paper1")
+      s << Entity.new("_:p5")
+      s << Entity.new("_:p10")
+      s << Entity.new("_:p3")
+      s << Entity.new("_:p2")
+    end
+    
+    set.server = @papers_server
+    
+    relation = set.refine{|f| f.equals(relations: [Relation.new("_:author")], values: [Entity.new("_:a1"), Entity.new("_:a2")], connector: 'AND')}
+    
+    expected_extension = { 
+     Entity.new("_:paper1") => {},
+     Entity.new("_:p5") => {}      
+    }    
+    
+    assert_equal expected_extension, relation.extension
+    
+  end
+
+  def test_refine_equal_property_path
+    set = Xset.new do |s| 
+      s << Entity.new("_:paper1")
+      s << Entity.new("_:p5")
+      s << Entity.new("_:p6")
+      s << Entity.new("_:p8")
+      s << Entity.new("_:p7")
+      s << Entity.new("_:p9")
+      s << Entity.new("_:p10")
+      s << Entity.new("_:p3")
+      s << Entity.new("_:p2")
+    end
+    
+    set.server = @papers_server
+    
+    relation = set.refine{|f|f.equals(connector: 'AND',relations: ['_:publishedOn','_:releaseYear'],values: [Xpair::Literal.new('2005')],)}
+    
+    expected_extension = { 
+
+     Entity.new("_:p2") => {}      
+    }    
+    
+    assert_equal expected_extension, relation.extension
+    
+  end
+  
   
   def test_refine_keyword_match
     set = Xset.new do |s| 
@@ -374,7 +444,7 @@ class RefineTest < XpairUnitTest
     relation = set.refine{|f| f.keyword_match(keywords: ['journal',])}
     
     expected_extension = { 
-      Entity.new("_:p2") => {},
+      Entity.new("_:journal1") => {},
       Entity.new("_:journal2") => {}      
     }    
     assert_equal expected_extension, relation.extension
@@ -448,8 +518,9 @@ class RefineTest < XpairUnitTest
     set.server = @papers_server
     s1 = set.select_items([Entity.new("_:p3")])
     s2 = set.select_items([Entity.new("_:p2")])
+    # binding.pry
     union = s1.union(s2)
-    p = union.pivot_forward([Relation.new('_:publicationYear')])
+    p = union.pivot_forward(relations: [Relation.new('_:publicationYear')])
     
     rs = union.refine{|f| f.image_equals(relations: [p],values: Xpair::Literal.new('2000', 'http://www.w3.org/2001/XMLSchema#integer'),)}
     expected_extension = {
@@ -474,7 +545,7 @@ class RefineTest < XpairUnitTest
     s1 = set.select_items([Entity.new("_:p3")])
     s2 = set.select_items([Entity.new("_:p2")])
     union = s1.union(s2)
-    p = union.pivot_forward([Relation.new('_:publicationYear')])
+    p = union.pivot_forward(relations: [Relation.new('_:publicationYear')])
     
     rs = union.refine{|f| f.equals(relations: [Relation.new("_:publicationYear")],values: Xpair::Literal.new('2000', 'http://www.w3.org/2001/XMLSchema#integer'),)}
     expected_extension = {
@@ -516,12 +587,98 @@ class RefineTest < XpairUnitTest
     set.server = @papers_server
     set.id= "sorigin"
     
-    s1 = set.pivot_forward([Relation.new("_:publicationYear")]);
+    s1 = set.pivot_forward(relations: [Relation.new("_:publicationYear")]);
     s1.id = "s1"
     s2 = s1.flatten
     s2.id = "flatten"
     s3 = set.refine{|f| f.image_equals(relations: [s2], values: Xpair::Literal.new("1998"))}
-
-
   end
+  
+  def test_refine_in_range
+    set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:p2") => {},
+        Entity.new("_:p3") => {},
+        Entity.new("_:p4") => {},
+      }
+    end
+    set.server = @papers_server
+    rs = set.refine{|f| f.in_range(relations: [Relation.new("_:publicationYear")], min: Xpair::Literal.new(1997.0), max: Xpair::Literal.new(2005.0))}
+    expected_rs = {
+      Entity.new("_:p2") => {},
+      Entity.new("_:p3") => {},
+    }
+    assert_equal expected_rs, rs.extension
+  end
+
+  def test_refine_compare_in_range
+    set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:p2") => {},
+        Entity.new("_:p3") => {},
+        Entity.new("_:p4") => {},
+      }
+    end
+    set.server = @papers_server
+    rs = set.refine{|f| f.compare(relations: [Relation.new("_:publicationYear")], restrictions: [[">=", Xpair::Literal.new(1997.0)], ["<=", Xpair::Literal.new(2005.0)]])}
+    expected_rs = {
+      Entity.new("_:p2") => {},
+      Entity.new("_:p3") => {},
+    }
+    assert_equal expected_rs, rs.extension
+  end
+
+  def test_refine_compare_in_range_OR
+    set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:p2") => {},
+        Entity.new("_:p3") => {},
+        Entity.new("_:p4") => {},
+      }
+    end
+    set.server = @papers_server
+    rs = set.refine{|f| f.compare(relations: [Relation.new("_:publicationYear")], connector: "OR", restrictions: [[">", Xpair::Literal.new(1998)], ["<", Xpair::Literal.new(1998)]])}
+    expected_rs = {
+      Entity.new("_:p2") => {},
+      Entity.new("_:p4") => {},
+    }
+    assert_equal expected_rs, rs.extension
+  end
+  
+  def test_compare_greater_than_equal
+    set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:p2") => {},
+        Entity.new("_:p3") => {},
+        Entity.new("_:p4") => {},
+      }
+    end
+    set.server = @papers_server
+    rs = set.refine{|f| f.compare(relations: [Relation.new("_:publicationYear")], connector: 'AND', restrictions: [[">=", Xpair::Literal.new(2000)]])}
+    expected_rs = {
+      Entity.new("_:p2") => {},
+      Entity.new("_:p4") => {},
+    }
+    assert_equal expected_rs, rs.extension
+    
+  end
+  
+  def test_compare_less_than_equal
+    set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:p2") => {},
+        Entity.new("_:p3") => {},
+        Entity.new("_:p4") => {},
+      }
+    end
+    set.server = @papers_server
+    rs = set.refine{|f| f.compare(relations: [Relation.new("_:publicationYear")], restrictions: [["<=", Xpair::Literal.new(2000)]])}
+    expected_rs = {
+      Entity.new("_:p2") => {},
+      Entity.new("_:p3") => {},
+    }
+    assert_equal expected_rs, rs.extension
+    
+  end
+  
 end

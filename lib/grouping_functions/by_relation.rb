@@ -2,6 +2,9 @@
 module Grouping
   class ByRelation < Grouping::Function
     attr_accessor :relations
+    def horizontal?
+      false
+    end
     def initialize(args)
 
       
@@ -46,11 +49,14 @@ module Grouping
       else
         relations = set.order_relations(self.relations)
         set.each_item do |item|
+          # binding.pry
           set.trace_image_items(item, relations.dup).each do |grouping_item|
+            
             if !mappings.has_key? grouping_item
               mappings[grouping_item] = {}
             end
             mappings[grouping_item][item] = {}
+            # binding.pry
           end
         end
       end
@@ -59,7 +65,9 @@ module Grouping
     end
     
     def expression
-      "by_relation(#{self.relations.map{|r| "'" << r.to_s << "'"}.inspect})"
+      relation_exp = ""
+      relation_exp = "[" << self.relations.map{|r| r.is_a?(Xset)? r.id : r.to_s}.join(",") << "]"
+      "by_domain(#{relation_exp})"
     end  
   end
   

@@ -15,10 +15,10 @@ module AuxiliaryOperations
       items_hash[item.id] = item
     end
     
-    self.pivot_forward([relation]).extension.each do |item, values|
+    self.pivot_forward(relations: [relation]).extension.each do |item, values|
       literal = ""
       labels = []
-      values.each_item do |label|
+      values.keys.each do |label|
         labels << label
       end
       

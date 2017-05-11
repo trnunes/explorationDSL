@@ -3,6 +3,7 @@ require './test/xpair_unit_test'
 class PivotTest < XpairUnitTest
 
   def setup
+
     @graph = RDF::Graph.new do |graph|
       graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o1")]
       graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o2")]
@@ -11,6 +12,7 @@ class PivotTest < XpairUnitTest
       graph << [RDF::URI("_:p4"),  RDF::URI("_:r2"), RDF::URI("_:o4")]
       graph << [RDF::URI("_:p4"),  RDF::URI("_:r2"), RDF::URI("_:o5")]
       graph << [RDF::URI("_:p5"),  RDF::URI("_:r2"), RDF::URI("_:o6")]
+      graph << [RDF::URI("_:z1"),  RDF::URI("_:r2"), RDF::URI("_:p6")]
     end
 
     @server = RDFDataServer.new(@graph)
@@ -96,9 +98,39 @@ class PivotTest < XpairUnitTest
 
 
     
-    assert_true set.pivot_forward([Relation.new("_:cite")]).empty?
-    assert_true set.pivot_backward([Relation.new("_:cite")]).empty?
+    assert_true set.pivot(relations: [Relation.new("_:cite")], ).empty?
+    assert_true set.pivot(relations: [Relation.new("_:cite")], direction: 'backward').empty?
     assert_true set.pivot().empty?    
+  end
+  
+  def test_pivot_relation_no_image
+    set = Xset.new do |s| 
+      s << Entity.new("_:p1")
+      s << Entity.new("_:p2")
+      s << Entity.new("_:p3")
+    end
+    
+    set.server = @server    
+    
+    rs = set.pivot(relations: [Relation.new("_:r7")], direction: 'forward')
+
+    expected_extension = {}
+    assert_equal expected_extension, rs.extension
+  end
+  
+  def test_project
+    test_set = Xset.new do |s|
+      s.server = @server
+      s.resulted_from = Xset.new
+      s.extension = {
+        Entity.new("_:p1")=>{},
+        Entity.new("_:p2")=>{},
+        Entity.new("_:p3")=>{},
+        Entity.new("_:p4")=>{},
+        Entity.new("_:p5")=>{}
+      }   
+    end
+    test_set.project(Relation.new("_:r1"))
   end
   
   def test_relations
@@ -106,22 +138,47 @@ class PivotTest < XpairUnitTest
       s.server = @server
       s.resulted_from = Xset.new
       s.extension = {
-        Entity.new("_:p1") => {},
-        Entity.new("_:p2") => {},
-        Entity.new("_:p3") => {},
-        Entity.new("_:p4") => {},
-        Entity.new("_:p5") => {}        
-      }
+        Entity.new("_:p1")=>{},
+        Entity.new("_:p2")=>{},
+        Entity.new("_:p3")=>{},
+        Entity.new("_:p4")=>{},
+        Entity.new("_:p5")=>{},
+        Entity.new("_:p6")=>{},
+      }   
     end
+  
 
     expected_extension = {
-      Entity.new("_:p1") => Xsubset.new("key"){|s| s.extension = {Relation.new("_:r1")=>{}}},
-      Entity.new("_:p2") => Xsubset.new("key"){|s| s.extension = {Relation.new("_:r1")=>{}}},
-      Entity.new("_:p3") => Xsubset.new("key"){|s| s.extension = {Relation.new("_:r1")=>{}}},
-      Entity.new("_:p4") => Xsubset.new("key"){|s| s.extension = {Relation.new("_:r2")=>{}}},
-      Entity.new("_:p5") => Xsubset.new("key"){|s| s.extension = {Relation.new("_:r2")=>{}}}
+     Relation.new("_:r1")=>{},
+     Relation.new("_:r2", true)=>{},
+     Relation.new("_:r2")=>{}
       
     }
+    rs = test_set.relations
+    assert_equal expected_extension, rs.extension
+    # assert_equal expected_index, rs.relation_index
+  end
+  
+  def test_relations_cache
+    test_set = Xset.new do |s|
+      s.server = @server
+      s.resulted_from = Xset.new
+      s.extension = {
+        Entity.new("_:p1")=>{},
+        Entity.new("_:p2")=>{},
+        Entity.new("_:p3")=>{},
+        Entity.new("_:p4")=>{},
+        Entity.new("_:p5")=>{}
+      }   
+    end
+  
+
+    expected_extension = {
+     Relation.new("_:r1")=>{},
+     Relation.new("_:r2")=>{}
+      
+    }
+    rs = test_set.relations
     rs = test_set.relations
     assert_equal expected_extension, rs.extension
     # assert_equal expected_index, rs.relation_index
@@ -138,21 +195,19 @@ class PivotTest < XpairUnitTest
     
     set.server = @server    
     
-    rs = set.pivot_forward(["_:r1"])
-    expected_extension = {
+    rs = set.pivot(relations: [Relation.new("_:r1")], direction: 'forward')
 
-      Entity.new("_:p1")=>
-       Xsubset.new("key"){|s| s.extension[Relation.new("_:r1")] = Xsubset.new("key") do |s|
-          s.extension = {
-            Entity.new("_:o1") =>{}, 
-            Entity.new("_:o2")=>{}
-          }
-        end
-      },
-      Entity.new("_:p2")=> Xsubset.new("key"){|s| s.extension[Relation.new("_:r1")] = Xsubset.new("key"){|s| s.extension = {Entity.new("_:o2") => {}}}},
-      Entity.new("_:p3")=> Xsubset.new("key"){|s| s.extension[Relation.new("_:r1")] = Xsubset.new("key"){|s| s.extension = {Entity.new("_:o3")=>{}}}},    
+    expected_extension = {
+      Entity.new("_:p1")=> {Entity.new("_:o1") => {}, Entity.new("_:o2") => {}},
+      Entity.new("_:p2")=> {Entity.new("_:o2") => {}},
+      Entity.new("_:p3")=> {Entity.new("_:o3") => {}}
     }
-        
+    puts rs.to_s
+    rs.each_image do |i|
+      puts i.id
+      rs.get_item(i)
+    end
+    rs.expression
     assert_equal expected_extension, rs.extension
     # assert_equal expected_index, rs.relation_index
   end
@@ -174,11 +229,11 @@ class PivotTest < XpairUnitTest
   #   rs = set.pivot_forward(["_:r1"], keep_structure: true)
   #   expected_index = {
   #     Entity.new("_:p1")=>{
-  #       Entity.new("_:o1") =>{},
-  #       Entity.new("_:o2")=>{}
+  #       Entity.new("_:o1") ,
+  #       Entity.new("_:o2")
   #     },
   #     Entity.new("_:p2")=> {Entity.new("_:o2") => {}},
-  #     Entity.new("_:p3")=>{Entity.new("_:o3")=>{}},
+  #     Entity.new("_:p3")=>{Entity.new("_:o3")},
   #   }
   #
   #   assert_equal expected_index, rs.extension
@@ -192,10 +247,10 @@ class PivotTest < XpairUnitTest
     end
     set.server = @papers_server
     expected_extension = {
-      Entity.new("_:paper1")=>Xsubset.new("key"){|s| s.extension = {Entity.new("_:a1") => {}, Entity.new("_:a2") => {}}},
-      Entity.new("_:p6")    =>Xsubset.new("key"){|s| s.extension = {Entity.new("_:a2") => {}, Entity.new("_:a1") => {}}}
+      Entity.new("_:paper1")=>{Entity.new("_:a1")=>{}, Entity.new("_:a2")=>{}},
+      Entity.new("_:p6")    =>{Entity.new("_:a2")=>{}, Entity.new("_:a1")=>{}}
     }
-    rs = set.pivot_forward([["_:cite", "_:author"]])
+    rs = set.pivot(relations: ["_:cite", "_:author"], path: true)
     assert_equal expected_extension, rs.extension
     # assert_equal expected_index, rs.relation_index
   end
@@ -227,139 +282,27 @@ class PivotTest < XpairUnitTest
       s << Entity.new("_:p6")
     end
     set.server = @papers_server
-    subset1 = Xsubset.new("key") do |s|
-      s.extension = {
+    subset1 = {
         Entity.new("_:a1")=>{},
-        Entity.new("_:a2")=>{}
-      }
-    end
-    subset2 = Xsubset.new("key") do |s|
-      s.extension = {
+        Entity.new("_:a2")=>{},
         Entity.new("_:p2")=>{},
         Entity.new("_:p3")=>{},
         Entity.new("_:p4")=>{}
-      }
-    end
-    subset3 = Xsubset.new("key") do |s|
-      s.extension = {
-        Relation.new("_:author")=>subset1,
-        Relation.new("_:cite")=> subset2,
-      }
-    end
-    
-    subset4 = Xsubset.new("key") do |s|
-      s.extension = {
-        Entity.new("_:a2")=>{}
-      }
-    end
-    
-    subset5 = Xsubset.new("key") do |s|
-      s.extension = {
+    }
+    subset2 = {
+        Entity.new("_:a2")=>{},
         Entity.new("_:p2")=>{},
         Entity.new("_:p3")=>{},
         Entity.new("_:p5")=>{}
-      }
-    end
-    
-    subset6 = Xsubset.new("key") do |s|
-      s.extension = {
-        Relation.new("_:author")=>subset4,
-        Relation.new("_:cite")=> subset5,        
-      }
-    end
-
-    expected_extension = {
-      Entity.new("_:paper1")=> subset3,
-      Entity.new("_:p6")=> subset6
     }
-    rs = set.pivot_forward(["_:cite", "_:author"])
+    expected_extension = {
+      Entity.new("_:paper1")=> subset1,
+      Entity.new("_:p6")=> subset2
+    }
+    rs = set.pivot(relations: ["_:cite", "_:author"])
     assert_equal expected_extension, rs.extension
 
     # assert_equal expected_index, rs.relation_index
-  end
-  
-  def test_pivot_keep_structure
-    set = Xset.new do |s|
-      s << Entity.new("_:p2")
-    end
-    set.server = @papers_server
-    expected_extension = {
-      Entity.new("_:journal1") => Xsubset.new do |s|
-        s.extension = {Xpair::Literal.new("2005") => {}}
-      end
-    }
-    rs = set.pivot_forward([Relation.new("_:publishedOn")]).pivot_forward([Relation.new("_:releaseYear")])
-    assert_equal expected_extension, rs.extension
-  end
-  
-  def test_pivot
-    set = Xset.new do |s|
-      s << Entity.new("_:paper1")
-      s << Entity.new("_:p6")
-    end
-    set.server = @papers_server
-    subset1 = Xsubset.new("key") do |s|
-      s.extension = {
-        Entity.new("_:a1")=>{},
-        Entity.new("_:a2")=>{}
-      }
-    end
-    subset2 = Xsubset.new("key") do |s|
-      s.extension = {
-        Entity.new("_:p2")=>{},
-        Entity.new("_:p3")=>{},
-        Entity.new("_:p4")=>{}
-      }
-    end
-    
-    subset4 = Xsubset.new("key") do |s|
-      s.extension = {
-        Entity.new("_:a2")=>{}
-      }
-    end
-    subset8 = Xsubset.new("key") do |s|
-      s.extension = {
-        Entity.new("_:journal1")=>{}
-      }
-    end
-    
-    subset5 = Xsubset.new("key") do |s|
-      s.extension = {
-        Entity.new("_:p2")=>{},
-        Entity.new("_:p3")=>{},
-        Entity.new("_:p5")=>{}
-      }
-    end
-    subset7 = Xsubset.new("key") do |s|
-      s.extension = {
-        Entity.new("_:k1")=>{},
-        Entity.new("_:k2")=>{},
-        Entity.new("_:k3")=>{}
-      }
-    end
-    
-    subset6 = Xsubset.new("key") do |s|
-      s.extension = {
-        Relation.new("_:author")=>subset4,
-        Relation.new("_:cite")=> subset5,        
-      }
-    end
-    subset3 = Xsubset.new("key") do |s|
-      s.extension = {
-        Relation.new("_:author")=>subset1,
-        Relation.new("_:cite")=> subset2,
-        Relation.new("_:keywords")=> subset7,
-        Relation.new("_:submittedTo")=> subset8,
-      }
-    end
-
-    expected_extension = {
-      Entity.new("_:paper1")=> subset3,
-      Entity.new("_:p6")=> subset6
-    }
-    rs = set.pivot()
-    assert_equal expected_extension, rs.extension
-    
   end
   
   
@@ -373,25 +316,78 @@ class PivotTest < XpairUnitTest
     set.server = @server
 
     expected_extension = {
-       Entity.new("_:o2")=>Xsubset.new("key") do |s|
-         s.extension[Relation.new("_:r1", true)]=Xsubset.new("key") do |s| 
-           s.extension = {
-             Entity.new("_:p1")=>{},
-             Entity.new("_:p2")=>{}
-           }
-         end
-       end,
-       Entity.new("_:o1")=>Xsubset.new("key") do |s|
-          s.extension[Relation.new("_:r1", true)]=Xsubset.new("key") do |s| 
-            s.extension = {
-               Entity.new("_:p1")=>{}
-             }
-           end
-       end
-    }
-    rs = set.pivot_backward(["_:r1"])
+       Entity.new("_:o2")=>{Entity.new("_:p1")=>{}, Entity.new("_:p2")=>{}},
+       Entity.new("_:o1")=>{Entity.new("_:p1")=>{}}
+     }
+    rs = set.pivot relations: ["_:r1"], direction: "backward"
     # assert_equal rs[Entity.new("_:o2")].first.keys.first.text, "_:r1 of"
     assert_equal expected_extension, rs.extension
 
   end
+  
+  def test_pivot_computed_relation
+    set = Xset.new do |s| 
+      s << Entity.new("_:p1")
+      s << Entity.new("_:p2")
+      s << Entity.new("_:p3")
+    end
+    
+    set.server = @server    
+    
+    relation_set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:p1")=> {Entity.new("_:o1") => {}, Entity.new("_:o2") => {}},
+        Entity.new("_:p2")=> {Entity.new("_:o2") => {}},
+        Entity.new("_:p3")=> {Entity.new("_:o3") => {}}
+      }
+    end
+    relation_set.server = @server
+    
+    rs = set.pivot(relations: [relation_set], direction: 'forward')
+
+    expected_extension = {
+      Entity.new("_:p1")=> {Entity.new("_:o1") => {}, Entity.new("_:o2") => {}},
+      Entity.new("_:p2")=> {Entity.new("_:o2") => {}},
+      Entity.new("_:p3")=> {Entity.new("_:o3") => {}}
+    }
+    puts rs.to_s
+    rs.each_image do |i|
+      puts i.id
+      rs.get_item(i)
+    end
+    rs.expression
+    assert_equal expected_extension, rs.extension
+    
+  end
+
+  def test_pivot_mixed_relation
+    set = Xset.new do |s|
+      s << Entity.new("_:paper1")
+      s << Entity.new("_:p6")
+    end
+    set.server = @papers_server
+    
+    relation_set = Xset.new do |s|
+      s.extension = {
+        Entity.new("_:paper1") =>{
+           Entity.new("_:p2")=> {},
+           Entity.new("_:p3")=> {},
+           Entity.new("_:p4")=> {}
+        },
+        Entity.new("_:p6") => {
+          Entity.new("_:p2")=>{},
+          Entity.new("_:p3")=>{},
+          Entity.new("_:p5")=>{}
+        }
+      }
+    end
+    expected_extension = {
+      Entity.new("_:paper1")=>{Entity.new("_:a1")=>{}, Entity.new("_:a2")=>{}},
+      Entity.new("_:p6")    =>{Entity.new("_:a2")=>{}, Entity.new("_:a1")=>{}}
+    }
+    rs = set.pivot(relations: [relation_set, "_:author"], path: true)
+    
+    assert_equal expected_extension, rs.extension
+  end
+  
 end

@@ -3,6 +3,7 @@ require "rdf"
 
 require './mixins/xpair'
 require './mixins/hash_explorable'
+require './mixins/explorable'
 require './mixins/auxiliary_operations'
 require './mixins/enumerable'
 require './mixins/persistable'
@@ -33,6 +34,7 @@ require 'set'
 require './adapters/rdf/rdf_data_server.rb'
 require './adapters/rdf/rdf_filter.rb'
 require './adapters/rdf/rdf_nav_query.rb'
+require './adapters/rdf/cache.rb'
 
 
 class FilterTest < Test::Unit::TestCase

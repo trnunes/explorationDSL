@@ -19,7 +19,10 @@ module Filtering
     end
     
     def expression
-      "InRange"
+      relation_exp = ""
+      relation_exp = "[" << @relations.map{|r| r.is_a?(Xset)? r.id : r.to_s}.join(",") << "]" 
+      
+      "inRange(#{relation_exp}, min: #{@min.to_s}, max: #{@max.to_s})"
     end
   end
   

@@ -9,11 +9,20 @@ class Relation < Item
     true
   end
   
-  def domain
-    
+  def domain(restriction)
+    @server.domain(self, restriction)
   end
   
-  def range
+  def image(restriction)
+    @server.image(self, restriction)
+  end
+  
+  def text
+    t = super().dup
+    if(@inverse)
+      t << " of"
+    end
+    t
   end
   
   def eql?(relation)

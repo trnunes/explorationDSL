@@ -10,6 +10,19 @@ module HashHelper
 
 
   end
+  
+  def self.contains?(hash, element)
+    if(hash.include?(element))
+      return true
+    else
+      hash.values.each do |value|
+        if(self.contains?(value, element))
+          return true
+        end
+      end
+    end
+    return false
+  end
 
   
   def self.join(source_hash, target_hash)

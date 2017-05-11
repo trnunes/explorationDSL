@@ -50,6 +50,9 @@ module HashExplorable
   def pivot_forward(relations)
     pivot({relations: relations})
   end
+  def pivot_backward(relations)
+    pivot({relations: relations, direction: "backward"})
+  end
   
   def pivot(args={})
     relations = args[:relations]
@@ -129,7 +132,7 @@ module HashExplorable
     finish_time = Time.now
     puts "EXECUTED PIVOT FORWARD: " << (finish_time - start_time).to_s
     HashHelper.print_hash(pivot_mappings) 
-    mount_result_set("#{self.intention}.pivot_forward(\"#{relations.to_s}\")", pivot_mappings)
+    mount_result_set("Pivot(\"#{relations.to_s.gsub("[", "").gsub("]", "")}\")", pivot_mappings)
   
   end
   

@@ -206,8 +206,8 @@ class RankTest < XpairUnitTest
       Entity.new("_:paper1") => {}
     }
     
-    set1 = test_set1.pivot_forward([Relation.new("_:publishedOn")])
-    set2 = set1.pivot_forward([Relation.new("_:releaseYear")])
+    set1 = test_set1.pivot_forward(relations: [Relation.new("_:publishedOn")])
+    set2 = set1.pivot_forward(relations: [Relation.new("_:releaseYear")])
     rs = test_set1.rank{|gf| gf.by_relation(relations: [set2, set1])}
     HashHelper.print_hash(rs.extension)
     assert_equal expected_extension, rs.extension
@@ -229,7 +229,7 @@ class RankTest < XpairUnitTest
       Entity.new("_:p9") => {}
     }
     
-    set1 = test_set1.pivot_forward([Relation.new("_:cite")])
+    set1 = test_set1.pivot_forward(relations: [Relation.new("_:cite")])
     set2 = set1.map{|mf| mf.count}
     rs = test_set1.rank{|gf| gf.by_relation(relations: [set2])}
     HashHelper.print_hash(rs.extension)
@@ -251,7 +251,7 @@ class RankTest < XpairUnitTest
     set1 = test_set1.group{|g| g.by_relation(relations: [Relation.new("_:cite")])}
     set2 = set1.map{|mf| mf.count}
     rs = set1.rank{|gf| gf.by_relation(relations: [set2])}
-    HashHelper.print_hash(rs.extension)
+    puts rs.extension.keys.to_a.map{|key|key.key.id}.inspect
     assert_equal [Entity.new("_:p5"), Entity.new("_:p3"), Entity.new("_:p2")], rs.extension.keys.to_a
     
   end

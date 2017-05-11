@@ -14,7 +14,7 @@ module Xpair
     def eql?(obj)
       self.class == obj.class && @value.to_s == obj.value.to_s
     end
-  
+
     def hash
       @value.to_s.hash
     end

@@ -28,11 +28,10 @@ module Filtering
     end
     
     def expression
-      if @relation.nil?
-        ".match(\"#{@pattern}\")"
-      else
-        ".match(\"#{relation.to_s}\", \"#{@pattern}\")"
-      end      
+      relation_exp = ""
+      relation_exp = "[" << @relations.map{|r| r.is_a?(Xset)? r.id : r.to_s}.join(",") << "]" if(@relations)
+      
+      "match(#{relation_exp}, #{@pattern.to_s})"
     end
   end
   
