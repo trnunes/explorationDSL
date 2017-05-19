@@ -1,19 +1,29 @@
 module Explorable
   class Map < Explorable::Operation
     
-    def eval
+    def prepare(args)
+      @args[:function].prepare()
+    end
+    
+    def delayed_result?
+      @args[:function].delayed_result?
+    end
+    
+    def eval_item(item)
       start_time = Time.now
-      mappings = {}
       function = @args[:function]
+
       if(!function)
         raise "Missing mapping function!"
       end
-      result_relation_index = {}
-      function.origin_set = self
-      mappings = function.compute(@args[:input])
+
+      # function.origin_set = self
+      mapped_items = function.map(item)
+      
+
       finish_time = Time.now
       puts "EXECUTED MAP: " << (finish_time - start_time).to_s
-      mappings
+      return mapped_items
     end
     
     def expression

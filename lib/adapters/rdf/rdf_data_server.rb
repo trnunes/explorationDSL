@@ -45,6 +45,10 @@ class RDFDataServer
   def size
     @graph.count
   end
+  
+  def accept_path_query?
+    true
+  end
   def path_string(relations)
     relations.map{|r| "<" << Xpair::Namespace.expand_uri(r.to_s) << ">"}.join("/")
     
@@ -172,7 +176,7 @@ class RDFDataServer
     items
   end
     
-  def image(relation, restriction=[] &block)
+  def image(relation, restriction=[], &block)
     items = []
     values_stmt = ""
     if(!restriction.empty?)

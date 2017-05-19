@@ -1,14 +1,30 @@
 class Item
   include Xpair::Graph
-  attr_accessor :servers, :id, :text
+  include Indexable
+  attr_accessor :servers, :id, :text, :parents, :index, :entry
   
   def initialize(id)
     @id = Xpair::Namespace.expand_uri(id.gsub(" ", "%20"))
     @servers = []
-  end 
+    @index = Indexing::Entry.new('root')
+    @entry = Indexing::Entry.new('root')
+    @parents = []
+  end
+  
   
   def add_server(server)
     @servers << server
+  end
+  
+  def clone
+    cloned_item = self.class.new(@id)
+    cloned_item.index = @index.copy
+    cloned_item
+  end
+  
+  def shallow_clone
+    cloned_item = self.class.new(@id)
+    cloned_item
   end
     
   def relation?

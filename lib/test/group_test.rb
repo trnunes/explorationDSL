@@ -92,51 +92,36 @@ class GroupTest < XpairUnitTest
   end
   
   def test_group_by
-    test_set = Xset.new do |s| 
-      s << Entity.new("_:p1")
-      s << Entity.new("_:p2")
-      s << Entity.new("_:p3")
-    end
+    test_set = Xset.new('test', '')
+    
+    test_set.add_pair Pair.new(Entity.new("_:p1"), Entity.new("_:p1"))
+    test_set.add_pair Pair.new(Entity.new("_:p2"), Entity.new("_:p2"))
+    test_set.add_pair Pair.new(Entity.new("_:p3"), Entity.new("_:p3"))
     
     test_set.server = @server
     
-    rs = test_set.group{|gf| gf.by_relation(relations: [Relation.new("_:r1")])}
+    rs = test_set.group{|gf| gf.by_relation(relations: [SchemaRelation.new("_:r1", @server)])}
     
-    expected_set = Xset.new do |s|
-      s.extension = {
-        Entity.new("_:o1") => Xsubset.new("key"){|s|
-          s.extension = {
-            Entity.new("_:p1")=>{}
-          }
-        },
-        Entity.new("_:o2") => Xsubset.new("key"){|s|
-          s.extension = {
-            Entity.new("_:p1")=>{},
-            Entity.new("_:p2")=>{}
-          }
-        },
-        Entity.new("_:o3") => Xsubset.new("key"){|s|
-          s.extension = {
-            Entity.new("_:p3")=>{}
-          }
-        },
-      }
-    end
-    assert_equal expected_set.extension[Entity.new("_:o1")].extension, rs.extension[Entity.new("_:o1")].extension
-    assert_equal expected_set.extension[Entity.new("_:o2")].extension, rs.extension[Entity.new("_:o2")].extension
-    assert_equal expected_set.extension[Entity.new("_:o3")].extension, rs.extension[Entity.new("_:o3")].extension
-
+    expected_pairs = Set.new([
+      Pair.new(Entity.new("_:o1"), Entity.new("_:p1"), "_:o1"),
+      Pair.new(Entity.new("_:o2"), Entity.new("_:p1"), "_:o2"),
+      Pair.new(Entity.new("_:o2"), Entity.new("_:p2"), "_:o2"),
+      Pair.new(Entity.new("_:o3"), Entity.new("_:p3"), "_:o3")
+    ])
+    
+    assert_equal expected_pairs, Set.new(rs.each_relation[0].each_pair + rs.each_relation[1].each_pair + rs.each_relation[2].each_pair)
   end
   
   def test_group_by_computed_relation
-    test_set = Xset.new do |s| 
-      s << Entity.new("_:p1")
-      s << Entity.new("_:p2")
-      s << Entity.new("_:p3")
-    end
+    test_set = Xset.new('test', '')
+    test_set.add_pair(Entity.new("_:p1"), Entity.new("_:p1"))
+    test_set.add_pair(Entity.new("_:p2"), Entity.new("_:p2"))
+    test_set.add_pair(Entity.new("_:p3"), Entity.new("_:p3"))
+
     
     test_set.server = @server
-    pivot_rs = test_set.pivot_forward(relations: [Relation.new("_:r1")])
+    
+    pivot_rs = test_set.pivot_forward(relations: [SchemaRelation.new("_:r1", @papers_server)])
     
     rs = test_set.group{|gf| gf.by_relation(relations: [pivot_rs])}
     

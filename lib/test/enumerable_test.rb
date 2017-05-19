@@ -350,27 +350,54 @@ class MergeTest < XpairUnitTest
     
   end
   
-  def test_paginate
-    s = Xset.new do |s|
-      s << Entity.new("_:paper1")
-      s << Entity.new("_:p2")
-      s << Entity.new("_:p3")
-      s << Entity.new("_:p4")
-      s << Entity.new("_:p5")
-      s << Entity.new("_:p6")
-      s << Entity.new("_:p7")
-      s << Entity.new("_:p8")
-      s << Entity.new("_:p9")
-      s << Entity.new("_:p10")
-    end
-    s.server = @papers_server
-    s.paginate(3)
-    assert_equal 4, s.count_pages
+  def test_paginate_items
+    s = Xset.new('test', '')
     
-    assert_equal Set.new([Entity.new("_:paper1"), Entity.new("_:p2"), Entity.new("_:p3")]), Set.new(s.each_image(page: 1))
-    assert_equal Set.new([Entity.new("_:p4"), Entity.new("_:p5"), Entity.new("_:p6")]), Set.new(s.each_image(page: 2))
-    assert_equal Set.new([Entity.new("_:p7"), Entity.new("_:p8"), Entity.new("_:p9")]), Set.new(s.each_image(page: 3))
-    assert_equal Set.new([Entity.new("_:p10")]), Set.new(s.each_image(page: 4))
+    s.add_item Entity.new("_:paper1")
+    s.add_item Entity.new("_:p2")
+    s.add_item Entity.new("_:p3")
+    s.add_item Entity.new("_:p4")
+    s.add_item Entity.new("_:p5")
+    s.add_item Entity.new("_:p6")
+    s.add_item Entity.new("_:p7")
+    s.add_item Entity.new("_:p8")
+    s.add_item Entity.new("_:p9")
+    s.add_item Entity.new("_:p10")
+
+    s.server = @papers_server
+    s.index.paginate_items(3)
+    assert_equal 4, s.index.count_item_pages
+    
+    assert_equal Set.new([Entity.new("_:paper1"), Entity.new("_:p2"), Entity.new("_:p3")]), Set.new(s.index.indexed_items(1))
+    assert_equal Set.new([Entity.new("_:p4"), Entity.new("_:p5"), Entity.new("_:p6")]), Set.new(s.index.indexed_items(2))
+    assert_equal Set.new([Entity.new("_:p7"), Entity.new("_:p8"), Entity.new("_:p9")]), Set.new(s.index.indexed_items(3))
+    assert_equal Set.new([Entity.new("_:p10")]), Set.new(s.index.indexed_items(4))
     
   end
+  
+  def test_paginate_groups
+    s = Xset.new('test', '')
+    
+    s.index.add_child Indexing::Entry.new(Entity.new("_:paper1"))
+    s.index.add_child Indexing::Entry.new(Entity.new("_:p2"))
+    s.index.add_child Indexing::Entry.new(Entity.new("_:p3"))
+    s.index.add_child Indexing::Entry.new(Entity.new("_:p4"))
+    s.index.add_child Indexing::Entry.new(Entity.new("_:p5"))
+    s.index.add_child Indexing::Entry.new(Entity.new("_:p6"))
+    s.index.add_child Indexing::Entry.new(Entity.new("_:p7"))
+    s.index.add_child Indexing::Entry.new(Entity.new("_:p8"))
+    s.index.add_child Indexing::Entry.new(Entity.new("_:p9"))
+    s.index.add_child Indexing::Entry.new(Entity.new("_:p10"))
+
+    s.server = @papers_server
+    s.index.paginate_groups(3)
+    assert_equal 4, s.index.count_group_pages
+    
+    assert_equal Set.new([Entity.new("_:paper1"), Entity.new("_:p2"), Entity.new("_:p3")]), Set.new(s.index.children(1).map{|e| e.indexing_item})
+    assert_equal Set.new([Entity.new("_:p4"), Entity.new("_:p5"), Entity.new("_:p6")]), Set.new(s.index.children(2).map{|e| e.indexing_item})
+    assert_equal Set.new([Entity.new("_:p7"), Entity.new("_:p8"), Entity.new("_:p9")]), Set.new(s.index.children(3).map{|e| e.indexing_item})
+    assert_equal Set.new([Entity.new("_:p10")]), Set.new(s.index.children(4).map{|e| e.indexing_item})
+    
+  end
+  
 end

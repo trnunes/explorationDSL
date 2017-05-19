@@ -13,35 +13,29 @@ module Filtering
     #   build_query_filter(set).compare(@relations, @operator, @value)
     #   super(set.extension_copy, set)
     # end
-    def eval(set)
-      extension = set.extension_copy
-      set_copy = Xset.new{|s| s.extension = extension}
-      if(@relations.nil?)
-          set_copy.each_item.select{|item| !(item.eql?(@value))}.each do |removed_item|
-            set_copy.remove_item(removed_item)
-          end
-          set_copy.extension
-      else
-        filter = build_query_filter(set)
+    def prepare(items, server)
+      filter = build_query_filter(items)
 
-        if(@connector == "AND")
+      if(@connector == "AND")
+        @restrictions.each do |restriction|
+          operator = restriction[0]
+          value = restriction[1]
+          filter.compare(@relations, operator, value)
+        end
+      else
+        filter.union do |u|
           @restrictions.each do |restriction|
             operator = restriction[0]
             value = restriction[1]
-            filter.compare(@relations, operator, value)
+            u.compare(@relations, operator, value)
           end
-        else
-          filter.union do |u|
-            @restrictions.each do |restriction|
-              operator = restriction[0]
-              value = restriction[1]
-              u.compare(@relations, operator, value)
-            end
-          end            
-        end
-          
-        super(extension, set)
+        end            
       end
+      @filtered_items = Set.new(filter.eval)
+    end
+    
+    def filter(item)
+      !@filtered_items.include? item
     end
     
     def expression

@@ -1,7 +1,80 @@
 module Explorable
   class Rank < Explorable::Operation
     
-    def eval
+    def prepare(args)
+      @args[:ranking_function].prepare(args, @args[:input].server)
+    end
+    
+    def compare(item1, item2)
+      score_1 = @ranking_function.score(item1)
+      score_2 = @ranking_function.score(item2)
+      # binding.pry
+      comparison = (score_1 <=> score_2 )
+      if comparison.nil?
+        if score_1 == -Float::INFINITY
+          1
+        elsif score_2 == -Float::INFINITY
+          -1
+        else
+          (score_1.to_s <=> score_2.to_s) * @multiplier
+        end 
+      else
+        (score_1 <=> score_2 ) * @multiplier
+      end
+    end
+    
+    def is_last_level(index_entries)
+      index_entries.each{|entry| return false if !entry.children.empty?}
+      return true
+    end
+    
+    def domain_rank(index_entries)
+      # binding.pry
+      index_entries.sort! do |entry1, entry2| 
+        comparison_value = 1
+        # binding.pry
+        entry1.indexed_items.each do |item1|
+          entry2.indexed_items.each do |item2|
+            comparison_value = compare(item1, item2)
+            # binding.pry
+          end
+        end
+        comparison_value
+      end
+    end
+    
+    def eval_set(index_entries)
+      @ranking_function = @args[:ranking_function]
+      @ranking_function ||= Ranking.alpha_rank
+      @multiplier = -1
+
+      if(@args[:order] == "ASC")
+        @multiplier = 1
+      end
+      
+      rank_by_domain = @ranking_function.domain_rank?
+
+      if(rank_by_domain && is_last_level(index_entries))
+        # binding.pry
+        domain_rank(index_entries)
+      else
+        
+        index_entries.each do |index_entry|
+        
+          if(index_entry.children.empty?)
+            self.prepare(@args)
+            # binding.pry
+            index_entry.indexed_items.sort! do |item1, item2|
+              compare(item1, item2)
+            end
+          else
+            eval_set(index_entry.children)
+          end
+        end
+      end
+    end
+    
+    def eval_items(item1, item2)
       start_time = Time.now
       multiplier = -1
 
@@ -9,11 +82,8 @@ module Explorable
         multiplier = 1
       end
       mappings = {}
-      ranking_function = @args[:ranking_function]
-      ranking_function ||= Ranking.alpha_rank
-      ranking_function.source_set = @args[:input]
     
-      mappings = @args[:input].each_image.to_a.sort do |item1, item2|
+      mappings = @args[:input].each_item.to_a.sort do |item1, item2|
         comparable1 = item1
         comparable2 = item2
 

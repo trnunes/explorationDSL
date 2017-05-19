@@ -4,37 +4,30 @@ module Explorable
     def horizontal?
       grouping_function.horizontal?
     end
-    def eval
+    
+    def eval_item(item)
+      item_results = Set.new
+      item_to_group = nil
+        
+      grouping_items = @grouping_function.group(item, @groups)
+
+      grouping_items = [grouping_items] if !grouping_items.respond_to? :each
+      if(!grouping_items.empty?)
+        item.parents = grouping_items
+        item_results << item
+      end
+      
+      item_results
+    end
+    
+    def prepare(args)
       start_time = Time.now
       input_set = @args[:input]
+      @groups = {}
       @grouping_function = @args[:function]
-      mappings = {}
-      result_relation_index = {}
-      parents_hash = {}
-      # binding.pry
-      if input_set.has_subsets?
-        input_set.each_image do |subset|
-        # binding.pry
-          grouped_subset = subset.group{grouping_function}
-          if(!grouped_subset.empty?)
-            mappings[subset] = Xsubset.new(subset.key){|s|s.server = input_set.server; s.extension = grouped_subset.extension}
-          end
-          # binding.pry
-        end
-      else
-        groups = grouping_function.group(input_set)
-        mappings = {}
-        groups.each do |group_key, group_values|
-          
-          subset = Xsubset.new(group_key){|s| s.server = input_set.server; s.extension = group_values}
-          subset.server = input_set.server
-          mappings[group_key] = subset
-          # binding.pry
-        end    
-      end
+      @grouping_function.prepare(input_set.each_item, @groups, input_set.server)
       finish_time = Time.now
       puts "EXECUTED GROUP: " << (finish_time - start_time).to_s
-      mappings
     end
     
     def expression

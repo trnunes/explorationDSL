@@ -62,7 +62,7 @@ module SPARQLQuery
     def convert_literal(literal)
       if literal.has_datatype? && !literal.datatype.include?("string")
         return "\"" << literal.value << "\"^^<#{literal.datatype}>"
-      elsif literal.value.class == Fixnum || literal.value.class == Float || literal.value.class == Double
+      elsif literal.value.class == Fixnum || literal.value.class == Float
         return literal.value.to_s
       else
         begin
@@ -85,8 +85,6 @@ module SPARQLQuery
         type = "xsd:integer"
       elsif literal.value.class == Float
         type = "xsd:float"
-      elsif literal.value.class == Double
-        type = "xsd:double"
       end
       type
     end
@@ -95,7 +93,7 @@ module SPARQLQuery
       
 
       sparql_entity = ""
-      if(item.is_a?(Entity) || item.is_a?(Relation) || item.is_a?(Type))
+      if(item.is_a?(Entity) || item.is_a?(Type))
         sparql_entity = "<#{item.to_s}>"
       else
         if(item.is_a?(String))
@@ -126,7 +124,14 @@ module SPARQLQuery
     end
     
     def path_string(relations)
-      relations.map{|r| "<" << Xpair::Namespace.expand_uri(r.to_s) << ">"}.join("/")
+      
+      relations.map do |r|
+        if(r.is_a? PathRelation)
+          r.relations.map{|rs| "<" + Xpair::Namespace.expand_uri(rs.id) + ">"}.join("/")
+        else
+          "<" << Xpair::Namespace.expand_uri(r.to_s) << ">"
+        end
+      end.join("/")
       
     end
     

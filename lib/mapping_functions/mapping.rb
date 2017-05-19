@@ -4,11 +4,12 @@ module Mapping
     mapping_function = Mapping::Function.load(function_name.to_s)
     # binding.pry
    unless mapping_function.nil?
-     mapping_function.init(options)
+     mapping_function.prepare(options)
      mapping_function
    else
      if(options[:map])
        function = Mapping::UserDefined.new(options)
+       function.prepare(options)
        function.save
        return function
      end
@@ -20,46 +21,31 @@ module Mapping
     include Persistable::Writable
     extend Persistable::Readable
     
+    def delayed_result?
+      false
+    end
   end
   
   module Aggregator
     include Function
     attr_accessor :origin_set, :name
     
-    def initialize(name)
+    def initialize(name, options = {})
       @name = name
+      @aggregated_value = nil
+      @options = options
     end
     
-    def compute(xset)
-      @mappings = {}
-      @set = xset
-      xset.each_image do |item|
-
-        if(item.is_a? Xsubset)
-
-          init(@options)
-          item.each do |subset_item|
-            map(subset_item)
-          end
-         @mappings[item] = Xsubset.new(item.key){ |s| s.extension = {@aggregation => {} }}
-         # binding.pry
-        else
-          map(item)
-        end
-        
-      end
-      if @mappings.empty?
-        @mappings[@aggregation] = {}
-      end
-      @mappings
+    def delayed_result?
+      true
     end
     
     def map(item)
       #implementation in the subclass
     end
     
-    def init(options = {})
-      @options = options
+    def prepare()
+
     end
     
     def expression
@@ -70,8 +56,9 @@ module Mapping
     include Function
     attr_accessor :origin_set, :name
     
-    def initialize(name)
+    def initialize(name, options = {})
       @name = name
+      @options = options
     end
     
     def compute(xset)

@@ -13,9 +13,13 @@ module Filtering
       end      
     end
     
-    def eval(set)
-      build_query_filter(set).filter_by_range(@relations, @min, @max)
-      super(set.extension_copy, set)
+    def prepare(items, server)
+      filter = build_query_filter(items).filter_by_range(@relations, @min, @max)
+      @filtered_items = Set.new(filter.eval)
+    end
+    
+    def fiter(item)
+      @filtered_items.include? item
     end
     
     def expression

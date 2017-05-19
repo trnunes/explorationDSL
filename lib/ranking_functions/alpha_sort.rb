@@ -4,7 +4,10 @@ module Ranking
     def score(item)
       item.to_s
     end    
-        
+    
+    def prepare(args, server)
+    end
+    
     def name
       "alpha_sort"
     end

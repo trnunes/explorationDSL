@@ -1,22 +1,25 @@
 module Explorable
   class Refine < Explorable::Operation
     
-    def eval
+    def prepare(args)
+      @args = args
+      start_time = Time.now
+      result_set = Xset.new(SecureRandom.uuid, self.expression)
       start_time = Time.now      
       input_set = @args[:input]
-      mappings = {}
-      if(input_set.has_subsets? && @args[:apply_to_subsets])
-        input_set.each_image do |subset|
-          subset_mappings = Filtering.eval_filters(subset)
-          mappings[subset] = Xsubset.new(subset.key){|s| s.server = input_set.server; s.extension = subset_mappings}
-        end
-      else
-        mappings = Filtering.eval_filters(input_set)
-      end
-      Filtering.clear
+
+      Filtering.set_server input_set.server
+      Filtering.prepare(input_set.each_item, input_set.server)
       finish_time = Time.now
       puts "EXECUTED REFINE: " << (finish_time - start_time).to_s
-      return mappings
+      
+    end
+    
+    def eval_item(item)
+      # binding.pry
+      if(!Filtering.eval_filters(item))
+        return item
+      end
     end
     
     def expression
@@ -26,6 +29,8 @@ module Explorable
   
   def refine(args = {}, &block)
     yield(Filtering)
-    execute_operation(Refine, args)
+    rs = execute_operation(Refine, args)
+    Filtering.clear
+    rs
   end
 end

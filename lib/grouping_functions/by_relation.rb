@@ -6,8 +6,6 @@ module Grouping
       false
     end
     def initialize(args)
-
-      
       if args.size > 0
         self.relations = args
       else
@@ -15,53 +13,36 @@ module Grouping
       end      
     end
     
-    def group(set)
-      mappings = {}
-      are_schema_relations = !self.relations.first.is_a?(Xset)
-      if(are_schema_relations)
-        query = set.server.begin_nav_query do |q|
-          set.each_item do |item|
-            q.on(item)
-
-          end
-          q.restricted_image(self.relations.first)
-        end
-
-        results_hash = query.execute
-
-        results_hash.each do |subject, relations|
-          if !relations.empty?
-
-            group_relation = relations.keys.first 
-
-            objects = results_hash[subject][group_relation]
-
-            objects ||= []
-            objects.each do |object|
-              if mappings[object].nil?
-                mappings[object] ||={}
-              end
-              mappings[object] ||= {}
-              mappings[object][subject] = {}
-            end
-          end
-        end        
+    def prepare(items_to_group, groups, server)
+      relation = nil
+      if self.relations.size > 1
+        self.relations.each{|r| r.server = server if r.server.nil?}
+        relation = PathRelation.new(self.relations)
       else
-        relations = set.order_relations(self.relations)
-        set.each_item do |item|
-          # binding.pry
-          set.trace_image_items(item, relations.dup).each do |grouping_item|
-            
-            if !mappings.has_key? grouping_item
-              mappings[grouping_item] = {}
-            end
-            mappings[grouping_item][item] = {}
-            # binding.pry
-          end
+        relation = self.relations.first
+        relation.server = server if relation.server.nil?
+      end
+      
+      @image_by_domain_hash = {}
+      # binding.pry
+      relation.restricted_image(items_to_group).each do |pair|
+        if !@image_by_domain_hash.has_key?(pair.domain)
+          @image_by_domain_hash[pair.domain] = []
+        end
+        @image_by_domain_hash[pair.domain] << pair.image
+      end
+      
+    end
+    
+    def group(item, groups)
+      grouping_items = Set.new
+      # binding.pry
+      if(@image_by_domain_hash.has_key?(item))
+        @image_by_domain_hash[item].each do |image_item|
+          grouping_items << image_item
         end
       end
-
-      mappings
+      grouping_items
     end
     
     def expression

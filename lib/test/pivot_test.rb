@@ -91,31 +91,23 @@ class PivotTest < XpairUnitTest
   end
   
   def test_empty
-    set = Xset.new do |s|
-    end
-    set.server = @papers_server
+    set = Xset.new("test", "")
     
+    assert_true set.pivot(relations: [SchemaRelation.new("_:cite", @papers_server)]).empty?
+    assert_true set.pivot(relations: [SchemaRelation.new("_:cite", @papers_server)], direction: 'backward').empty?
 
-
-    
-    assert_true set.pivot(relations: [Relation.new("_:cite")], ).empty?
-    assert_true set.pivot(relations: [Relation.new("_:cite")], direction: 'backward').empty?
-    assert_true set.pivot().empty?    
   end
   
   def test_pivot_relation_no_image
-    set = Xset.new do |s| 
-      s << Entity.new("_:p1")
-      s << Entity.new("_:p2")
-      s << Entity.new("_:p3")
-    end
+    set = Xset.new("test_set", "")
+    set.add_pair(Pair.new(Entity.new("_:not_existent"), Entity.new("_:not_existent")))
     
     set.server = @server    
     
-    rs = set.pivot(relations: [Relation.new("_:r7")], direction: 'forward')
+    rs = set.pivot(relations: [SchemaRelation.new("_:r7", @papers_server)], direction: 'forward')
 
-    expected_extension = {}
-    assert_equal expected_extension, rs.extension
+    
+    assert_true rs.empty?
   end
   
   def test_project
@@ -187,93 +179,45 @@ class PivotTest < XpairUnitTest
   
   def test_pivot_forward
     
-    set = Xset.new do |s| 
-      s << Entity.new("_:p1")
-      s << Entity.new("_:p2")
-      s << Entity.new("_:p3")
-    end
+    set = Xset.new("test", "")
+    
+    set.add_pair Pair.new(Entity.new("_:p1"), Entity.new("_:p1"))
+    set.add_pair Pair.new(Entity.new("_:p2"), Entity.new("_:p2"))
+    set.add_pair Pair.new(Entity.new("_:p3"), Entity.new("_:p3"))
+
     
     set.server = @server    
     
-    rs = set.pivot(relations: [Relation.new("_:r1")], direction: 'forward')
+    rs = set.pivot(relations: [SchemaRelation.new("_:r1", @server)], direction: 'forward')
+
 
     expected_extension = {
       Entity.new("_:p1")=> {Entity.new("_:o1") => {}, Entity.new("_:o2") => {}},
       Entity.new("_:p2")=> {Entity.new("_:o2") => {}},
       Entity.new("_:p3")=> {Entity.new("_:o3") => {}}
     }
-    puts rs.to_s
-    rs.each_image do |i|
-      puts i.id
-      rs.get_item(i)
-    end
-    rs.expression
-    assert_equal expected_extension, rs.extension
-    # assert_equal expected_index, rs.relation_index
+    expected_pairs = [Pair.new(Entity.new("_:o1"), Entity.new("_:o1"), 'default'), Pair.new(Entity.new("_:o2"), Entity.new("_:o2"), 'default'), Pair.new(Entity.new("_:o3"), Entity.new("_:o3"), 'default')]
+
+    assert_equal Set.new(expected_pairs), Set.new(rs.each_relation.first.each_pair)
+    puts "======INDEX======="
+    puts rs.index.inspect
+    
   end
-  
-  # def test_pivot_forward_keep_structure
-  #   set = Xset.new do |s|
-  #     s << Entity.new("_:p1")
-  #     s << Entity.new("_:p2")
-  #     s << Entity.new("_:p3")
-  #   end
-  #
-  #   set.server = @server
-  #
-  #   expected_extension = {
-  #     Entity.new("_:o1") => {},
-  #     Entity.new("_:o2") => {},
-  #     Entity.new("_:o3") => {}
-  #   }
-  #   rs = set.pivot_forward(["_:r1"], keep_structure: true)
-  #   expected_index = {
-  #     Entity.new("_:p1")=>{
-  #       Entity.new("_:o1") ,
-  #       Entity.new("_:o2")
-  #     },
-  #     Entity.new("_:p2")=> {Entity.new("_:o2") => {}},
-  #     Entity.new("_:p3")=>{Entity.new("_:o3")},
-  #   }
-  #
-  #   assert_equal expected_index, rs.extension
-  #   assert_equal expected_index, rs.relation_index
-  # end
-  
+    
   def test_pivot_property_path
-    set = Xset.new do |s|
-      s << Entity.new("_:paper1")
-      s << Entity.new("_:p6")
-    end
+    set = Xset.new("test", "")
+    
+     set.add_pair Pair.new(Entity.new("_:paper1"), Entity.new("_:paper1"))
+     set.add_pair Pair.new(Entity.new("_:p6"), Entity.new("_:p6"))
+    
     set.server = @papers_server
-    expected_extension = {
-      Entity.new("_:paper1")=>{Entity.new("_:a1")=>{}, Entity.new("_:a2")=>{}},
-      Entity.new("_:p6")    =>{Entity.new("_:a2")=>{}, Entity.new("_:a1")=>{}}
-    }
-    rs = set.pivot(relations: ["_:cite", "_:author"], path: true)
-    assert_equal expected_extension, rs.extension
-    # assert_equal expected_index, rs.relation_index
+    expected_pairs = Set.new([Pair.new(Entity.new("_:a1"), Entity.new("_:a1"), 'default'),Pair.new(Entity.new("_:a2"), Entity.new("_:a2"), 'default') ])
+    rs = set.pivot(relations: [PathRelation.new([SchemaRelation.new("_:cite", @papers_server), SchemaRelation.new("_:author", @papers_server)])])
+    assert_equal expected_pairs, Set.new(rs.each_relation.first.each_pair)
+    puts "======INDEX======="
+    puts rs.index.inspect
+    
   end
-  
-  # def test_pivot_property_path_keep_structure
-  #   set = Xset.new do |s|
-  #     s << Entity.new("_:paper1")
-  #     s << Entity.new("_:p6")
-  #   end
-  #   set.server = @papers_server
-  #   expected_index = {
-  #     Entity.new("_:paper1")=>{Entity.new("_:a1") => {}, Entity.new("_:a2") => {}},
-  #     Entity.new("_:p6")    =>{Entity.new("_:a1") => {}, Entity.new("_:a2") => {}},
-  #
-  #   }
-  #   expected_extension = {
-  #     Entity.new("_:a1") => {},
-  #     Entity.new("_:a2") => {}
-  #   }
-  #   rs = set.pivot_forward([["_:cite", "_:author"]], keep_structure: true)
-  #   assert_equal expected_index, rs.extension
-  #   assert_equal expected_index, rs.relation_index
-  # end
   
   
   def test_pivot_multiple_relations
@@ -301,93 +245,82 @@ class PivotTest < XpairUnitTest
     }
     rs = set.pivot(relations: ["_:cite", "_:author"])
     assert_equal expected_extension, rs.extension
+    puts "======INDEX======="
+    puts rs.index.inspect
 
     # assert_equal expected_index, rs.relation_index
   end
   
   
   def test_pivot_backward
-    set = Xset.new do |s|
-      s << Entity.new("_:o1")
-      s << Entity.new("_:o2")
-      s.resulted_from =  Xset.new{|os| os.server = @server}
-    end
+    set = Xset.new("test", "") 
+    pairs = [Pair.new(Entity.new("_:o1"), Entity.new("_:o1"), 'default'), Pair.new(Entity.new("_:o2"), Entity.new("_:o2"), 'default')]
+    
+    set.add_pair pairs[0]
+    set.add_pair pairs[1]
+
+    
 
     set.server = @server
+    
+    expected_pairs = [Pair.new(Entity.new("_:p1"), Entity.new("_:p1"), 'default'), Pair.new(Entity.new("_:p2"), Entity.new("_:p2"), 'default')]
 
-    expected_extension = {
-       Entity.new("_:o2")=>{Entity.new("_:p1")=>{}, Entity.new("_:p2")=>{}},
-       Entity.new("_:o1")=>{Entity.new("_:p1")=>{}}
-     }
-    rs = set.pivot relations: ["_:r1"], direction: "backward"
-    # assert_equal rs[Entity.new("_:o2")].first.keys.first.text, "_:r1 of"
-    assert_equal expected_extension, rs.extension
+    rs = set.pivot relations: [SchemaRelation.new("_:r1", @server)], is_backward: true
 
+    assert_equal Set.new(expected_pairs), Set.new(rs.each_relation.first.each_pair)
+    puts "======INDEX======="
+    puts rs.index.inspect
+    
   end
   
   def test_pivot_computed_relation
-    set = Xset.new do |s| 
-      s << Entity.new("_:p1")
-      s << Entity.new("_:p2")
-      s << Entity.new("_:p3")
-    end
+    set = Xset.new("test", "")
+    set.add_pair(Pair.new(Entity.new("_:p1"), Entity.new("_:p1"), 'default'))
+    set.add_pair(Pair.new(Entity.new("_:p2"), Entity.new("_:p2"), 'default'))
+    set.add_pair(Pair.new(Entity.new("_:p3"), Entity.new("_:p3"), 'default'))
     
     set.server = @server    
     
-    relation_set = Xset.new do |s|
-      s.extension = {
-        Entity.new("_:p1")=> {Entity.new("_:o1") => {}, Entity.new("_:o2") => {}},
-        Entity.new("_:p2")=> {Entity.new("_:o2") => {}},
-        Entity.new("_:p3")=> {Entity.new("_:o3") => {}}
-      }
-    end
-    relation_set.server = @server
+    relation = ComputedRelation.new('crelation')
+    relation.add_pair(Pair.new(Entity.new("_:p1"), Entity.new("_:o1")))
+    relation.add_pair(Pair.new(Entity.new("_:p1"), Entity.new("_:o2")))
+    relation.add_pair(Pair.new(Entity.new("_:p2"), Entity.new("_:o2")))
+    relation.add_pair(Pair.new(Entity.new("_:p3"), Entity.new("_:o3")))
     
-    rs = set.pivot(relations: [relation_set], direction: 'forward')
+    
+    rs = set.pivot(relations: [relation], direction: 'forward')
 
-    expected_extension = {
-      Entity.new("_:p1")=> {Entity.new("_:o1") => {}, Entity.new("_:o2") => {}},
-      Entity.new("_:p2")=> {Entity.new("_:o2") => {}},
-      Entity.new("_:p3")=> {Entity.new("_:o3") => {}}
-    }
-    puts rs.to_s
-    rs.each_image do |i|
-      puts i.id
-      rs.get_item(i)
-    end
-    rs.expression
-    assert_equal expected_extension, rs.extension
+    expected_pairs = [Pair.new(Entity.new("_:o1"), Entity.new("_:o1"), 'default'), Pair.new(Entity.new("_:o2"), Entity.new("_:o2"), 'default'), Pair.new(Entity.new("_:o3"), Entity.new("_:o3"), 'default')]
+
+    assert_equal Set.new(expected_pairs), Set.new(rs.each_relation.first.each_pair)
+    puts "======INDEX======="
+    puts rs.index.inspect
     
   end
 
   def test_pivot_mixed_relation
-    set = Xset.new do |s|
-      s << Entity.new("_:paper1")
-      s << Entity.new("_:p6")
-    end
+    set = Xset.new("test", "")
+    
+    set.add_pair Pair.new(Entity.new("_:paper1"), Entity.new("_:paper1"))
+    set.add_pair Pair.new(Entity.new("_:p6"), Entity.new("_:p6"))
+    
     set.server = @papers_server
     
-    relation_set = Xset.new do |s|
-      s.extension = {
-        Entity.new("_:paper1") =>{
-           Entity.new("_:p2")=> {},
-           Entity.new("_:p3")=> {},
-           Entity.new("_:p4")=> {}
-        },
-        Entity.new("_:p6") => {
-          Entity.new("_:p2")=>{},
-          Entity.new("_:p3")=>{},
-          Entity.new("_:p5")=>{}
-        }
-      }
-    end
-    expected_extension = {
-      Entity.new("_:paper1")=>{Entity.new("_:a1")=>{}, Entity.new("_:a2")=>{}},
-      Entity.new("_:p6")    =>{Entity.new("_:a2")=>{}, Entity.new("_:a1")=>{}}
-    }
-    rs = set.pivot(relations: [relation_set, "_:author"], path: true)
+    computed_relation = ComputedRelation.new("crelation")
+    computed_relation.add_pair Pair.new(Entity.new("_:paper1"), Entity.new("_:p2"))
+    computed_relation.add_pair Pair.new(Entity.new("_:paper1"), Entity.new("_:p3"))
+    computed_relation.add_pair Pair.new(Entity.new("_:paper1"), Entity.new("_:p4"))
+    computed_relation.add_pair Pair.new(Entity.new("_:p6"), Entity.new("_:p2"))
+    computed_relation.add_pair Pair.new(Entity.new("_:p6"), Entity.new("_:p3"))
+    computed_relation.add_pair Pair.new(Entity.new("_:p6"), Entity.new("_:p5"))
+ 
+    expected_pairs = [Pair.new(Entity.new("_:a1"), Entity.new("_:a1"), 'default'), Pair.new(Entity.new("_:a2"), Entity.new("_:a2"), 'default')]
     
-    assert_equal expected_extension, rs.extension
+    rs = set.pivot(relations: [PathRelation.new([computed_relation, SchemaRelation.new("_:author", @papers_server)])])
+    
+    assert_equal Set.new(expected_pairs), rs.each_relation.first.each_pair
+    puts "======INDEX======="
+    puts rs.index.inspect
   end
   
 end

@@ -2,26 +2,25 @@ module Mapping
   class Count
     include Mapping::Aggregator
   
-    def initialize()
-      super("count")
-      init()
+    def initialize(options = {})
+      super("count", options)
     end
     
-    def init(options = {})
-      @aggregation = Xpair::Literal.new(0)
+    def prepare(options = {})
+      @aggregated_value = Xpair::Literal.new(0)
     end
     
     def map(item)
-      @aggregation.value += 1
+      @aggregated_value.value += 1
+      @aggregated_value
     end
-    
     
     def expression
       "count"
     end
   end
 
-  def self.count  
-    return Count.new()
+  def self.count(options = {})
+    return Count.new(options)
   end
 end

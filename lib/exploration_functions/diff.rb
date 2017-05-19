@@ -1,17 +1,29 @@
 module Explorable
   class Diff < Explorable::Operation
     
-    def eval
+    def eval_set(index_entries)
       start_time = Time.now
-      mappings = {}
-      source_items = @args[:input].each_item
-      target_items = @args[:target].each_item
-      diff_items = source_items - target_items
-      mappings = diff_items.map{|item| [item,{}]}.to_h
+      source_index_entries = index_entries
+      target_index_entries = [@args[:target].index]
+      
+      while(!source_index_entries.empty? && !target_index_entries.empty?)
+        source_children = []
+        target_children = []
+        source_index_entries.each do |entry1|
+          target_index_entries.each do |entry2|
+            if(entry1.indexing_item == entry2.indexing_item)
+              entry1.indexed_items = entry1.indexed_items - entry2.indexed_items
+            end
+          end
+          source_children += entry1.children
+          target_children = target_index_entries.map{|entry| entry.children}.flatten
+        end
+        source_index_entries = source_children
+        target_index_entries = target_children
+      end
 
       finish_time = Time.now
       puts "EXECUTED DIFF: " << (finish_time - start_time).to_s
-      mappings
     end
     
     def expression

@@ -1,6 +1,6 @@
 
 module Grouping
-  class ByDomain < Grouping::Function
+  class ByImage < Grouping::Function
     attr_accessor :relations
     
     def horizontal?
@@ -21,7 +21,7 @@ module Grouping
     end
     
     def group(item, pair, groups)
-      Pair.new(pair.domain, pair.image)
+      Pair.new(pair.image, pair.domain)
     end
     
     def expression
@@ -35,6 +35,6 @@ module Grouping
     if !args.has_key? :relations
       raise "Missing relations param!"
     end
-    ByDomain.new(args[:relations])
+    ByImage.new(args[:relations])
   end
 end

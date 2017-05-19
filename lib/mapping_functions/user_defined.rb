@@ -6,12 +6,6 @@ module Mapping
 
       @options = options
 
-
-      init(options)
-    end
-    
-    def init(options)
-      # binding.pry
       self.class.class_eval do
         include options[:function_type]
       end
@@ -20,6 +14,9 @@ module Mapping
       @id = @name
       @init_code = options[:initializer]
       @map_code = options[:map]
+    end
+    
+    def prepare(options = {})
       begin
         eval(@init_code)
       rescue Exception => e
@@ -28,7 +25,7 @@ module Mapping
     end
   
   
-    def map(item)
+    def map(pair, *args)
       begin
         # binding.pry
         eval(@map_code)
@@ -38,9 +35,7 @@ module Mapping
     end
     
     def expression
-      relation_exp = ""
-      relation_exp = "[" << self.relations.map{|r| r.is_a?(Xset)? r.id : r.to_s}.join(",") << "]"
-      "image_count(#{relation_exp})"
+      "user_defined"
     end
   end
 end

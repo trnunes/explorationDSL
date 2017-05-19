@@ -1,24 +1,26 @@
 module Mapping
   class Average
     include Mapping::Aggregator
-    def initialize()
-      super("avg")
-      init()
+    def initialize(options = {})
+      super("avg", options)
     end
     
-    def init(options = {})
+    def prepare(options = {})
       @sum = 0
       @count = 0
-      @aggregation = 0
+      @aggregated_value = Xpair::Literal.new(0)
     end
     
     def map(item)
+      # binding.pry
       if(!item.is_a? Xpair::Literal)
         raise "Mapping function should receive only literals as arugments! (#{item.inspect})"
       end
       @sum += item.value.to_f
       @count += 1
-      @aggregation = Xpair::Literal.new(@sum.to_f/@count.to_f)
+      @aggregated_value.value = Xpair::Literal.new(@sum.to_f/@count.to_f).value
+      @aggregated_value
+      # binding.pry
     end
     
     def expression
@@ -26,8 +28,8 @@ module Mapping
     end
   end
 
-  def self.avg(relations=nil)
-    return Average.new()
+  def self.avg(options = {})
+    return Average.new(options)
   end
 end
 

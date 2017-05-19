@@ -102,11 +102,11 @@ module SPARQLQuery
       results = Set.new
       @server.execute(@query).each do |s|
         if(!s[:pf].nil?)
-          results << Relation.new(Xpair::Namespace.colapse_uri(s[:pf].to_s), true)
+          results << SchemaRelation.new(Xpair::Namespace.colapse_uri(s[:pf].to_s), @server, true)
         end
         
         if(!s[:pb].nil?)
-          results << Relation.new(Xpair::Namespace.colapse_uri(s[:pb].to_s))
+          results << SchemaRelation.new(Xpair::Namespace.colapse_uri(s[:pb].to_s), @server)
         end
       end
       results
@@ -140,8 +140,8 @@ module SPARQLQuery
         end
         item = Entity.new(subject_id)
         item.add_server(@server)
-        relation = Relation.new(relation_id)
-        relation.add_server(@server)
+        relation = SchemaRelation.new(relation_id, @server)
+
 
         hash[item] ||= {}
         hash[item][relation] ||=[]

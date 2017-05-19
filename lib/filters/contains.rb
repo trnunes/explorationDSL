@@ -9,20 +9,23 @@ module Filtering
         @values = args[1]
       else
         raise "Invalid number of arguments. Expected: min 1, max 2; Received: #{args.size}"
-      end      
+      end
     end
     
-    def eval(set)
+    def prepare(items, server)
       count = 0
-      f = build_query_filter(set)
+      f = build_query_filter(items)
 
       f.union do |u|
         @values.each do |value|
           u.relation_equals(@relations, value) 
         end
       end
-      
-      super(set.extension_copy, set)      
+      @filtered_items = Set.new(f.eval)
+    end
+    
+    def filter(item)
+      @filtered_items.include?(item)
     end
     
     def expression

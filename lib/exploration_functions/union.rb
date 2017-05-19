@@ -1,29 +1,33 @@
 module Explorable
   class Union < Explorable::Operation
     
-    def eval
-      input_set = @args[:input]
-      target_set = @args[:target]
+    def eval_set(index_entries)
       start_time = Time.now
-      mappings = input_set.extension_copy
-      self_images = input_set.each_image
-      target_images = target_set.each_image
-      mappings = (self_images + target_images).map do |image| 
-        if image.is_a? Xsubset
-          [image, image]
-        else
-          [image, {}]
-        end
-      end.to_h
-      finish_time = Time.now
-      puts "EXECUTED UNION: " << (finish_time - start_time).to_s
-
-      if @args[:inplace]
-        input_set.extension = mappings
-        self
-      end
-      mappings
+      source_index_entries = index_entries
+      target_index_entries = [@args[:target].index]
       
+      while(!source_index_entries.empty? && !target_index_entries.empty?)
+        source_children = []
+        target_children = []
+        entries_to_be_added = []
+        source_index_entries.each do |entry1|
+          target_index_entries.each do |entry2|
+            if(entry1.indexing_item == entry2.indexing_item)
+              entry1.indexed_items = entry1.indexed_items + entry2.indexed_items
+            else
+              entries_to_be_added << entry2
+            end
+          end
+          source_children += entry1.children
+          target_children = target_index_entries.map{|entry| entry.children}.flatten
+        end
+        entries_to_be_added.each{|entry| source_index_entries.push(entry.copy)}
+        source_index_entries = source_children
+        target_index_entries = target_children
+      end
+
+      finish_time = Time.now
+      puts "EXECUTED DIFF: " << (finish_time - start_time).to_s
     end
     
     def expression
