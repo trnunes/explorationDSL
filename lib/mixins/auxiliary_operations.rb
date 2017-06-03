@@ -14,15 +14,10 @@ module AuxiliaryOperations
     self.each_item do |item|
       items_hash[item.id] = item
     end
-    
-    self.pivot_forward(relations: [relation]).extension.each do |item, values|
-      literal = ""
-      labels = []
-      values.keys.each do |label|
-        labels << label
-      end
-      
-      items_hash[item.id].text = labels.join " | "
+    relation.server = relation.server || @server
+
+    relation.restricted_image(self.each_item).each do |pair|
+      items_hash[pair.domain.id].text = pair.image.text
     end
     self    
   end

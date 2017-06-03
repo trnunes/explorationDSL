@@ -25,6 +25,20 @@ module Xpair
     def has_datatype?
       !(datatype.nil? || datatype.empty?)
     end
+    
+    def expression
+      if @value.is_a?(Numeric)
+        value_str = @value.to_s 
+      else
+        value_str = "\"" + @value.to_s + "\""
+      end
+      expr = "Xpair::Literal.new(" + value_str + ""
+      if(@datatype)
+        expr += ", \"" + @datatype + "\""
+      end
+      expr += ")"
+      expr
+    end
 
     def eql?(obj)
       self.class == obj.class && @value.to_s == obj.value.to_s

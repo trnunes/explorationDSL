@@ -1,23 +1,50 @@
 class SchemaRelation
-  attr_accessor :id, :server, :inverse, :text
+  attr_accessor :id, :server, :inverse, :text, :parents, :index
 
-  def initialize(id, server=nil, inverse=false)
+  def initialize(id, inverse=false, server=nil)
     @id = id
+    @text = @id
     @server = server
     @inverse = inverse
-    
+    @parents = []
+    @index = Indexing::Entry.new('root')
+  end
+  def inverse?
+    @inverse
+  end
+  def clone
+    cloned_item = self.class.new(@id)
+    cloned_item.text = @text
+    cloned_item.server = @server
+    cloned_item.inverse = @inverse
+    cloned_item.index = @index.copy
+    cloned_item
+  end
+  
+  def shallow_clone
+    cloned_item = self.class.new(@id)
+    cloned_item.text = @text
+    cloned_item.server = @server
+    cloned_item.inverse = @inverse
+    cloned_item
   end
   
   def domain()
+    return @server.image(self) if @inverse
     @server.domain(self)
   end
   
   def image()
+    return @server.domain(self) if @inverse
     @server.image(self)
   end
   
   def restricted_image(restriction)
     return [] if restriction.empty?
+    if @inverse
+      @inverse = false
+      return restricted_domain(restriction)
+    end
     result_pairs = []
     query = @server.begin_nav_query do |q|
       restriction.each do |item|
@@ -40,6 +67,11 @@ class SchemaRelation
   
   def restricted_domain(restriction)
     return [] if restriction.empty?
+    if @inverse
+      @inverse = false
+      return restricted_image(restriction)
+    end
+    
     result_pairs = []
     query = @server.begin_nav_query do |q|
       restriction.each do |item|
@@ -56,7 +88,7 @@ class SchemaRelation
         end
       end  
     end
-    binding.pry
+
 
     result_pairs
   end
@@ -67,6 +99,10 @@ class SchemaRelation
       t << " of"
     end
     t
+  end
+  
+  def expression
+    "SchemaRelation.new('" + @id + "', " + @inverse.to_s + ")"
   end
   
   def to_s

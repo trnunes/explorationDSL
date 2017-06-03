@@ -30,13 +30,22 @@ module Explorable
       puts "EXECUTED DIFF: " << (finish_time - start_time).to_s
     end
     
-    def expression
-      "union(#{@args[:input].id}, #{@args[:target].id})"
+    def v_expression
+      "Union(#{@args[:target].title})"
     end
+    def expression
+      "#{@args[:input].id}.union(#{@args[:target].title})"
+    end
+    
   end
   
   def union(target, args={})
     args = {target: target}    
-    execute_operation(Union, args)
+    execute_exploration_operation(Union, args)
+  end
+  
+  def v_union(target, args={})
+    args = {target: target}    
+    execute_visualization_operation(Union, args)
   end
 end

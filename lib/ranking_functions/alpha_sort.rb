@@ -13,8 +13,7 @@ module Ranking
     end
     
     def expression
-      relation_exp = self.relations.map{|r| r.is_a?(Xset)? r.expression : r.to_s}.join(", ")
-      "by_relation(#{relation_exp})"
+      "alpha_sort"
     end
     
   end

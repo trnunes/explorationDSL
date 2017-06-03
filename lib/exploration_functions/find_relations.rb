@@ -1,27 +1,37 @@
 module Explorable
   class FindRelations < Explorable::Operation   
-    def eval()
+    
+    def delayed_result?
+      true
+    end
+    
+    def prepare(args)
       start_time = Time.now
-
-      input_set = @args[:input]
-      entities = input_set.each_entity.to_a
-      limit = @args[:limit]
-      limit ||= entities.size
-
-      keep_structure = @args[:keep_structure].nil? ? false : @args[:keep_structure]
-
-      mappings = {}
-      results = input_set.server.begin_nav_query.find_relations(entities[0..limit])
-
-      results.each do |item|
-
-        mappings[item] = {}
-
+      @result_set = Set.new
+      if(!@relations.nil?)
+        return
       end
+
+      input_set = args[:input]
+      if(args[:position] == "domain")
+        entities = input_set.each_domain
+      else
+        entities = input_set.each_item
+      end
+      entities.select!{|e| !e.is_a?(Xpair::Literal)}
+      limit = args[:limit] || entities.size
+
+      @relations = Set.new
+      @relations = Set.new input_set.server.begin_nav_query.find_relations(entities[0..limit])
+      # binding.pry
+
       finish_time = Time.now
 
       puts "FindRelations: " <<(finish_time - start_time).to_s
-      return mappings
+    end
+    
+    def eval_item(item)
+      @relations
     end
      
     # def eval()
@@ -62,15 +72,26 @@ module Explorable
     #   puts "FindRelations: " <<(finish_time - start_time).to_s
     #   return mappings
     # end
+
+    def v_expression
+      "Relations()"
+    end
     
     def expression
-      "relations(#{@args[:input].id})"
+      "#{@args[:input].id}.relations()"
     end
   end
   
   def relations(args = {})
     args[:direction] = "backward"
-    execute_operation(FindRelations, args)
+    # binding.pry
+    execute_exploration_operation(FindRelations, args)
+  end
+
+  def v_relations(args = {})
+    args[:direction] = "backward"
+    # binding.pry
+    execute_visualization_operation(FindRelations, args)
   end
   
   def forward_relations(args = {})

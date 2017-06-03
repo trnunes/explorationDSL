@@ -27,7 +27,7 @@ class Entity < Item
     
   
   def expression
-    "Entity.new(\"" + id + "\")"
+    "Entity.new(\"" + @id + "\")"
   end
   
   def to_json(*a)

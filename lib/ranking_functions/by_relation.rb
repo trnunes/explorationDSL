@@ -1,18 +1,18 @@
 module Ranking
   class ByRelation < Ranking::Function
-    attr_accessor :relations
+    attr_accessor :relation
     
-    def initialize(relations)
-      @relations = PathRelation.new(relations)
+    def initialize(relation)
+      @relation = relation
     end
     
     def prepare(args, server)
-      @relations.server = server
+      @relation.server = server
       if(!@result_hash.nil?)
         return
       end
       @result_hash = {}
-      result_pairs = @relations.restricted_image(args[:input].each_item)
+      result_pairs = @relation.restricted_image(args[:input].each_item)
       result_pairs.each do |pair|
         if(!@result_hash.has_key?(pair.domain))
           @result_hash[pair.domain] = []
@@ -34,8 +34,8 @@ module Ranking
     end    
     
     def expression
-      relation_exp = self.relations.map{|r| r.is_a?(Xset)? r.expression : r.to_s}.join(", ")
-      "by_relation(#{relation_exp})"
+      relation_exp = self.relation.text
+      "#{relation_exp}"
     end
     
     def name
@@ -44,6 +44,6 @@ module Ranking
   end
   
   def self.by_relation(args={})
-    ByRelation.new(args[:relations])
+    ByRelation.new(args[:relation])
   end
 end

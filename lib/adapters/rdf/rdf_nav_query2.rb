@@ -98,15 +98,21 @@ module SPARQLQuery
     
     def find_relations(items)
       @items = items
-      @query = "SELECT distinct ?pf ?pb WHERE{ {VALUES ?o {#{@items.map{|i| "<" + i.id + ">"}.join(" ")}}. ?s ?pf ?o.} UNION {VALUES ?s {#{@items.map{|i| "<" + i.id + ">"}.join(" ")}}. ?s ?pb ?o.}}"
+      are_literals = !@items.empty? && @items[0].is_a?(Xpair::Literal)
+      if(are_literals)
+        @query = "SELECT distinct ?pf WHERE{ {VALUES ?o {#{@items.map{|i| SPARQLQuery.convert_literal(i)}.join(" ")}}. ?s ?pf ?o.}}"
+      else
+        @query = "SELECT distinct ?pf ?pb WHERE{ {VALUES ?o {#{@items.map{|i| "<" + i.id + ">"}.join(" ")}}. ?s ?pf ?o.} UNION {VALUES ?s {#{@items.map{|i| "<" + i.id + ">"}.join(" ")}}. ?s ?pb ?o.}}"
+      end
+      
       results = Set.new
       @server.execute(@query).each do |s|
         if(!s[:pf].nil?)
-          results << SchemaRelation.new(Xpair::Namespace.colapse_uri(s[:pf].to_s), @server, true)
+          results << SchemaRelation.new(Xpair::Namespace.colapse_uri(s[:pf].to_s), true, @server)
         end
         
         if(!s[:pb].nil?)
-          results << SchemaRelation.new(Xpair::Namespace.colapse_uri(s[:pb].to_s), @server)
+          results << SchemaRelation.new(Xpair::Namespace.colapse_uri(s[:pb].to_s), false, @server)
         end
       end
       results
@@ -140,7 +146,7 @@ module SPARQLQuery
         end
         item = Entity.new(subject_id)
         item.add_server(@server)
-        relation = SchemaRelation.new(relation_id, @server)
+        relation = SchemaRelation.new(relation_id, false, @server)
 
 
         hash[item] ||= {}

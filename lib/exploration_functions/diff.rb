@@ -26,14 +26,18 @@ module Explorable
       puts "EXECUTED DIFF: " << (finish_time - start_time).to_s
     end
     
+    def v_expression
+      "Diff(#{@args[:target].title})"
+    end
+    
     def expression
-      "diff(#{@args[:input].id}, #{@args[:input].id})"
+      "#{@args[:input].id}.diff(#{@args[:target].id})"
     end
   end
   
   def diff(target)
     args = {target: target}
     
-    execute_operation(Diff, args)
+    execute_exploration_operation(Diff, args)
   end
 end

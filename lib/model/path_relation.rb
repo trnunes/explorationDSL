@@ -1,21 +1,28 @@
 class PathRelation
-  attr_accessor :id, :server, :inverse, :text, :relations
+  attr_accessor :id, :server, :inverse, :text, :relations, :limit
 
-  def initialize(relations)
+  def initialize(relations, limit=nil)
+    @limit = limit
     @relations = relations
   end
   
   def can_fire_path_query
     are_all_schema_relations = (@relations.select{|r| r.is_a? SchemaRelation}.size == @relations.size)
 
+    are_all_single_direction = (@relations.map{|r| r.inverse}.uniq == 1)
+
     is_single_server = (@relations.map{|r| r.server}.uniq.size == 1)
-    are_all_schema_relations && is_single_server
+    (are_all_schema_relations && are_all_single_direction && s_single_server)
   end
   
   def domain()
     @relations.first.domain
   end
   
+  def server=(server)
+    @server = server
+    @relations.each{|r| r.server = server}
+  end
   def image()
     @relations.last.image
   end
@@ -25,9 +32,12 @@ class PathRelation
     result_pairs = []
 
     result_pairs = items.map{|i| Pair.new(i, i)}
-    relations.each do |r|
 
-      partial_pairs = r.restricted_image(result_pairs.map{|pair| pair.image})
+    relations.each do |r|
+      
+      restriction = result_pairs.map{|pair| pair.image}
+      @limit ||= restriction.size
+      partial_pairs = r.restricted_image(Set.new(restriction[0..@limit]))
       partial_pairs_hash = {}
       partial_pairs.each do |pair| 
         if(!partial_pairs_hash.has_key? pair.domain)
@@ -58,7 +68,7 @@ class PathRelation
     result_pairs = items.map{|i| Pair.new(i, i)}
     relations.each do |r|
       
-      partial_pairs = r.restricted_domain(result_pairs.map{|pair| pair.image})
+      partial_pairs = r.restricted_domain(Set.new(result_pairs.map{|pair| pair.image}))
       partial_pairs_hash = partial_pairs.map{|pair| [pair.domain, pair.image]}.to_h
       
       result_pairs.each do |pair|

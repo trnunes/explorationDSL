@@ -26,15 +26,26 @@ module Explorable
       return mapped_items
     end
     
-    def expression
-      "map(#{@args[:input].id}).{#{@args[:function].expression}}"
+    def v_expression
+      "Map(#{@args[:function].expression})"
     end
+    
+    def expression
+      "#{@args[:input].id}.map(#{@args[:function].expression})"
+    end
+    
   end
     
   def map(args = {}, &block)
     args[:function] = yield(Mapping)
-    execute_operation(Map, args)
+    execute_exploration_operation(Map, args)
   end
+  
+  def v_map(args = {}, &block)
+    args[:function] = yield(Mapping)
+    execute_visualization_operation(Map, args)
+  end
+  
 end
 # module Explorable
 #   class Map < Explorable::Operation

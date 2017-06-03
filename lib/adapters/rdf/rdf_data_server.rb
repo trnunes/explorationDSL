@@ -70,7 +70,7 @@ class RDFDataServer
     query = "SELECT DISTINCT ?class WHERE { ?s a ?class.}"
     classes = []
     execute(query, content_type: content_type).each do |s|
-      type = Type.new(s[:class].to_s)
+      type = Type.new(Xpair::Namespace.colapse_uri(s[:class].to_s))
       # type.text = s[:label].to_s if !s[:label].to_s.empty?
       type.add_server(self)
       classes << type
@@ -82,7 +82,7 @@ class RDFDataServer
     query = "SELECT DISTINCT ?s  WHERE { ?s a <#{Xpair::Namespace.expand_uri(type.id)}>.}"
     instances = []
     execute(query, content_type: content_type).each do |s|
-      item = Entity.new(s[:s].to_s)
+      item = Entity.new(Xpair::Namespace.colapse_uri(s[:s].to_s))
       # item.text = s[:label].to_s if !s[:label].to_s.empty?
       item.add_server(self)
       instances << item
@@ -94,7 +94,7 @@ class RDFDataServer
     query = "SELECT DISTINCT ?relation WHERE { ?s ?relation ?o.}"
     classes = []
     execute(query, content_type: content_type).each do |s|
-      relation = Relation.new(s[:relation].to_s)
+      relation = SchemaRelation.new(Xpair::Namespace.colapse_uri(s[:relation].to_s), false, self)
       # relation.text = s[:label].to_s if !s[:label].to_s.empty?
       relation.add_server(self)
       classes << relation
@@ -111,7 +111,7 @@ class RDFDataServer
     end
     query = "SELECT distinct ?s WHERE{?s ?p ?o. FILTER(#{filters.join(" && ")}) } "
     execute(query,content_type: content_type ).each do |s|
-      item = Entity.new(s[:s].to_s)
+      item = Entity.new(Xpair::Namespace.colapse_uri(s[:s].to_s))
       item.add_server(self)
       items << item
     end
@@ -126,7 +126,7 @@ class RDFDataServer
 
 
     execute(query,content_type: content_type ).each do |s|
-      item = Entity.new(s[:s].to_s)
+      item = Entity.new(Xpair::Namespace.colapse_uri(s[:s].to_s))
       item.add_server(self)
       items << item
     end

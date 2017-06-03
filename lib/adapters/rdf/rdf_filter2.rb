@@ -50,7 +50,7 @@ module SPARQLQuery
       @construct_stmts << "#{path_string(relation)} ?o#{object_index}"
       filter_exp = ""
       if(value.is_a? Xpair::Literal)
-        filter_exp = "FILTER(#{get_literal_type(value)}(?o#{object_index}) #{comparator.to_s} #{convert_literal(value)})"
+        filter_exp = "FILTER(#{SPARQLQuery.get_literal_type(value)}(?o#{object_index}) #{comparator.to_s} \"#{value.value.to_s}\"^^#{SPARQLQuery.get_literal_type(value)})"
       else
         filter_exp = "FILTER(?o#{object_index} #{comparator.to_s} <#{Xpair::Namespace.expand_uri(value.id)}>)"
       end
@@ -59,35 +59,7 @@ module SPARQLQuery
       
     end
     
-    def convert_literal(literal)
-      if literal.has_datatype? && !literal.datatype.include?("string")
-        return "\"" << literal.value << "\"^^<#{literal.datatype}>"
-      elsif literal.value.class == Fixnum || literal.value.class == Float
-        return literal.value.to_s
-      else
-        begin
-          return Integer(literal.value).to_s
-        rescue ArgumentError => e
-          begin
-            return Float(literal.value).to_s
-          rescue ArgumentError => e
-            return "\"" << literal.value << "\""
-          end
-        end
-      end
-    end
     
-    def get_literal_type(literal)
-      type = ""
-      if(literal.datatype)
-        type = Xpair::Namespace.colapse_uri(literal.datatype)
-      elsif literal.value.class == Fixnum
-        type = "xsd:integer"
-      elsif literal.value.class == Float
-        type = "xsd:float"
-      end
-      type
-    end
   
     def relation_equals(relations, item)
       
@@ -97,9 +69,9 @@ module SPARQLQuery
         sparql_entity = "<#{item.to_s}>"
       else
         if(item.is_a?(String))
-          sparql_entity = convert_literal(Xpair::Literal.new(item))
+          sparql_entity = SPARQLQuery.convert_literal(Xpair::Literal.new(item))
         else
-          sparql_entity = convert_literal(item)
+          sparql_entity = SPARQLQuery.convert_literal(item)
         end
       end
       if(relations.size == 1)
@@ -114,7 +86,7 @@ module SPARQLQuery
     def filter_by_range(relations, min, max)
       object_index = SPARQLFilter.next_object_index
       @construct_stmts << "#{path_string(relations)} ?o#{object_index}"
-      @where_stmts << SimpleFilter.new("?s #{path_string(relations)} ?o#{object_index}. FILTER(#{get_literal_type(min)}(?o#{object_index}) >= #{convert_literal(min)} && #{get_literal_type(max)}(?o#{object_index}) <= #{convert_literal(max)})")
+      @where_stmts << SimpleFilter.new("?s #{path_string(relations)} ?o#{object_index}. FILTER(#{SPARQLQuery.get_literal_type(min)}(?o#{object_index}) >= \"#{min.value.to_s}\"^^#{SPARQLQuery.get_literal_type(min)} && #{SPARQLQuery.get_literal_type(max)}(?o#{object_index}) <= \"#{max.value.to_s}\"^^#{SPARQLQuery.get_literal_type(max)})")
       # binding.pry
     end
   
@@ -306,7 +278,7 @@ end
 #       @filters << SimpleFilter.new(equals_stmt(entity))
 #     end
 #
-#     def convert_literal(literal)
+#     def SPARQLQuery.convert_literal(literal)
 #       if literal.value.to_s.match(/\A[-+]?[0-9]+\z/).nil?
 #         "\"" << literal.value << "\""
 #       else
@@ -321,9 +293,9 @@ end
 #         sparql_entity = "<#{item.to_s}>"
 #       else
 #         if(item.is_a?(String))
-#           sparql_entity = convert_literal(Xpair::Literal.new(item))
+#           sparql_entity = SPARQLQuery.convert_literal(Xpair::Literal.new(item))
 #         else
-#           sparql_entity = convert_literal(item)
+#           sparql_entity = SPARQLQuery.convert_literal(item)
 #         end
 #       end
 #       @where_stmts << SimpleFilter.new("?s #{path_string(relations)} #{sparql_entity}")

@@ -8,6 +8,7 @@ java_import 'java.util.concurrent.ThreadPoolExecutor'
 java_import 'java.util.concurrent.TimeUnit'
 
 module SPARQLQuery
+  
   class NavigationalQuery
 
     def initialize(server)

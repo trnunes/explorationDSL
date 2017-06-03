@@ -6,6 +6,7 @@ module Explorable
     end
     
     def eval_item(item)
+
       item_results = Set.new
       item_to_group = nil
         
@@ -23,6 +24,7 @@ module Explorable
     def prepare(args)
       start_time = Time.now
       input_set = @args[:input]
+      @result_set = Set.new
       @groups = {}
       @grouping_function = @args[:function]
       @grouping_function.prepare(input_set.each_item, @groups, input_set.server)
@@ -30,13 +32,23 @@ module Explorable
       puts "EXECUTED GROUP: " << (finish_time - start_time).to_s
     end
     
+    def v_expression
+      "Group(#{@args[:function].expression})"
+    end
+    
     def expression
-      "group(#{@args[:input].id}){#{@args[:function].expression}}"
+      "#{@args[:input].id}.group(#{@args[:function].expression})"
     end
   end
   
   def group(args = {})
     args[:function] = yield(Grouping)
-    execute_operation(Group, args)
+    execute_exploration_operation(Group, args)
   end
+  
+  def v_group(args = {})
+    args[:function] = yield(Grouping)
+    execute_visualization_operation(Group, args)
+  end
+  
 end

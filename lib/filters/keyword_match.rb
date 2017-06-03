@@ -6,7 +6,7 @@ module Filtering
     end
     
     def contains_keyword(item, keyword)
-      item.id.include?(keyword) || item.text.to_s.include?(keyword)
+      item.text.to_s.include?(keyword)
     end
     
     def prepare(items, server)
@@ -30,7 +30,7 @@ module Filtering
     end
     
     def expression
-      "keyword_match(#{@keyword_pattern.to_s})"
+      "keywords: #{@keyword_pattern.to_s}"
     end
   end
   

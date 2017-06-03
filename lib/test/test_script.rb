@@ -1,4 +1,4 @@
-require 'pry'
+require "pry"
 require "test/unit"
 require "rdf"
 require 'linkeddata'
@@ -10,6 +10,20 @@ require './mixins/persistable'
 require './mixins/graph'
 require './mixins/indexing'
 require './mixins/indexable'
+
+require './model/item'
+require './model/pair'
+require './model/path_relation'
+require './model/schema_relation'
+require './model/computed_relation'
+require './model/xset'
+require './model/literal'
+require './model/entity'
+require './model/type'
+require './model/ranked_set'
+require './model/xsubset'
+require './model/namespace'
+require './model/session'
 
 require './exploration_functions/operation'
 require './exploration_functions/find_relations'
@@ -32,7 +46,9 @@ require './filters/match'
 require './filters/in_range'
 require './filters/image_equals'
 require './filters/compare'
+require './filters/relation_compare'
 require './filters/by_image'
+require './filters/operators/filtering_operator.rb'
 
 require './grouping_functions/grouping'
 require './grouping_functions/by_relation'
@@ -41,27 +57,14 @@ require './grouping_functions/by_domain'
 require './ranking_functions/ranking'
 require './ranking_functions/alpha_sort'
 require './ranking_functions/by_relation'
+require './ranking_functions/by_image'
+require './ranking_functions/by_domain'
 
 require './mapping_functions/mapping'
 require './mapping_functions/average'
 require './mapping_functions/count'
 require './mapping_functions/image_count'
 require './mapping_functions/user_defined'
-
-
-require './model/item'
-require './model/pair'
-require './model/path_relation'
-require './model/schema_relation'
-require './model/computed_relation'
-require './model/xset'
-require './model/literal'
-require './model/entity'
-require './model/type'
-require './model/ranked_set'
-require './model/xsubset'
-require './model/namespace'
-require './model/session'
 
 require './aux/grouping_expression.rb'
 require './aux/ranking_functions'
@@ -134,14 +137,33 @@ xset.add_item Entity.new('_:p6')
 # xset.add_item Entity.new('_:p9')
 # xset.add_item Entity.new('_:p10')
 xset.server = @papers_server
+
+xset2 = Xset.new('s1', '')
+xset2.add_item Entity.new('_:paper1')
+xset2.add_item Entity.new('_:p2')
+
+xset3 = Xset.new('s1', '')
+xset3.add_item Entity.new('_:a1')
+
+
+rs = xset.refine{|f| f.compare(restrictions: [f.op.in(xset2)])}
+
+
+
+
 g1 = xset.group{|gf| gf.by_relation(relations: [SchemaRelation.new("_:author", @papers_server)])}
 g2 = g1.group{|gf| gf.by_relation(relations: [SchemaRelation.new("_:publicationYear")])}
 
-g2.refine{|rf| rf.by_image(restriction: "item.id == '_:p3'")}
+rs = g2.refine{|rf| rf.by_image(restriction: "item.id == '_:p3'")}
+g3  = xset.group{|gf| gf.by_relation(relations: [SchemaRelation.new("_:cite", @papers_server)])}
+c = g3.map{|f| f.count}
+r = c.rank{|f| f.by_image}
 
-# g1 = Xset.load('test_set').group{|gf| gf.by_relation(relations: [SchemaRelation.new("_:author")])}
-# p = xset.pivot(relations: [SchemaRelation.new("_:cite", @papers_server)])
-# p = p.pivot(relations: [SchemaRelation.new("_:author", @papers_server)])
+rf = xset.refine{|f| f.compare(restrictions: [f.op.equal(Entity.new("_:p3")), f.op.equal(Entity.new("_:p4"))])}
+items = g2.select_items([Entity.new("_:p3")])
+g1 = Xset.load('test_set').group{|gf| gf.by_relation(relations: [SchemaRelation.new("_:author")])}
+p = xset.pivot(relations: [SchemaRelation.new("_:cite", @papers_server)])
+p = p.pivot(relations: [SchemaRelation.new("_:author", @papers_server)])
 
-# g1 = xset.group{|gf| gf.by_relation(relations: [SchemaRelation.new("_:author", @papers_server)])}
+g1 = xset.group{|gf| gf.by_relation(relations: [SchemaRelation.new("_:author", @papers_server)])}
 

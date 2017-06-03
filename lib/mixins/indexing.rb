@@ -40,7 +40,9 @@ module Indexing
   
   
   def each_item(&block)
+    
     items = leaves.map{|leaf_entry| leaf_entry.indexed_items}.flatten
+    # binding.pry
     if(block_given?)
       items.each &block
     else
@@ -202,8 +204,12 @@ module Indexing
       @children = children
     end
     
-    def children(page = 1)
-      @children[group_offset(page)..group_limit(page)]
+    def children(page = nil)
+      if(page && @total_groups_per_page)
+        @children[group_offset(page)..group_limit(page)] || []
+      else
+        @children
+      end
     end
     
     def indexed_items=(indexed_items)
@@ -211,8 +217,12 @@ module Indexing
       @indexed_items.each{|item| item.index = self}
     end
         
-    def indexed_items(page=1)
-      @indexed_items[items_offset(page)..items_limit(page)]
+    def indexed_items(page=nil)
+      if(page && @total_items_per_page)
+        @indexed_items[items_offset(page)..items_limit(page)] || []
+      else
+        @indexed_items
+      end
     end
     
     def append_item(item)
@@ -291,16 +301,31 @@ module Indexing
       @children.each do |child|
         child.paginate_items(max_items)
       end
-      
+    end
+    
+    def paginate(total_by_page)
+      if(@children.empty?)
+        paginate_items(total_by_page)
+      else
+        paginate_groups(total_by_page)
+      end
     end
     
     
-    def count_pages(size, total_by_page)
+    def number_of_pages(size, total_by_page)
       if total_by_page == 0
         return 0
       end
     
       (size.to_f/total_by_page.to_f).ceil
+    end
+    
+    def count_pages
+      if(@children.empty?)
+        count_item_pages()
+      else
+        count_group_pages()
+      end
     end
     
     def limit(size, total_by_page, page)
@@ -321,11 +346,11 @@ module Indexing
     end
     
     def count_group_pages
-      count_pages(@children.size, total_groups_per_page())
+      number_of_pages(@children.size, total_groups_per_page())
     end
     
     def count_item_pages
-      count_pages(@indexed_items.size, total_items_per_page())
+      number_of_pages(@indexed_items.size, total_items_per_page())
     end
     
     def group_offset(page)

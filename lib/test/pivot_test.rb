@@ -301,8 +301,8 @@ class PivotTest < XpairUnitTest
   def test_pivot_mixed_relation
     set = Xset.new("test", "")
     
-    set.add_pair Pair.new(Entity.new("_:paper1"), Entity.new("_:paper1"))
-    set.add_pair Pair.new(Entity.new("_:p6"), Entity.new("_:p6"))
+    set.add_item Entity.new("_:paper1")
+    set.add_item Entity.new("_:p6")
     
     set.server = @papers_server
     
@@ -321,6 +321,19 @@ class PivotTest < XpairUnitTest
     assert_equal Set.new(expected_pairs), rs.each_relation.first.each_pair
     puts "======INDEX======="
     puts rs.index.inspect
+  end
+  
+  def test_pivot_inverse_path_relation
+    set = Xset.new("test", "")
+    
+    set.add_item Entity.new("_:paper1")
+    set.add_item Entity.new("_:p6")
+    
+    set.server = @papers_server
+    rs = set.pivot(relations: [PathRelation.new([SchemaRelation.new("_:cite", true), SchemaRelation.new("_:publishedOn")])])
+    expected_items = Set.new([Entity.new("_:journal1"), Entity.new("_:journal2")])
+    assert_equal expected_items, Set.new(rs.each_item)
+    
   end
   
 end

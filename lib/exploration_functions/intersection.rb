@@ -21,18 +21,22 @@ module Explorable
         source_index_entries = source_children
         target_index_entries = target_children
       end
-
       finish_time = Time.now
       puts "EXECUTED DIFF: " << (finish_time - start_time).to_s
     end
     
-    def expression
-      "intersect(#{@args[:input]}, #{@args[:target]})"
+    def v_expression
+      "Intersect(#{@args[:target].title})"
     end
+    
+    def expression
+      "#{@args[:input].id}.intersect(#{@args[:target].id})"
+    end
+    
   end
   
   def intersect(target)
     args = {target: target}
-    execute_operation(Intersection, args)
+    execute_exploration_operation(Intersection, args)
   end
 end

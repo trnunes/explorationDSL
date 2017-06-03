@@ -3,7 +3,7 @@ module Filtering
     
     def initialize(args={})
       super(args)
-      @relations = args[:relations]
+      
       @connector = args[:connector]
       @connector ||= "AND"
       @restrictions = args[:restrictions]
@@ -14,44 +14,37 @@ module Filtering
     #   super(set.extension_copy, set)
     # end
     def prepare(items, server)
-      filter = build_query_filter(items)
-
-      if(@connector == "AND")
-        @restrictions.each do |restriction|
-          operator = restriction[0]
-          value = restriction[1]
-          filter.compare(@relations, operator, value)
-        end
-      else
-        filter.union do |u|
-          @restrictions.each do |restriction|
-            operator = restriction[0]
-            value = restriction[1]
-            u.compare(@relations, operator, value)
-          end
-        end            
-      end
-      @filtered_items = Set.new(filter.eval)
+      
     end
     
     def filter(item)
-      !@filtered_items.include? item
+      if(@connector == "AND")
+        result = true
+      else
+        result = false
+      end
+      
+      @restrictions.each do |r|
+        if(@connector == "AND")
+          result = result && r.evaluate(item)
+        else
+          result = result || r.evaluate(item)
+        end
+      end
+      !result
     end
     
     def expression
+      connector = @connector || "AND" 
       relation_exp = ""
-      relation_exp = "[" << @relations.map{|r| r.is_a?(Xset)? r.id : r.to_s}.join(",") << "]"
-      
-      "compare(#{relation_exp}, operator: #{@operator.to_s}, value: #{@value.to_s})"
+      relation_exp = @restrictions.map{|r| r.expression}.join(" " + connector + " ")
+      relation_exp
     end
   end
   
   
   
   def self.compare(args)
-    if args[:relations].nil?
-      raise "MISSING RELATIONS FOR FILTER!"
-    end
     if args[:restrictions].nil?
       raise "MISSING VALUE FOR FILTER!"
     end

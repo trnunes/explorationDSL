@@ -8,7 +8,7 @@ module Explorable
     def compare(item1, item2)
       score_1 = @ranking_function.score(item1)
       score_2 = @ranking_function.score(item2)
-      # binding.pry
+
       comparison = (score_1 <=> score_2 )
       if comparison.nil?
         if score_1 == -Float::INFINITY
@@ -29,18 +29,21 @@ module Explorable
     end
     
     def domain_rank(index_entries)
-      # binding.pry
-      index_entries.sort! do |entry1, entry2| 
+
+      sorted_entries = index_entries.sort do |entry1, entry2|
         comparison_value = 1
-        # binding.pry
-        entry1.indexed_items.each do |item1|
-          entry2.indexed_items.each do |item2|
-            comparison_value = compare(item1, item2)
-            # binding.pry
+        if(@args[:position] == "domain")
+          comparison_value = compare(entry1.indexing_item, entry2.indexing_item)
+        else
+          entry1.indexed_items.each do |item1|
+            entry2.indexed_items.each do |item2|
+              comparison_value = compare(item1, item2)
+            end
           end
         end
         comparison_value
       end
+      index_entries.first.parent.children = sorted_entries
     end
     
     def eval_set(index_entries)
@@ -52,21 +55,24 @@ module Explorable
         @multiplier = 1
       end
       
-      rank_by_domain = @ranking_function.domain_rank?
+      rank_by_domain = @ranking_function.domain_rank? || (@args[:position] == "domain")
 
       if(rank_by_domain && is_last_level(index_entries))
-        # binding.pry
+
         domain_rank(index_entries)
+
+
       else
         
         index_entries.each do |index_entry|
         
           if(index_entry.children.empty?)
             self.prepare(@args)
-            # binding.pry
-            index_entry.indexed_items.sort! do |item1, item2|
+
+            sorted_entries = index_entry.indexed_items.sort do |item1, item2|
               compare(item1, item2)
             end
+            index_entry.indexed_items = sorted_entries
           else
             eval_set(index_entry.children)
           end
@@ -89,7 +95,7 @@ module Explorable
 
         score_1 = ranking_function.score(comparable1)
         score_2 = ranking_function.score(comparable2)
-        # binding.pry
+
         comparison = (score_1 <=> score_2 )
         if comparison.nil?
           if score_1 == -Float::INFINITY
@@ -105,12 +111,16 @@ module Explorable
         end      
       end.map{|i| [i, {}]}.to_h
       finish_time = Time.now
-      puts "EXECUTED RANK: " << (finish_time - start_time).to_s
+
       mappings
     end
     
+    def v_expression
+      "Rank_#{@args[:position].to_s.downcase}_"+@args[:order].to_s.downcase+"(#{@args[:ranking_function].expression})"
+    end
+    
     def expression
-      "rank(#{@args[:input].id}){#{@args[:ranking_function].expression}}"
+      "#{@args[:input].id}.rank_#{@args[:position].to_s.downcase}_"+@args[:order].to_s.downcase+"(#{@args[:ranking_function].expression})"
     end
   end
   
@@ -119,8 +129,16 @@ module Explorable
       args[:ranking_function] = yield(Ranking)
     end
     
-    execute_operation(Rank, args)
+    execute_exploration_operation(Rank, args)
   end
+  
+  def v_rank(args = {}, &block)
+    if(block_given?)
+      args[:ranking_function] = yield(Ranking)
+    end
+    execute_visualization_operation(Rank, args)
+  end
+  
 end
 # module Explorable
 #   class Rank < Explorable::Operation
@@ -143,7 +161,7 @@ end
 #
 #         score_1 = ranking_function.score(comparable1)
 #         score_2 = ranking_function.score(comparable2)
-#         # binding.pry
+
 #         comparison = (score_1 <=> score_2 )
 #         if comparison.nil?
 #           if score_1 == -Float::INFINITY
@@ -159,7 +177,7 @@ end
 #         end
 #       end.to_h
 #       finish_time = Time.now
-#       puts "EXECUTED RANK: " << (finish_time - start_time).to_s
+
 #       mappings
 #     end
 #
