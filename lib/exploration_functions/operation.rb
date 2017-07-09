@@ -154,6 +154,7 @@ module Explorable
     def execute(args={})
       @args = args
       result_set = Xset.new(SecureRandom.uuid, self.expression, self.v_expression)
+      result_set.intention = self
       input_set = @args[:input]
       input_set.save
 

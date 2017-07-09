@@ -140,6 +140,12 @@ module Indexing
       
     end
     
+    def natural_sort!
+      @indexed_items.sort!{|i1, i2| i1.text <=> i2.text}
+      @children.sort!{|c1, c2| c1.indexing_item.text <=> c2.indexing_item.text}
+      @children.each{|c| c.natural_sort!}
+    end
+    
     def <<(item)
       item.index = self
       @indexed_items << item

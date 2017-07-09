@@ -2,7 +2,7 @@ module Ranking
   class AlphaSort < Ranking::Function
     
     def score(item)
-      item.to_s
+      item.text
     end    
     
     def prepare(args, server)

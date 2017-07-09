@@ -13,16 +13,17 @@ module Explorable
       result_pairs = Set.new
       position = args[:position] || "image"
       items = input_set.each_item
-      limit = args[:limit] || items.size
+      @limit = args[:limit] || items.size
       relations.each do |r|
 
         r.server = r.server || input_set.server
-        r.limit = limit if r.is_a?(PathRelation)
+        r.limit = @limit if r.is_a?(PathRelation)
 
         if(is_backward)
-          result_pairs += r.restricted_domain(items[0..limit])
+          result_pairs += r.restricted_domain(items[0..@limit], [], args[:limit].to_i)
         else
-          result_pairs += r.restricted_image(items[0..limit])
+          # binding.pry
+          result_pairs += r.restricted_image(items[0..@limit], [], args[:limit].to_i)
         end
       end
       
@@ -52,7 +53,8 @@ module Explorable
     def expression
       relationExp = @args[:relations].map{|r| r.text}.join(", ")
       direction = @args[:is_backward] ? "backward" : "forward"
-      "#{@args[:input].id}.pivot"+direction+"(#{relationExp})"
+      limit = @args[:limit] || @args[:input].each_item.size
+      "#{@args[:input].id}.pivot"+direction+"(#{relationExp}, limit: #{limit.to_s})"
     end
     
   end

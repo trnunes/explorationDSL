@@ -54,8 +54,12 @@ class RDFDataServer
     
   end
 
-  def begin_nav_query(&block)
+  def begin_nav_query(options = {}, &block)
     t = SPARQLQuery::NavigationalQuery.new(self)
+    if(options[:limit].to_i > 0)
+      t.limit = options[:limit].to_i
+    end
+    
     if block_given?
       yield(t)
     else
@@ -63,14 +67,33 @@ class RDFDataServer
     end
     t
   end
-  
+  def sample_type(relation_uri, items, inverse = false)
+    types = Xpair::Visualization.types
+    types.delete("http://www.w3.org/2000/01/rdf-schema#Resource")
+    retrieved_types = []
+    if(types.size > 0)
+      types_values_clause = "VALUES ?t {#{types.map{|t| "<" + Xpair::Namespace.expand_uri(t) + ">"}.join(" ")}}"
+      items_values_clause = "VALUES ?s {#{items[0..5].map{|i| "<" + Xpair::Namespace.expand_uri(i.id) + ">"}.join(" ")}}"
+      if inverse
+        query = "SELECT distinct ?t WHERE{#{items_values_clause}. #{types_values_clause}. ?o #{relation_uri} ?s. ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?t}"
+      else
+        query = "SELECT distinct ?t WHERE{#{items_values_clause}. #{types_values_clause}. ?s #{relation_uri} ?o. ?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?t}"
+      end
+      
+      execute(query, content_type: content_type).each do |s|
+        retrieved_types << Xpair::Namespace.expand_uri(s[:t].to_s)
+      end
+    end
+    types_with_vis_properties = (retrieved_types & types)
+    types_with_vis_properties.empty? ? "rdfs:Resource" : types_with_vis_properties.first
+  end
   def types
     limit = 10
     offset = 0
     query = "SELECT DISTINCT ?class WHERE { ?s a ?class.}"
     classes = []
     execute(query, content_type: content_type).each do |s|
-      type = Type.new(Xpair::Namespace.colapse_uri(s[:class].to_s))
+      type = Entity.new(Xpair::Namespace.colapse_uri(s[:class].to_s))
       # type.text = s[:label].to_s if !s[:label].to_s.empty?
       type.add_server(self)
       classes << type
@@ -84,7 +107,7 @@ class RDFDataServer
     execute(query, content_type: content_type).each do |s|
       item = Entity.new(Xpair::Namespace.colapse_uri(s[:s].to_s))
       # item.text = s[:label].to_s if !s[:label].to_s.empty?
-      item.add_server(self)
+      item.server = self
       instances << item
     end
     instances
@@ -96,7 +119,7 @@ class RDFDataServer
     execute(query, content_type: content_type).each do |s|
       relation = SchemaRelation.new(Xpair::Namespace.colapse_uri(s[:relation].to_s), false, self)
       # relation.text = s[:label].to_s if !s[:label].to_s.empty?
-      relation.add_server(self)
+      relation.server = self
       classes << relation
     end
     classes    
@@ -109,7 +132,9 @@ class RDFDataServer
     keyword_pattern.each do |pattern|
       filters << "(regex(str(?o), \"#{pattern}\"))"
     end
-    query = "SELECT distinct ?s WHERE{?s ?p ?o. FILTER(#{filters.join(" && ")}) } "
+
+    label_clause = SPARQLQuery.label_where_clause("?s", "rdfs:Resource")
+    query = "SELECT distinct ?s ?lo WHERE{?s ?p ?o. #{label_clause}  FILTER(#{filters.join(" && ")}) } "
     execute(query,content_type: content_type ).each do |s|
       item = Entity.new(Xpair::Namespace.colapse_uri(s[:s].to_s))
       item.add_server(self)
@@ -122,15 +147,18 @@ class RDFDataServer
     filters = []
     unions = []
     items = []
-    query = "select ?s ?p ?o where {?o <http://www.bigdata.com/rdf/search#search> \" #{keyword_pattern.join(" ")}\". ?o <http://www.bigdata.com/rdf/search#matchAllTerms> \"true\" . ?s ?p ?o .}"
+    label_clause = SPARQLQuery.label_where_clause("?s", Xpair::Visualization.label_relations_for("rdfs:Resource"))
+    label_clause = " OPTIONAL " + label_clause if !label_clause.empty?
+    query = "select ?s ?p ?o ?ls where {?o <http://www.bigdata.com/rdf/search#search> \" #{keyword_pattern.join(" ")}\". ?o <http://www.bigdata.com/rdf/search#matchAllTerms> \"true\" . ?s ?p ?o . #{label_clause}}"
 
 
     execute(query,content_type: content_type ).each do |s|
-      item = Entity.new(Xpair::Namespace.colapse_uri(s[:s].to_s))
+      item = Entity.new(Xpair::Namespace.colapse_uri(s[:s].to_s),  "rdfs:Resource")
+      item.text = s[:ls].to_s
       item.add_server(self)
       items << item
     end
-    items
+    items.sort{|i1, i2| i1.text <=> i2.text}
   end
   
   
@@ -152,11 +180,11 @@ class RDFDataServer
   
   def all_relations(&block)
     relations = []
-    query = @graph.query("SELECT distinct ?p ?label WHERE{?s ?p ?o. OPTIONAL{?p <#{@label_property}> ?label}")
+    query = @graph.query("SELECT distinct ?p ?label WHERE{?s ?p ?o. OPTIONAL{?p <#{Xpair::Namespace.expand_uri("rdfs:label")}> ?label}")
     query.each_solution do |solution|
-      relation = Relation.new(solution[:p].to_s)
+      relation = SchemaRelation.new(Xpair::Namespace.colapse_uri(solution[:p].to_s))
       relation.text = solution[:label].to_s
-      relation.add_server(self);
+      relation.server = self;
       relations << relation
       block.call(relation) if !block.nil?
     end       

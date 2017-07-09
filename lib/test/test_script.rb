@@ -33,10 +33,12 @@ require './exploration_functions/group'
 require './exploration_functions/map'
 require './exploration_functions/flatten'
 require './exploration_functions/union'
+require './exploration_functions/join'
 require './exploration_functions/intersection'
 require './exploration_functions/diff'
 require './exploration_functions/rank'
 require './exploration_functions/select'
+require './visualization/visualization'
 
 require './filters/filtering'
 require './filters/contains'
@@ -74,6 +76,7 @@ require './aux/hash_helper'
 require 'set'
 
 require './adapters/rdf/rdf_data_server.rb'
+require './adapters/rdf/sparql_query.rb'
 require './adapters/rdf/rdf_filter2.rb'
 require './adapters/rdf/rdf_nav_query2.rb'
 require './adapters/rdf/cache.rb'
@@ -91,6 +94,17 @@ require './adapters/rdf/cache.rb'
       graph << [RDF::URI("_:p8"),  RDF::URI("_:cite"), RDF::URI("_:p3")]
       graph << [RDF::URI("_:p9"),  RDF::URI("_:cite"), RDF::URI("_:p5")]
       graph << [RDF::URI("_:p10"),  RDF::URI("_:cite"), RDF::URI("_:p5")]
+      
+      graph << [RDF::URI("_:paper1"),  RDF::URI("http://www.w3.org/2000/01/rdf-schema#type"), RDF::URI("http://tecweb/pns#Paper")]
+      graph << [RDF::URI("_:p2"),      RDF::URI("http://www.w3.org/2000/01/rdf-schema#type"), RDF::URI("http://tecweb/pns#Paper")]
+      graph << [RDF::URI("_:p3"),      RDF::URI("http://www.w3.org/2000/01/rdf-schema#type"), RDF::URI("http://tecweb/pns#Paper")]
+      graph << [RDF::URI("_:p4"),      RDF::URI("http://www.w3.org/2000/01/rdf-schema#type"), RDF::URI("http://tecweb/pns#Paper")]
+      graph << [RDF::URI("_:p5"),      RDF::URI("http://www.w3.org/2000/01/rdf-schema#type"), RDF::URI("http://tecweb/pns#Paper")]
+      graph << [RDF::URI("_:p6"),      RDF::URI("http://www.w3.org/2000/01/rdf-schema#type"), RDF::URI("http://tecweb/pns#Paper")]
+      graph << [RDF::URI("_:p7"),      RDF::URI("http://www.w3.org/2000/01/rdf-schema#type"), RDF::URI("http://tecweb/pns#Paper")]
+      graph << [RDF::URI("_:p8"),      RDF::URI("http://www.w3.org/2000/01/rdf-schema#type"), RDF::URI("http://tecweb/pns#Paper")]
+      graph << [RDF::URI("_:p9"),      RDF::URI("http://www.w3.org/2000/01/rdf-schema#type"), RDF::URI("http://tecweb/pns#Paper")]
+      graph << [RDF::URI("_:p10"),     RDF::URI("http://www.w3.org/2000/01/rdf-schema#type"), RDF::URI("http://tecweb/pns#Paper")]
       
       graph << [RDF::URI("_:paper1"),  RDF::URI("_:submittedTo"), RDF::URI("_:journal1")]
       
@@ -123,15 +137,17 @@ require './adapters/rdf/cache.rb'
     end
 
     @papers_server = RDFDataServer.new(papers_graph)
-
+    module Xpair::Visualization
+        label "http://tecweb/pns#Paper", "_:author"
+    end
 
 xset = Xset.new('s0', '')
-xset.add_item Entity.new('_:paper1')
-xset.add_item Entity.new('_:p2')
-xset.add_item Entity.new('_:p3')
+xset.add_item Entity.new('_:paper1', "rdf:Resource")
+xset.add_item Entity.new('_:p2',  "rdf:Resource")
+xset.add_item Entity.new('_:p3',  "rdf:Resource")
 # xset.add_item Entity.new('_:p4')
-xset.add_item Entity.new('_:p4')
-xset.add_item Entity.new('_:p6')
+xset.add_item Entity.new('_:p4', "rdf:Resource")
+xset.add_item Entity.new('_:p6', "rdf:Resource")
 # xset.add_item Entity.new('_:p7')
 # xset.add_item Entity.new('_:p8')
 # xset.add_item Entity.new('_:p9')
@@ -139,11 +155,12 @@ xset.add_item Entity.new('_:p6')
 xset.server = @papers_server
 
 xset2 = Xset.new('s1', '')
-xset2.add_item Entity.new('_:paper1')
-xset2.add_item Entity.new('_:p2')
+xset2.add_item Entity.new('_:paper1',  "rdf:Resource")
+xset2.add_item Entity.new('_:p2,  "rdf:Resource"')
 
 xset3 = Xset.new('s1', '')
-xset3.add_item Entity.new('_:a1')
+xset3.add_item Entity.new('_:a1',  "rdf:Resource")
+
 
 
 rs = xset.refine{|f| f.compare(restrictions: [f.op.in(xset2)])}
@@ -162,8 +179,8 @@ r = c.rank{|f| f.by_image}
 rf = xset.refine{|f| f.compare(restrictions: [f.op.equal(Entity.new("_:p3")), f.op.equal(Entity.new("_:p4"))])}
 items = g2.select_items([Entity.new("_:p3")])
 g1 = Xset.load('test_set').group{|gf| gf.by_relation(relations: [SchemaRelation.new("_:author")])}
-p = xset.pivot(relations: [SchemaRelation.new("_:cite", @papers_server)])
+p = xset.pivot(relations: [SchemaRelation.new("_:cite")])
 p = p.pivot(relations: [SchemaRelation.new("_:author", @papers_server)])
 
-g1 = xset.group{|gf| gf.by_relation(relations: [SchemaRelation.new("_:author", @papers_server)])}
+g2 = xset.group(image_set: xset3){|gf| gf.by_relation(relations: [SchemaRelation.new("_:author", @papers_server)])}
 

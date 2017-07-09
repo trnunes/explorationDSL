@@ -9,10 +9,12 @@ class PathRelation
   def can_fire_path_query
     are_all_schema_relations = (@relations.select{|r| r.is_a? SchemaRelation}.size == @relations.size)
 
-    are_all_single_direction = (@relations.map{|r| r.inverse}.uniq == 1)
+    are_all_single_direction = (@relations.map{|r| r.inverse}.uniq.size == 1)
 
-    is_single_server = (@relations.map{|r| r.server}.uniq.size == 1)
-    (are_all_schema_relations && are_all_single_direction && s_single_server)
+    # is_single_server = (@relations.map{|r| r.server}.uniq.size == 1)
+    # (are_all_schema_relations && are_all_single_direction && s_single_server)
+    # binding.pry
+    (are_all_schema_relations && are_all_single_direction)
   end
   
   def domain()
@@ -27,7 +29,7 @@ class PathRelation
     @relations.last.image
   end
   
-  def mixed_path_restricted_image(items)
+  def mixed_path_restricted_image(items, image_items, limit)
     relations = @relations
     result_pairs = []
 
@@ -37,7 +39,7 @@ class PathRelation
       
       restriction = result_pairs.map{|pair| pair.image}
       @limit ||= restriction.size
-      partial_pairs = r.restricted_image(Set.new(restriction[0..@limit]))
+      partial_pairs = r.restricted_image(Set.new(restriction[0..@limit]), image_items, limit)
       partial_pairs_hash = {}
       partial_pairs.each do |pair| 
         if(!partial_pairs_hash.has_key? pair.domain)
@@ -82,17 +84,22 @@ class PathRelation
     result_pairs
   end
     
-  def schema_restricted_image(restriction)
+  def schema_restricted_image(restriction, image_items, limit)
+    if(@relations.first.inverse)
+      @relations.first.inverse = false
+      return schema_restricted_domain(restriction, image_items, limit)
+    end
     server = @relations.first.server
     result_pairs = []
-    query = server.begin_nav_query do |q|
+    query = server.begin_nav_query(limit: limit) do |q|
       restriction.each do |item|
         q.on(item)
       end
-      q.restricted_image(@relations.map{|r| r.id})
+      q.restricted_image(@relations.map{|r| r.id}, image_items)
     end
+    # binding.pry
     partial_path_results = query.execute
-    
+    # binding.pry
     partial_path_results.each do |item, relations_hash|
       relations_hash.each do |key, values|
         values.each do |v|
@@ -103,9 +110,14 @@ class PathRelation
     result_pairs
   end
   
-  def schema_restricted_domain(restriction)
+  def schema_restricted_domain(restriction, image_items, limit)
+    if(@relations.first.inverse)
+      @relations.first.inverse = false
+      return schema_restricted_image(restriction, image_items, limit)
+    end
+    
     result_pairs = []
-    query = @server.begin_nav_query do |q|
+    query = @server.begin_nav_query(limit: limit) do |q|
       restriction.each do |item|
         q.on(item)
       end
@@ -123,11 +135,11 @@ class PathRelation
     result_pairs
   end
   
-  def restricted_image(restriction)
+  def restricted_image(restriction, image_items = [], limit)
     if can_fire_path_query
-      schema_restricted_image(restriction)
+      schema_restricted_image(restriction, image_items, limit)
     else
-      mixed_path_restricted_image(restriction)
+      mixed_path_restricted_image(restriction, image_items, limit)
     end
   end
   

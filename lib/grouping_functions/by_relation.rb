@@ -6,15 +6,26 @@ module Grouping
       false
     end
     def initialize(args)
-      if args.size > 0
-        self.relations = args
+      if args[:relations].size > 0
+        self.relations = args[:relations]
+        
       else
         raise "Invalid number of arguments. Expected: min 1, max 2; Received: #{args.size}"
-      end      
+      end
+           
     end
     
-    def prepare(items_to_group, groups, server)
+    def prepare(items_to_group, groups, server, args = {})
       relation = nil
+      image_set = []
+
+
+      image_set = args[:image_set] || []
+      if !image_set.empty?
+        image_set = image_set.each_item
+      end
+      # binding.pry
+
       if self.relations.size > 1
         self.relations.each{|r| r.server = server if r.server.nil?}
         relation = PathRelation.new(self.relations)
@@ -25,7 +36,7 @@ module Grouping
       
       @image_by_domain_hash = {}
       # binding.pry
-      relation.restricted_image(items_to_group).each do |pair|
+      relation.restricted_image(items_to_group, image_set, args[:limit].to_i).each do |pair|
         if !@image_by_domain_hash.has_key?(pair.domain)
           @image_by_domain_hash[pair.domain] = []
         end
@@ -46,9 +57,7 @@ module Grouping
     end
     
     def expression
-      relation_exp = ""
-      relation_exp = "[" << self.relations.map{|r| r.is_a?(Xset)? r.id : r.to_s}.join(",") << "]"
-      "by_domain(#{relation_exp})"
+      "by_relation(#{self.relations.first.text})"
     end  
   end
   
@@ -56,6 +65,6 @@ module Grouping
     if !args.has_key? :relations
       raise "Missing relations param!"
     end
-    ByRelation.new(args[:relations])
+    ByRelation.new(args)
   end
 end

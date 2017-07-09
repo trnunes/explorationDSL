@@ -2,8 +2,8 @@ module Ranking
   class ByRelation < Ranking::Function
     attr_accessor :relation
     
-    def initialize(relation)
-      @relation = relation
+    def initialize(args)
+      @relation = args[:relation]
     end
     
     def prepare(args, server)
@@ -44,6 +44,6 @@ module Ranking
   end
   
   def self.by_relation(args={})
-    ByRelation.new(args[:relation])
+    ByRelation.new(args)
   end
 end

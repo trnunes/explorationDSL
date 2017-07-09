@@ -28,6 +28,10 @@ class Xset
     domains.to_a.sort{|d1, d2| d1.to_s <=> d2.to_s}
   end
   
+  def natural_sort!
+    @index.natural_sort!
+  end
+  
   def each(&block)
     each_item &block
   end

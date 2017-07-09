@@ -1,4 +1,17 @@
 module SPARQLQuery
+  
+  def self.label_where_clause(var, label_relations)
+    label_relations.map do |l|
+      expanded_uri = Xpair::Namespace.expand_uri(l)
+      if var == "?s"
+        "{" + var + " <#{expanded_uri}> " + "?ls" + "}."
+      else
+        "{" + var + " <#{expanded_uri}> " + "?lo" + "}."
+      end
+      
+    end.join(" OPTIONAL")
+  end
+
   def self.convert_literal(literal)
     if literal.has_datatype? && !literal.datatype.downcase.include?("string")
       return "\"" << literal.value << "\"^^<#{literal.datatype}>"

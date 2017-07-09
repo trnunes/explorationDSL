@@ -6,7 +6,7 @@ module Filtering
     end
     
     def contains_keyword(item, keyword)
-      item.text.to_s.include?(keyword)
+      item.text.to_s.downcase.include?(keyword.downcase)
     end
     
     def prepare(items, server)

@@ -27,7 +27,7 @@ module Explorable
       @result_set = Set.new
       @groups = {}
       @grouping_function = @args[:function]
-      @grouping_function.prepare(input_set.each_item, @groups, input_set.server)
+      @grouping_function.prepare(input_set.each_item, @groups, input_set.server, @args)
       finish_time = Time.now
       puts "EXECUTED GROUP: " << (finish_time - start_time).to_s
     end
@@ -37,7 +37,12 @@ module Explorable
     end
     
     def expression
-      "#{@args[:input].id}.group(#{@args[:function].expression})"
+      if @args[:image_set]
+        "#{@args[:input].id}.group(restriction: #{@args[:image_set].title}, function: #{@args[:function].expression})"
+      else
+        "#{@args[:input].id}.group(#{@args[:function].expression})"
+      end
+      
     end
   end
   

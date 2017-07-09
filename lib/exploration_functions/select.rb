@@ -33,7 +33,7 @@ module Explorable
         return index.indexing_item
       else
         indexed_item = index.indexed_items.select{|indexed_item| indexed_item == item}.first
-        puts "tried select"
+        # puts "tried select"
         # binding.pry
         if(indexed_item)
           return indexed_item
@@ -48,11 +48,11 @@ module Explorable
       return nil
     end
     def v_expression
-      "Select(#{@args[:items].map{|item| item.text}})"
+      "Select()"
     end
     
     def expression
-      "#{@args[:input].id}.select(#{@args[:items].map{|item| item.text}})"
+      "#{@args[:input].id}.select(#{@args[:items].map{|item| item.text}.join(", ")})"
     end
   end
   

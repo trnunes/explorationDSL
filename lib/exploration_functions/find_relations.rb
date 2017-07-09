@@ -19,10 +19,10 @@ module Explorable
         entities = input_set.each_item
       end
       entities.select!{|e| !e.is_a?(Xpair::Literal)}
-      limit = args[:limit] || entities.size
+      @limit = args[:limit] || entities.size
 
       @relations = Set.new
-      @relations = Set.new input_set.server.begin_nav_query.find_relations(entities[0..limit])
+      @relations = Set.new input_set.server.begin_nav_query.find_relations(entities[0..@limit])
       # binding.pry
 
       finish_time = Time.now
@@ -78,7 +78,8 @@ module Explorable
     end
     
     def expression
-      "#{@args[:input].id}.relations()"
+      limit = @args[:limit] || @args[:input].each_item.size
+      "#{@args[:input].id}.relations(limit: #{limit.to_s})"
     end
   end
   

@@ -33,7 +33,12 @@ module Explorable
       sorted_entries = index_entries.sort do |entry1, entry2|
         comparison_value = 1
         if(@args[:position] == "domain")
-          comparison_value = compare(entry1.indexing_item, entry2.indexing_item)
+          if(@ranking_function.domain_rank?)
+            comparison_value = compare((entry1.indexed_items[0] || 0) , (entry2.indexed_items[0] || 0))
+          else
+            comparison_value = compare(entry1.indexing_item, entry2.indexing_item)
+          end
+          
         else
           entry1.indexed_items.each do |item1|
             entry2.indexed_items.each do |item2|
@@ -72,6 +77,7 @@ module Explorable
             sorted_entries = index_entry.indexed_items.sort do |item1, item2|
               compare(item1, item2)
             end
+            # binding.pry
             index_entry.indexed_items = sorted_entries
           else
             eval_set(index_entry.children)

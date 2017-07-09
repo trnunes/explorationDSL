@@ -24,6 +24,7 @@ module SPARQLQuery
       @where_stmts = [] 
       @construct_stmts = []     
       @entities = Set.new
+      @labels_by_entity = {}
     end
   
     def equals_stmt(entity)
@@ -40,6 +41,7 @@ module SPARQLQuery
   
   
     def equals(entity)
+      @labels_by_entity[Xpair::Namespace.expand_uri(entity.id)] = entity.text
       @entities << "<#{Xpair::Namespace.expand_uri(entity.id)}>"
       @filters << SimpleFilter.new(equals_stmt(entity))
 
@@ -77,7 +79,6 @@ module SPARQLQuery
       if(relations.size == 1)
         @construct_stmts << "#{path_string(relations)} #{sparql_entity}"
       end
-
       
       @where_stmts << SimpleFilter.new("?s #{path_string(relations)} #{sparql_entity}") 
 
@@ -131,18 +132,17 @@ module SPARQLQuery
     def eval     
       result_set = Set.new
       SPARQLFilter.reset_indexes
-      
       @server.execute(build_query).each do |solution|
 
         if(solution.is_a? RDF::Query::Solution)
-                  # binding.pry
-          result_set << Entity.new(solution.to_a[0][1].to_s)
+          e = Entity.new(solution.to_a[0][1].to_s)
         else
-          result_set << Entity.new(solution[0].to_s)
+          e = Entity.new(solution[0].to_s)
         end
+
+        e.text = @labels_by_entity[Xpair::Namespace.expand_uri(e.id)].to_s
+        result_set << e
       end
-      # binding.pry
-      
       result_set
     end
   
