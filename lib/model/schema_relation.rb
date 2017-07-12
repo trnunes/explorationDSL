@@ -99,9 +99,10 @@ class SchemaRelation
   def text
     t = @text.dup
     if(@inverse)
-      t << " of"
+      t + " of"
+    else
+      t
     end
-    t
   end
   
   def expression

@@ -152,7 +152,7 @@ class PathRelation
   end
       
   def text
-    @relations.map{|r| r.inverse? ? r.text + " of" : r.text}.join("/")
+    @relations.map{|r| r.text}.join("/")
   end
   
   def eql?(relation)

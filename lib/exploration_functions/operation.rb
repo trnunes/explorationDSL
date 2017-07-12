@@ -39,6 +39,9 @@ module Explorable
   
   class Operation  
   
+    def initialize(*args)
+      @mappings = {}
+    end
     def update
       execute(@args)
     end
@@ -59,6 +62,7 @@ module Explorable
 
       entries_to_remove = []
       new_indexed_items = []
+      
       index_entries.each do |index_entry|
         new_indexed_items = []
         if(index_entry.children.empty?)
@@ -71,6 +75,13 @@ module Explorable
             
 
             partial_results = eval_item(item)
+            if partial_results.respond_to?(:each)
+              @mappings[item] = Set.new partial_results.dup
+            else
+              @mappings[item] = Set.new([partial_results].compact)
+            end
+            
+            # binding.pry
 
             next if(delayed_result? && !(item == index_entry.indexed_items.last))
             next if(partial_results.nil?)
@@ -172,6 +183,7 @@ module Explorable
 
             self.eval_set([index])
             result_set.index = index
+            # binding.pry
           end
           Explorable.cache(result_set)
           
@@ -185,10 +197,11 @@ module Explorable
           index = input_set.index.copy
           self.eval_set([index])
           result_set.index = index
-
+          
           
         end
       end
+      result_set.mappings = @mappings
       result_set.resulted_from = input_set
       result_set.server = input_set.server
       result_set
@@ -224,18 +237,23 @@ module Explorable
   end
   
   def execute_exploration_operation(operation_klass, args)
+   
     rs = execute_operation(operation_klass, args)
+   
     Explorable.exploration_session.add_set(rs)
     rs
   end
   
   def execute_operation(operation_klass, args)
+
     args[:input] = self
     operation_klass.new.execute args
   end
   
   def execute_visualization_operation(operation_klass, args)
+
     rs = execute_operation(operation_klass, args)
+    rs.mappings = @mappings
     Explorable.visualization_session.add_set(rs)
     rs
   end

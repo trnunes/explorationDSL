@@ -4,13 +4,14 @@ class Xset
   include Indexing
   include Persistable::Writable
   extend Persistable::Readable
-  attr_accessor :id, :expression, :v_expression, :index, :server, :resulted_from, :title
+  attr_accessor :id, :expression, :v_expression, :index, :server, :resulted_from, :title, :mappings
   
   def initialize(id, expression, v_expression = nil)
     @id = id
     @expression = expression
     @v_expression = v_expression || expression
     @index = Indexing::Entry.new('root')
+    @mappings = {}
   end
   
   def literal_extension?
@@ -39,5 +40,58 @@ class Xset
   def empty?
     @index.empty?
   end
+  
+  ##Relation Methods##
+  def add_mapping(domain, image)
+    if(!@mappings.has_key?(domain))
+      @mappings[domain] = Set.new
+    end
+    @mappings[domain] << image
+  end
+  
+  def inverse?
+    false
+  end
+    
+  def domain()
+    @mappings.keys
+  end
+  
+  def image()
+    @mappings.values.flatten
+  end
+  
+  def [](restriction)
+    restricted_image_set(restriction)
+  end
+  
+  def restricted_image(restriction, image_items = [], limit = -1)
+    res_image = Set.new
+    restriction.each do |domain_item|
+      if(@mappings.has_key? domain_item)
+        res_image += @mappings[domain_item].map{|img| Pair.new(domain_item, img)}
+      end
+    end
+    res_image
+  end
+  
+  def restricted_image_set(restriction, image_items = [], limit = -1)
+    res_image = Set.new
+    restriction.each do |domain_item|
+      res_image += @mappings[domain_item] if(@mappings.has_key? domain_item)
+    end
+    res_image
+  end
+  
+  def restricted_domain_set(restriction, image_items = [], limit = -1)
+    res_domain = Set.new
+    restriction.each do |image_item|
+      @mappings.each do |domain, image_set|
+        res_domain << domain if image_set.include?(image_item)
+      end
+    end
+    res_domain
+  end
+ alias text title 
   
 end

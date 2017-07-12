@@ -51,6 +51,7 @@ require 'filters/image_equals'
 require 'filters/compare'
 require 'filters/relation_compare'
 require 'filters/by_image'
+require 'filters/local_filter'
 
 require 'grouping_functions/grouping'
 require 'grouping_functions/by_relation'

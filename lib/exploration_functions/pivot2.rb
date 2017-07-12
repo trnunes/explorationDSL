@@ -47,7 +47,7 @@ module Explorable
     def v_expression
       relationExp = @args[:relations].map{|r| r.text}.join(", ")
       direction = @args[:is_backward] ? "backward" : "forward"
-      "Pivot"+direction+"(#{relationExp})"
+      "Pivot(#{relationExp})"
     end
     
     def expression

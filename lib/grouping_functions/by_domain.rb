@@ -1,40 +1,55 @@
 
 module Grouping
   class ByDomain < Grouping::Function
-    attr_accessor :relations
-    
+    attr_accessor :domain_set
     def horizontal?
-      true
+      false
     end
-    
     def initialize(args)
-
-      
-      if args.size > 0
-        self.relations = args
+      if args[:domain_set]
+        self.domain_set = args[:domain_set]
+        
       else
         raise "Invalid number of arguments. Expected: min 1, max 2; Received: #{args.size}"
-      end      
+      end
+           
     end
     
-    def prepare(items_to_group)
+    def prepare(items_to_group, groups, server, args = {})
+      relation = nil
+      input_set = args[:input]
+
+      
+      @domain_by_image_hash = {}
+
+      input_set.restricted_image(self.domain_set, [], args[:limit].to_i).each do |pair|
+        if !@domain_by_image_hash.has_key?(pair.image)
+          @domain_by_image_hash[pair.image] = Set.new
+        end
+        @domain_by_image_hash[pair.image] << pair.domain
+      end
+      
     end
     
-    def group(item, pair, groups)
-      Pair.new(pair.domain, pair.image)
+    def group(item, groups)
+      grouping_items = Set.new
+      if(@domain_by_image_hash.has_key?(item))
+        @domain_by_image_hash[item].each do |image_item|
+          grouping_items << image_item
+        end
+      end
+      grouping_items
     end
     
     def expression
-      relation_exp = ""
-      relation_exp = "[" << self.relations.map{|r| r.is_a?(Xset)? r.id : r.to_s}.join(",") << "]"
-      "by_domain(#{relation_exp})"
+      "by_domain(#{self.domain_set.text})"
     end  
   end
   
   def self.by_domain(args = {})
-    if !args.has_key? :relations
-      raise "Missing relations param!"
+    if !args.has_key? :domain_set
+      raise "Missing domain set param!"
     end
-    ByDomain.new(args[:relations])
+    ByDomain.new(args)
   end
 end

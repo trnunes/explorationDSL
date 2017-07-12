@@ -50,7 +50,9 @@ require './filters/image_equals'
 require './filters/compare'
 require './filters/relation_compare'
 require './filters/by_image'
+require './filters/local_filter'
 require './filters/operators/filtering_operator.rb'
+
 
 require './grouping_functions/grouping'
 require './grouping_functions/by_relation'
@@ -138,7 +140,7 @@ require './adapters/rdf/cache.rb'
 
     @papers_server = RDFDataServer.new(papers_graph)
     module Xpair::Visualization
-        label "http://tecweb/pns#Paper", "_:author"
+        label_for_type "http://tecweb/pns#Paper", "_:author"
     end
 
 xset = Xset.new('s0', '')
@@ -180,7 +182,15 @@ rf = xset.refine{|f| f.compare(restrictions: [f.op.equal(Entity.new("_:p3")), f.
 items = g2.select_items([Entity.new("_:p3")])
 g1 = Xset.load('test_set').group{|gf| gf.by_relation(relations: [SchemaRelation.new("_:author")])}
 p = xset.pivot(relations: [SchemaRelation.new("_:cite")])
+p = xset.pivot(relations: [SchemaRelation.new("_:author", @papers_server)])
 p = p.pivot(relations: [SchemaRelation.new("_:author", @papers_server)])
 
 g2 = xset.group(image_set: xset3){|gf| gf.by_relation(relations: [SchemaRelation.new("_:author", @papers_server)])}
+
+## refine by related set ###
+
+p = xset.pivot(relations: [SchemaRelation.new("_:author")])
+r = xset.refine{|f| f.relation_compare(relations: [p], connector: "AND", restrictions: [["=", Entity.new("_:a1")]])}
+g = xset.group{|g| g.by_relation relations: [p]}
+gd = p.group{|g| g.by_domain domain_set: xset}
 

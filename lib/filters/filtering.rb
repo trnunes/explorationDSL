@@ -46,6 +46,13 @@ module Filtering
 
     
     def build_query_filter(items)
+      if(@relations)
+        if(@relations[0].is_a? Xset)
+          @filter = LocalFilter::LocalANDFilter.new(items)
+          return @filter
+        end
+      end
+      
       @filter = server.begin_filter do |f|
         f.union do |u|
           items.each do |item|

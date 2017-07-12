@@ -20,14 +20,15 @@ module Filtering
         @restrictions.each do |restriction|
           operator = restriction[0]
           value = restriction[1]
-          filter.compare(@relations, operator, value)
+
+          filter.compare(@relations.first, operator, value)
         end
       else
         filter.union do |u|
           @restrictions.each do |restriction|
             operator = restriction[0]
             value = restriction[1]
-            u.compare(@relations, operator, value)
+            u.compare(@relations.first, operator, value)
           end
         end            
       end
@@ -42,6 +43,7 @@ module Filtering
       
       relation_exp = ""
       # binding.pry
+      
       relation_exp = @relations.map{|r| r.text}.join(", ")
       
       restrictions_exp = @restrictions.map{|r| r[0] + " " + r[1].text}.join( " " + @connector + " ")
