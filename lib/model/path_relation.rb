@@ -135,7 +135,7 @@ class PathRelation
     result_pairs
   end
   
-  def restricted_image(restriction, image_items = [], limit)
+  def restricted_image(restriction, image_items = [], limit=-1)
     if can_fire_path_query
       schema_restricted_image(restriction, image_items, limit)
     else
@@ -143,7 +143,7 @@ class PathRelation
     end
   end
   
-  def restricted_domain(restriction)
+  def restricted_domain(restriction, image_items = [], limit=-1)
     if can_fire_path_query
       schema_restricted_domain(restriction)
     else

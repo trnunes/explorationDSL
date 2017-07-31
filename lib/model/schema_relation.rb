@@ -69,6 +69,7 @@ class SchemaRelation
   end
   
   def restricted_domain(restriction, image_items = [], limit = -1)
+    
     return [] if restriction.empty?
     if @inverse
       @inverse = false

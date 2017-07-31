@@ -51,10 +51,22 @@ module SPARQLQuery
       object_index = SPARQLFilter.next_object_index
       @construct_stmts << "#{path_string(relation)} ?o#{object_index}"
       filter_exp = ""
-      if(value.is_a? Xpair::Literal)
-        filter_exp = "FILTER(#{SPARQLQuery.get_literal_type(value)}(?o#{object_index}) #{comparator.to_s} \"#{value.value.to_s}\"^^#{SPARQLQuery.get_literal_type(value)})"
+      
+      if(comparator == "in" && value.respond_to?(:each))
+        filter_exp = "VALUES ?o#{object_index} {" + value.each_item.map do |item| 
+          if(item.is_a? Xpair::Literal)
+            "\"#{item.value.to_s}\"^^#{SPARQLQuery.get_literal_type(item)}"
+          else
+            "<#{Xpair::Namespace.expand_uri(item.id)}>"
+          end
+        end.join(" ") + "}"
       else
-        filter_exp = "FILTER(?o#{object_index} #{comparator.to_s} <#{Xpair::Namespace.expand_uri(value.id)}>)"
+        if(value.is_a? Xpair::Literal)
+          filter_exp = "FILTER(#{SPARQLQuery.get_literal_type(value)}(?o#{object_index}) #{comparator.to_s} \"#{value.value.to_s}\"^^#{SPARQLQuery.get_literal_type(value)})"
+        else
+          filter_exp = "FILTER(?o#{object_index} #{comparator.to_s} <#{Xpair::Namespace.expand_uri(value.id)}>)"
+        end
+        
       end
       
       @where_stmts << SimpleFilter.new("?s #{path_string(relation)} ?o#{object_index}. #{filter_exp}")
@@ -96,8 +108,11 @@ module SPARQLQuery
       @filters << SimpleFilter.new(regex_stmt(pattern))
     end
     
+    ##TODO normalize this parameter to receive only single relations and not arrays
     def path_string(relations)
+      relations = [relations] if(!relations.respond_to?(:each))
       
+
       relations.map do |r|
         if(r.is_a? PathRelation)
           r.relations.map{|rs| "<" + Xpair::Namespace.expand_uri(rs.id) + ">"}.join("/")

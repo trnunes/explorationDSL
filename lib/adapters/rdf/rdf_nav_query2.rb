@@ -114,6 +114,7 @@ module SPARQLQuery
         end
       end
       label_clause = mount_label_clause("?s", @relation, true)
+      # binding.pry
       where = "#{domain_items_values_clause} VALUES ?o {#{@items.map{|i| "<" + i.id + ">"}.join(" ")}}. ?s #{@relation.map{|r| "<" + Xpair::Namespace.expand_uri(r.to_s) + ">"}.join("/")} ?o. #{label_clause}"
       # binding.pry
       @query = "SELECT ?s ?o ?ls WHERE{#{where}}"

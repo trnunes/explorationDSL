@@ -71,7 +71,7 @@ class RDFDataServer
     types = Xpair::Visualization.types
     types.delete("http://www.w3.org/2000/01/rdf-schema#Resource")
     retrieved_types = []
-    if(types.size > 0)
+    if(types.size > 0 && !items[0].is_a?(Xpair::Literal))
       types_values_clause = "VALUES ?t {#{types.map{|t| "<" + Xpair::Namespace.expand_uri(t) + ">"}.join(" ")}}"
       items_values_clause = "VALUES ?s {#{items[0..5].map{|i| "<" + Xpair::Namespace.expand_uri(i.id) + ">"}.join(" ")}}"
       if inverse
@@ -93,7 +93,7 @@ class RDFDataServer
     query = "SELECT DISTINCT ?class WHERE { ?s a ?class.}"
     classes = []
     execute(query, content_type: content_type).each do |s|
-      type = Entity.new(Xpair::Namespace.colapse_uri(s[:class].to_s))
+      type = Type.new(Xpair::Namespace.colapse_uri(s[:class].to_s))
       # type.text = s[:label].to_s if !s[:label].to_s.empty?
       type.add_server(self)
       classes << type
@@ -107,7 +107,7 @@ class RDFDataServer
     execute(query, content_type: content_type).each do |s|
       item = Entity.new(Xpair::Namespace.colapse_uri(s[:s].to_s))
       # item.text = s[:label].to_s if !s[:label].to_s.empty?
-      item.server = self
+      item.add_server self
       instances << item
     end
     instances

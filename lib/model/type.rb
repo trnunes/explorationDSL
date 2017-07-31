@@ -11,6 +11,12 @@ class Type < Item
     instances
   end
   
+  def expression
+    "Type.new(\"" + @id + "\")"
+  end
+  def to_s
+    self.id
+  end
   def relations
     relations = Set.new()
   end
