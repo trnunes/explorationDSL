@@ -13,8 +13,10 @@ module Filtering
     #   build_query_filter(set).compare(@relations, @operator, @value)
     #   super(set.extension_copy, set)
     # end
-    def prepare(items, server)
-      filter = build_query_filter(items)
+    def prepare(items, server, args)
+      offset = args[:out_offset] || 0
+      limit = args[:out_limit] || 0
+      filter = build_query_filter(items, {offset: offset, limit: limit})
 
       if(@connector == "AND")
         @restrictions.each do |restriction|

@@ -5,24 +5,31 @@ module Explorable
       true
     end
     
+    
     def prepare(args)
       start_time = Time.now
       @result_set = Set.new
+      out_limit = args[:out_limit] || 0
+      out_offset = args[:out_offset] || 0
       if(!@relations.nil?)
         return
       end
 
       input_set = args[:input]
-      if(args[:position] == "domain")
-        entities = input_set.each_domain
-      else
-        entities = input_set.each_item
-      end
-      entities.select!{|e| !e.is_a?(Xpair::Literal)}
-      @limit = args[:limit] || entities.size
 
       @relations = Set.new
-      @relations = Set.new input_set.server.begin_nav_query.find_relations(entities[0..@limit])
+      if(input_set.root?)
+        @relations = input_set.server.relations(out_offset, out_limit)
+      else
+        if(args[:position] == "domain")
+          entities = input_set.each_domain
+        else
+          entities = input_set.each_item
+        end
+        entities.select!{|e| !e.is_a?(Xpair::Literal)}
+        @limit = args[:limit] || entities.size
+        @relations = Set.new input_set.server.begin_nav_query.find_relations(entities[0..@limit], out_offset, out_limit)        
+      end
       # binding.pry
 
       finish_time = Time.now
@@ -33,45 +40,6 @@ module Explorable
     def eval_item(item)
       @relations
     end
-     
-    # def eval()
-    #   start_time = Time.now
-    #
-    #   input_set = @args[:input]
-    #   entities = input_set.each_entity.to_a
-    #   limit = @args[:limit]
-    #   limit ||= entities.size
-    #
-    #   keep_structure = @args[:keep_structure].nil? ? false : @args[:keep_structure]
-    #
-    #   mappings = {}
-    #   results = input_set.server.begin_nav_query.find_forward_relations(entities[0..limit])
-    #
-    #   results.each do |item, relations_hash|
-    #     mappings[item] = {}
-    #     relations_hash.each do |relation, values|
-    #       mappings[item][relation] = {}
-    #     end
-    #   end
-    #   if(@args[:direction] == 'backward')
-    #     results = input_set.server.begin_nav_query.find_backward_relations(entities[0..limit])
-    #
-    #     results.each do |item, relations_hash|
-    #       mappings[item] ||= {}
-    #       relations_hash.each do |relation, values|
-    #         r = Relation.new(relation.id)
-    #         r.servers = relation.servers
-    #         r.inverse = true
-    #         r.text += " of"
-    #         mappings[item][r] = {}
-    #       end
-    #     end
-    #   end
-    #   finish_time = Time.now
-    #
-    #   puts "FindRelations: " <<(finish_time - start_time).to_s
-    #   return mappings
-    # end
 
     def v_expression
       "Relations()"

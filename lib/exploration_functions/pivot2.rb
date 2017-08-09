@@ -2,9 +2,6 @@ module Explorable
   class Pivot < Explorable::Operation
     
     def prepare(args)
-      if(!@result_hash.nil?)
-        return
-      end
       @result_set = Set.new
       @result_hash = {}
       relations = args[:relations]
@@ -14,16 +11,19 @@ module Explorable
       position = args[:position] || "image"
       items = input_set.each_item
       @limit = args[:limit] || items.size
+      out_limit = args[:out_limit] || 0
+      out_offset = args[:out_offset] || 0
+      items_to_filter = args[:items_to_filter]
       relations.each do |r|
 
         r.server = r.server || input_set.server
         r.limit = @limit if r.is_a?(PathRelation)
 
         if(is_backward)
-          result_pairs += r.restricted_domain(items[0..@limit], [], args[:limit].to_i)
+          result_pairs += r.restricted_domain(items[0..@limit], [], items_to_filter, out_offset, out_limit)
         else
-          # binding.pry
-          result_pairs += r.restricted_image(items[0..@limit], [], args[:limit].to_i)
+
+          result_pairs += r.restricted_image(items[0..@limit], [], items_to_filter, out_offset, out_limit)
         end
       end
       

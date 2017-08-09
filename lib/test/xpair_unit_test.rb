@@ -1,4 +1,5 @@
 require "pry"
+require 'forwardable'
 require "test/unit"
 require "rdf"
 require 'linkeddata'
@@ -26,6 +27,7 @@ require './model/namespace'
 require './model/session'
 
 require './exploration_functions/operation'
+require './exploration_functions/cursor'
 require './exploration_functions/find_relations'
 require './exploration_functions/pivot2'
 require './exploration_functions/refine'

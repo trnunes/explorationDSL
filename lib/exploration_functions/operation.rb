@@ -39,8 +39,9 @@ module Explorable
   
   class Operation  
   
-    def initialize(*args)
+    def initialize(args = {})
       @mappings = {}
+      @args = args
     end
     def update
       execute(@args)
@@ -57,11 +58,14 @@ module Explorable
     def prepare(args)
     end
     
-
+    def eval_root_set(xset)
+    end
+    
     def eval_set(index_entries)
 
       entries_to_remove = []
       new_indexed_items = []
+      literal_results = false
       
       index_entries.each do |index_entry|
         new_indexed_items = []
@@ -87,6 +91,9 @@ module Explorable
             next if(partial_results.nil?)
             
             partial_results = [partial_results] if !partial_results.respond_to?(:each)
+            if !partial_results.first.is_a?(Xpair::Literal)
+              @result_set = Set.new(@result_set)
+            end
             @result_set += partial_results
 
           end
@@ -161,53 +168,62 @@ module Explorable
     end
     def eval_item(item)
     end
-
-    def execute(args={})
-      @args = args
-      result_set = Xset.new(SecureRandom.uuid, self.expression, self.v_expression)
-      result_set.intention = self
+    
+    def execute(offset = 0, limit = 20, items_to_filter = [])
+      items = []
       input_set = @args[:input]
-      input_set.save
 
-      # binding.pry
-      if(Explorable.use_cache?)
-        cached_result = Explorable.get_from_cache(self.expression)
-        if(cached_result)
-          result_set = Explorable.get_from_cache(self.expression)
+      if(!input_set.empty?)
+        @args[:out_offset] = offset
+        @args[:out_limit] = limit
+        @args[:items_to_filter] = items_to_filter
+        self.prepare(@args)
+        input_index_structure_copy = input_set.index.copy
 
+        if input_set.root?
+          binding.pry
+          input_index_structure_copy.indexed_items = self.eval_root_set(input_set)
+          return 
         else
-          if(!@args[:input].empty?) 
-            input_set = @args[:input]
-
-            index = input_set.index.copy
-
-            self.eval_set([index])
-            result_set.index = index
-            # binding.pry
-          end
-          Explorable.cache(result_set)
           
+          self.eval_set([input_index_structure_copy])          
         end
-      else
 
-        if(!@args[:input].empty?)         
-
-          input_set = @args[:input]
-          self.prepare(@args)
-          index = input_set.index.copy
-          self.eval_set([index])
-          result_set.index = index
-          
-          
-        end
       end
-      result_set.mappings = @mappings
-      result_set.resulted_from = input_set
-      result_set.server = input_set.server
-      result_set
-      
+      input_index_structure_copy
     end
     
+    def create_result_set()
+      
+      result_set = Xset.new(SecureRandom.uuid, self.expression, self.v_expression)
+
+      input_set = @args[:input]
+      # if(!input_set.empty?)
+      #   result_index = self.execute()
+      #   result_set.index = result_index
+      # end
+     result_set.mappings = @mappings
+     result_set.resulted_from = input_set
+     result_set.server = input_set.server
+     result_set.intention = self
+     result_set
+   end
+   
+   def get_result_set()
+     if(Explorable.use_cache?)
+       cached_result = Explorable.get_from_cache(self.expression)
+       result_set = cached_result
+       if(!cached_result)
+         result_set = self.create_result_set()
+         Explorable.cache(result_set)
+       end
+     else
+       result_set = self.create_result_set()
+     end
+     result_set.save
+     result_set
+   end
+        
   
     def dependencies
       @args.values.flatten.select do |arg|
@@ -247,7 +263,8 @@ module Explorable
   def execute_operation(operation_klass, args)
 
     args[:input] = self
-    operation_klass.new.execute args
+    operation_klass.new(args).get_result_set()
+    
   end
   
   def execute_visualization_operation(operation_klass, args)

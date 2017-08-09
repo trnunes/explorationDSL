@@ -39,16 +39,16 @@ class SchemaRelation
     @server.image(self)
   end
   
-  def restricted_image(restriction, image_items = [], limit = -1)
+  def restricted_image(restriction, image_items = [], items_to_filter = [], offset = 0, limit = -1)
     return [] if restriction.empty?
     # binding.pry
     if @inverse
       @inverse = false
-      return restricted_domain(restriction, image_items, limit)
+      return restricted_domain(restriction, image_items, items_to_filter, offset, limit)
     end
     result_pairs = []
     
-    query = @server.begin_nav_query(limit: limit) do |q|
+    query = @server.begin_nav_query(offset: offset, limit: limit, items_to_filter: items_to_filter) do |q|
       restriction.each do |item|
         q.on(item)
       end
@@ -68,16 +68,16 @@ class SchemaRelation
     result_pairs
   end
   
-  def restricted_domain(restriction, image_items = [], limit = -1)
+  def restricted_domain(restriction, image_items = [], items_to_filter = [], offset = 0, limit = -1)
     
     return [] if restriction.empty?
     if @inverse
       @inverse = false
-      return restricted_image(restriction, image_items, limit)
+      return restricted_image(restriction, image_items, offset, limit)
     end
     
     result_pairs = []
-    query = @server.begin_nav_query(limit: limit) do |q|
+    query = @server.begin_nav_query(offset: offset, limit: limit, items_to_filter: items_to_filter) do |q|
       restriction.each do |item|
         q.on(item)
       end

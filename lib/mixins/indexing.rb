@@ -126,10 +126,12 @@ module Indexing
   # end
 
   
-  class Entry
+  class Entry 
+    extend Forwardable
     attr_accessor :indexing_item, :children, :indexed_items, :parent
+    def_delegators :@indexing_item, :id, :text, :class, :has_datatype?, :datatype, :expression, :inverse
     
-    def initialize(indexing_item, parent = nil, children = [])
+    def initialize(indexing_item, parent = nil, children = Set.new)
       @indexing_item = indexing_item
       @children = children
       @indexed_items = []

@@ -38,7 +38,7 @@ class RDFDataServer
         Xpair::Literal.new(literal.to_s)
       else
         Xpair::Literal.new(literal.to_s.to_i)
-      end      
+      end
     end
   end
   
@@ -58,6 +58,8 @@ class RDFDataServer
     t = SPARQLQuery::NavigationalQuery.new(self)
     if(options[:limit].to_i > 0)
       t.limit = options[:limit].to_i
+      t.offset = options[:offset].to_i
+      t.items_to_filter = options[:items_to_filter]
     end
     
     if block_given?
@@ -67,6 +69,7 @@ class RDFDataServer
     end
     t
   end
+  
   def sample_type(relation_uri, items, inverse = false)
     types = Xpair::Visualization.types
     types.delete("http://www.w3.org/2000/01/rdf-schema#Resource")
@@ -87,12 +90,11 @@ class RDFDataServer
     types_with_vis_properties = (retrieved_types & types)
     types_with_vis_properties.empty? ? "rdfs:Resource" : types_with_vis_properties.first
   end
-  def types
-    limit = 10
-    offset = 0
+  def types(limit = 0, offset = 0)
+    
     query = "SELECT DISTINCT ?class WHERE { ?s a ?class.}"
     classes = []
-    execute(query, content_type: content_type).each do |s|
+    execute(query, {content_type: content_type, offset: offset, limit: limit}).each do |s|
       type = Type.new(Xpair::Namespace.colapse_uri(s[:class].to_s))
       # type.text = s[:label].to_s if !s[:label].to_s.empty?
       type.add_server(self)
@@ -101,10 +103,11 @@ class RDFDataServer
     classes
   end
   
-  def instances(type)
+  def instances(type, offset=0, limit=0)
     query = "SELECT DISTINCT ?s  WHERE { ?s a <#{Xpair::Namespace.expand_uri(type.id)}>.}"
+    
     instances = []
-    execute(query, content_type: content_type).each do |s|
+    execute(query, {content_type: content_type, offset: offset, limit: limit}).each do |s|
       item = Entity.new(Xpair::Namespace.colapse_uri(s[:s].to_s))
       # item.text = s[:label].to_s if !s[:label].to_s.empty?
       item.add_server self
@@ -113,10 +116,11 @@ class RDFDataServer
     instances
   end
   
-  def relations
+  def relations(offset = 0, limit = 0)
     query = "SELECT DISTINCT ?relation WHERE { ?s ?relation ?o.}"
+        
     classes = []
-    execute(query, content_type: content_type).each do |s|
+    execute(query, {content_type: content_type, offset: offset, limit: limit}).each do |s|
       relation = SchemaRelation.new(Xpair::Namespace.colapse_uri(s[:relation].to_s), false, self)
       # relation.text = s[:label].to_s if !s[:label].to_s.empty?
       relation.server = self
@@ -125,7 +129,7 @@ class RDFDataServer
     classes    
   end
   
-  def search(keyword_pattern)
+  def search(keyword_pattern, offset = 0, limit = 0)
     filters = []
     unions = []
     items = []
@@ -135,7 +139,8 @@ class RDFDataServer
 
     label_clause = SPARQLQuery.label_where_clause("?s", "rdfs:Resource")
     query = "SELECT distinct ?s ?lo WHERE{?s ?p ?o. #{label_clause}  FILTER(#{filters.join(" && ")}) } "
-    execute(query,content_type: content_type ).each do |s|
+    
+    execute(query, {content_type: content_type, offset: offset, limit: limit}).each do |s|
       item = Entity.new(Xpair::Namespace.colapse_uri(s[:s].to_s))
       item.add_server(self)
       items << item
@@ -143,7 +148,11 @@ class RDFDataServer
     items
   end
   
-  def blaze_graph_search(keyword_pattern)
+  def match_all(keyword_pattern, offset = 0, limit = 0)
+    blaze_graph_search(keyword_pattern, offset, limit)
+  end
+  
+  def blaze_graph_search(keyword_pattern, offset = 0, limit = 0)
     filters = []
     unions = []
     items = []
@@ -152,7 +161,7 @@ class RDFDataServer
     query = "select ?s ?p ?o ?ls where {?o <http://www.bigdata.com/rdf/search#search> \" #{keyword_pattern.join(" ")}\". ?o <http://www.bigdata.com/rdf/search#matchAllTerms> \"true\" . ?s ?p ?o . #{label_clause}}"
 
 
-    execute(query,content_type: content_type ).each do |s|
+    execute(query,{content_type: content_type, offset: offset, limit: limit}).each do |s|
       item = Entity.new(Xpair::Namespace.colapse_uri(s[:s].to_s),  "rdfs:Resource")
       item.text = s[:ls].to_s
       item.add_server(self)
@@ -163,8 +172,13 @@ class RDFDataServer
   
   
 
-  def begin_filter(&block)
+  def begin_filter(options = {}, &block)
     f = SPARQLQuery::SPARQLFilter::ANDFilter.new(self)
+    if(options[:limit].to_i > 0)
+      f.limit = options[:limit].to_i
+      f.offset = options[:offset].to_i
+    end
+    
     if block_given?
       yield(f)
       f
@@ -248,20 +262,24 @@ class RDFDataServer
   def execute(query, options = {})
     solutions = []
 
-    offset = 0
+    offset = options[:offset] || 0
+    limit = options[:limit] || 0
     rs = [0]
     # if self.cache.has_key? query
     #   return @cache[query].results
     # end
     
-    puts query.to_s
+
 
     # while(!rs.empty?)
 
       limited_query = query #+ "limit #{@limit} offset #{offset}"
 
+      if(limit > 0)
+        limited_query << "limit #{limit} offset #{offset}"
+      end
 
-
+      puts limited_query.to_s
       rs = @graph.query(limited_query, options)      
       rs_a = rs.to_a
       

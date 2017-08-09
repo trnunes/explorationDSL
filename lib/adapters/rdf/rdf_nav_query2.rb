@@ -9,7 +9,7 @@ java_import 'java.util.concurrent.TimeUnit'
 
 module SPARQLQuery
   class NavigationalQuery
-    attr_accessor :limit
+    attr_accessor :limit, :offset, :items_to_filter
     def initialize(server)
       @items = []
       @server = server
@@ -22,6 +22,9 @@ module SPARQLQuery
       @relation_object_hash = {}
       @subject_index = 0
       @cached_solution = Set.new
+      @limit = 0
+      @offset = 0
+      @items_to_filter = []
       
     end
   
@@ -95,7 +98,17 @@ module SPARQLQuery
         where_clause = "VALUES ?s {#{@items.map{|i| "<" + i.id + ">"}.join(" ")}}. {?s #{relation_uri} ?o}. #{label_clause} #{image_items_values_clause}"
       end
       # binding.pry
-      @query = "SELECT ?s ?o ?lo where{#{where_clause}}"
+      @query = "SELECT ?s ?o ?lo where{#{where_clause} "
+      if(!@items_to_filter.to_a.empty?)
+        @query << " FILTER (" << @items_to_filter.map do |item| 
+          if(item.is_a?(Xpair::Literal))
+            "?o != #{SPARQLQuery.convert_literal(item)}"
+          else
+            "?o != <#{item.id}>"
+          end
+        end.join(" && ") << ")"
+      end
+      @query << "}"
       self
     end
 
@@ -126,7 +139,8 @@ module SPARQLQuery
       @items = items
       @query = "SELECT distinct ?p WHERE{ VALUES ?s {#{@items.map{|i| "<" + i.id + ">"}.join(" ")}}. ?s ?p ?o.}"
       results = []
-      @server.execute(@query).each do |s|
+      
+      @server.execute(@query, {offset: @offset, limit: @limit}).each do |s|
         results << Xpair::Namespace.colapse_uri(solution[:p].to_s)
       end
       results
@@ -137,7 +151,7 @@ module SPARQLQuery
       @items = items
       @query = "SELECT distinct ?p WHERE{ VALUES ?o {#{@items.map{|i| "<" + i.id + ">"}.join(" ")}}. ?s ?p ?o.}"
       results = []
-      @server.execute(@query).each do |s|
+      @server.execute(@query, {offset: @offset, limit: @limit}).each do |s|
         results << Xpair::Namespace.colapse_uri(solution[:p].to_s)
       end
       results
@@ -153,7 +167,7 @@ module SPARQLQuery
       end
       
       results = Set.new
-      @server.execute(@query).each do |s|
+      @server.execute(@query, {offset: @offset, limit: @limit}).each do |s|
         if(!s[:pf].nil?)
           results << SchemaRelation.new(Xpair::Namespace.colapse_uri(s[:pf].to_s), true, @server)
         end
@@ -178,10 +192,8 @@ module SPARQLQuery
   
     def execute(cache_subject_only = false, subject_modifier="")
       hash = {}
-      if @limit
-        @query += "limit " + @limit.to_s
-      end
-      @server.execute(@query).each do |solution|
+
+      @server.execute(@query, {offset: @offset, limit: @limit}).each do |solution|
 
         # binding.pry
         subject_id = Xpair::Namespace.colapse_uri(solution[:s].to_s)

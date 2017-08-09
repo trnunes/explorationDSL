@@ -1,3 +1,4 @@
+require 'forwardable'
 require "pry"
 require "test/unit"
 require "rdf"
@@ -26,6 +27,7 @@ require './model/namespace'
 require './model/session'
 
 require './exploration_functions/operation'
+require './exploration_functions/cursor'
 require './exploration_functions/find_relations'
 require './exploration_functions/pivot2'
 require './exploration_functions/refine'
@@ -142,7 +144,7 @@ require './adapters/rdf/cache.rb'
     module Xpair::Visualization
         label_for_type "http://tecweb/pns#Paper", "_:author"
     end
-
+    Explorable.use_cache false
 xset = Xset.new('s0', '')
 xset.add_item Entity.new('_:paper1', "rdf:Resource")
 xset.add_item Entity.new('_:p2',  "rdf:Resource")

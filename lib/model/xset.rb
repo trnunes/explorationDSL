@@ -17,7 +17,11 @@ class Xset
   def literal_extension?
     each_item.first.is_a? Xpair::Literal
   end
-    
+  
+  def get_cursor(window_size)
+    Cursor.new(self, window_size)
+  end
+  
   def each_domain(&block)
     domains = Set.new
     each_item do |item|
@@ -38,7 +42,11 @@ class Xset
   end
   
   def empty?
-    @index.empty?
+    @index.empty? && !self.root?
+  end
+  
+  def root?
+    @id == "root"
   end
   
   ##Relation Methods##
@@ -65,7 +73,7 @@ class Xset
     restricted_image_set(restriction)
   end
   
-  def restricted_image(restriction, image_items = [], limit = -1)
+  def restricted_image(restriction, image_items = [], offset = 0, limit = -1)
     res_image = Set.new
     restriction.each do |domain_item|
       if(@mappings.has_key? domain_item)
@@ -75,7 +83,7 @@ class Xset
     res_image
   end
   
-  def restricted_image_set(restriction, image_items = [], limit = -1)
+  def restricted_image_set(restriction, image_items = [], offset = 0, limit = -1)
     res_image = Set.new
     restriction.each do |domain_item|
       res_image += @mappings[domain_item] if(@mappings.has_key? domain_item)
@@ -83,7 +91,7 @@ class Xset
     res_image
   end
   
-  def restricted_domain_set(restriction, image_items = [], limit = -1)
+  def restricted_domain_set(restriction, image_items = [], offset = 0, limit = -1)
     res_domain = Set.new
     restriction.each do |image_item|
       @mappings.each do |domain, image_set|
@@ -92,6 +100,6 @@ class Xset
     end
     res_domain
   end
- alias text title 
+ alias text title
   
 end

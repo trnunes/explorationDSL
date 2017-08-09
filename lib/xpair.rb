@@ -2,7 +2,7 @@ Dir["/Users/tnunes/development/xpair/mixins/*.rb"].each {|file| require file }
 Dir["/Users/tnunes/development/xpair/model/*.rb"].each {|file| require file }
 Dir["/Users/tnunes/development/xpair/aux/*.rb"].each {|file| require file }
 Dir["/Users/tnunes/development/xpair/adapters/rdf/*.rb"].each {|file| require file }
-
+require 'forwardable'
 require 'mixins/xpair'
 require 'mixins/explorable'
 require 'mixins/auxiliary_operations'
@@ -27,6 +27,7 @@ require 'model/namespace'
 require 'model/session'
 
 require 'exploration_functions/operation'
+require 'exploration_functions/cursor'
 require 'exploration_functions/find_relations'
 require 'exploration_functions/pivot2'
 require 'exploration_functions/refine'
@@ -45,6 +46,8 @@ require 'filters/operators/filtering_operator'
 require 'filters/contains'
 require 'filters/equals'
 require 'filters/keyword_match'
+require 'filters/keyword_match_all'
+require 'filters/relation_compare'
 require 'filters/match'
 require 'filters/in_range'
 require 'filters/image_equals'

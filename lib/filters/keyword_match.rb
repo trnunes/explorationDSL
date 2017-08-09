@@ -1,5 +1,6 @@
 module Filtering
   class KeywordMatch < Filtering::Filter
+    attr_accessor :filtered_items
     def initialize(*args)
       raise "Invalid number of arguments #{args.size} for 1" if args.size != 1
       @keyword_pattern = args.first
@@ -24,7 +25,7 @@ module Filtering
       end
       @filtered_items
     end
-    
+
     def filter(item)
       @filtered_items.include? item
     end
