@@ -1,38 +1,53 @@
 module Explorable
   class Pivot < Explorable::Operation
+    attr_accessor :queriable
+    def queriable?
+      @queriable
+    end
     
+
     def prepare(args)
       if(!@result_hash.nil?)
         return
       end
+      puts "-----BEGIN PREPARE----"
       @result_set = Set.new
       @result_hash = {}
       relations = args[:relations]
       is_backward = args[:is_backward]
       input_set = args[:input]
-      result_pairs = Set.new
+      result_pairs = []
       position = args[:position] || "image"
       items = input_set.each_item
       @limit = args[:limit] || items.size
+      # @queriable = true
       relations.each do |r|
-
         r.server = r.server || input_set.server
-        r.limit = @limit if r.is_a?(PathRelation)
-
-        if(is_backward)
-          result_pairs += r.restricted_domain(items[0..@limit], [], args[:limit].to_i)
+        if r.is_a?(PathRelation)
+          r.limit = @limit 
+          # @queriable = r.can_fire_path_query
+        end
+        if(@limit > 5000)
+          offset = 0
+          local_limit = 5000
+          while(local_limit < @limit) do
+            result_pairs += r.restricted_image(items[0..@limit], [], args[:limit].to_i)
+          end
+          
         else
-          # binding.pry
           result_pairs += r.restricted_image(items[0..@limit], [], args[:limit].to_i)
         end
+        
+
       end
-      
+      puts "START PARSING PAIRS INPIVOT PREPARE"
       result_pairs.each do |pair|
-        if(!@result_hash.has_key?(pair.domain))
+        if(@result_hash[pair.domain].nil?)
           @result_hash[pair.domain] = []
         end
         @result_hash[pair.domain] << pair.image
       end
+      puts "--------------FINISHED PREPARE PIVOT----------------"
     end
     
     def eval_item(item)

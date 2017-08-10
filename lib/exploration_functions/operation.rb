@@ -3,11 +3,20 @@ module Explorable
   @@use_cache = true
   @@visualization_session = Xpair::Session.new
   @@exploration_session = Xpair::Session.new
+  @@query_set_map = {}
+  
+  def self.put_query(set_id, query)
+    @@query_set_map[set_id] = query
+  end
+  
+  def self.get_query(set_id)
+    @@query_set_map[set_id]
+  end
   
   def self.set_current_session(session)
     @@exploration_session = session
   end
-  
+    
   def self.exploration_session
     @@exploration_session
   end
@@ -141,6 +150,7 @@ module Explorable
       end
 
       entries_to_remove.each{|entry| remove_index_entry(index_entries, entry)}
+      puts "------------FINISHED EVAL SET IN OPERATION------------------"
     end
     
     def remove_index_entry(index_entries, entry_to_remove)
@@ -160,6 +170,10 @@ module Explorable
       end
     end
     def eval_item(item)
+    end
+    
+    def queriable?
+      false
     end
 
     def execute(args={})
@@ -204,6 +218,10 @@ module Explorable
       result_set.mappings = @mappings
       result_set.resulted_from = input_set
       result_set.server = input_set.server
+      if queriable?
+        Explorable.put_query(result_set.id, input_set.server.last_query)
+      end
+      
       result_set
       
     end

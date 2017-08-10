@@ -2,7 +2,8 @@ require 'rdf'
 require 'sparql/client'
 
 class RDFDataServer
-  attr_accessor :graph, :limit , :offset, :namespace_map, :label_property, :items_limit, :use_select, :content_type, :api_key, :cache
+  attr_accessor :graph, :limit , :offset, :namespace_map, :label_property, :items_limit, :use_select, :content_type, :api_key, :cache, :last_query
+  
 
 
   def initialize(graph, options = {})
@@ -22,6 +23,7 @@ class RDFDataServer
     @cache_max_size = options[:cache_limit]
     @cache_max_size ||= 20000
     @cache = RDFCache.new(@cache_max_size)
+    @last_query = "select * where{?s ?p ?o} limit 20"
     
     
   end
@@ -264,13 +266,14 @@ class RDFDataServer
 
       rs = @graph.query(limited_query, options)      
       rs_a = rs.to_a
-      
+      puts "=-=========FINISHED============"
 
       solutions += rs_a
     #   break if rs_a.size < @limit
     #   offset += limit + 1
     # end
     # self.cache[query] = QueryResults.new(solutions)
+    @last_query = limited_query
     solutions
   end
   

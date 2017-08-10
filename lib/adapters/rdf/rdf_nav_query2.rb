@@ -178,6 +178,7 @@ module SPARQLQuery
   
     def execute(cache_subject_only = false, subject_modifier="")
       hash = {}
+      puts "BEGIN EXECUTE"
       if @limit
         @query += "limit " + @limit.to_s
       end
@@ -216,6 +217,7 @@ module SPARQLQuery
         end
 
       end
+      puts "FINISHED EXECUTE"
       hash
     end
   end

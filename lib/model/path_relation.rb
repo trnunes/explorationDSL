@@ -85,6 +85,7 @@ class PathRelation
   end
     
   def schema_restricted_image(restriction, image_items, limit)
+    puts "BEGIN SCHEMA RESTRICTED IMAGE"
     if(@relations.first.inverse)
       @relations.first.inverse = false
       return schema_restricted_domain(restriction, image_items, limit)
@@ -100,13 +101,15 @@ class PathRelation
     # binding.pry
     partial_path_results = query.execute
     # binding.pry
+    puts "START BUILD PAIRS"
     partial_path_results.each do |item, relations_hash|
       relations_hash.each do |key, values|
         values.each do |v|
           result_pairs << Pair.new(item, v)
         end
       end
-    end
+    end    
+    puts "FINISH SCHEMA RESTRICTED IMAGE"
     result_pairs
   end
   
@@ -124,14 +127,15 @@ class PathRelation
       q.restricted_domain(@relations.map{|r| r.id})
     end
     partial_path_results = query.execute
-    
+    puts "START BUILD PAIRS"
     partial_path_results.each do |item, relations_hash|
       relations_hash.each do |relation, values|
         values.each do |value|
           result_pairs << Pair.new(value, item)
         end
       end  
-    end
+    end    
+    puts "FINISH SCHEMA RESTRICTED DOMAIN"
     result_pairs
   end
   
