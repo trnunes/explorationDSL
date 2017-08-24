@@ -3,11 +3,19 @@ require 'securerandom'
 module Persistable
   
   @@memoryRepository = {}
+  @@session_repository = nil
   
   def self.repository
     @@memoryRepository
   end
   
+  def self.set_session_repository(repository)
+    @@session_repository = repository
+  end
+  
+  def self.session_repository
+    @@session_repository
+  end
 
 end
 

@@ -34,12 +34,13 @@ class PathRelation
     result_pairs = []
 
     result_pairs = items.map{|i| Pair.new(i, i)}
-
+    
     relations.each do |r|
+      puts "Image Of: #{r.to_s}"
       
       restriction = result_pairs.map{|pair| pair.image}
-      @limit ||= restriction.size
-      partial_pairs = r.restricted_image(Set.new(restriction[0..@limit]), image_items, limit)
+      local_limit = @limit || restriction.size
+      partial_pairs = r.restricted_image(Set.new(restriction[0..local_limit]), image_items, limit)
       partial_pairs_hash = {}
       partial_pairs.each do |pair| 
         if(!partial_pairs_hash.has_key? pair.domain)
@@ -57,6 +58,7 @@ class PathRelation
           end
         end
       end
+      # binding.pry
       result_pairs = new_result_pairs
 
     end

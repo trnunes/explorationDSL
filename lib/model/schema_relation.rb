@@ -39,6 +39,28 @@ class SchemaRelation
     @server.image(self)
   end
   
+  def get_where_for_xplain_relations
+    if relation_uri == "http://tecweb.puc-rio.br/xplain/range"
+      
+    elsif relation_uri == "http://tecweb.puc-rio.br/xplain/domain"
+      "SELECT DISTINCT ?c WHERE{?s <#{Xpair::Namespace.expand_uri(@items.first.id)}> ?o. ?o a ?c}"
+    elsif relation_uri == "http://tecweb.puc-rio.br/xplain/ofType"
+      "SELECT DISTINCT ?p WHERE{?s ?p ?c. ?c a <#{Xpair::Namespace.expand_uri(@items.first.id)}>}"
+    end
+  end
+  
+  def range_relation?
+    self.id == "xplain:range"
+  end
+  
+  def domain_relation?
+    self.id == "xplain:domain"
+  end
+  
+  def of_type_relation?
+    self.id == "xplain:ofType"
+  end
+  
   def restricted_image(restriction, image_items = [], limit = -1)
     return [] if restriction.empty?
     # binding.pry
@@ -47,15 +69,30 @@ class SchemaRelation
       return restricted_domain(restriction, image_items, limit)
     end
     result_pairs = []
-    
-    query = @server.begin_nav_query(limit: limit) do |q|
+
+    partial_path_results = {}
+    if range_relation?
       restriction.each do |item|
-        q.on(item)
+        partial_path_results.merge! @server.find_range_types(item)
       end
-      # binding.pry
-      q.restricted_image(self.id, image_items)
-    end
-    partial_path_results = query.execute
+    elsif domain_relation?
+      restriction.each do |item|
+        partial_path_results.merge! @server.find_domain_types(item)
+      end
+    elsif of_type_relation?
+      restriction.each do |item|
+        partial_path_results.merge! @server.find_relations_for_type(item)
+      end     
+    else
+      query = @server.begin_nav_query(limit: limit) do |q|
+        restriction.each do |item|
+          q.on(item)
+        end
+        # binding.pry
+        q.restricted_image(self.id, image_items)
+      end
+      partial_path_results = query.execute      
+    end  
     
     partial_path_results.each do |item, relations_hash|
       relations_hash.each do |key, values|

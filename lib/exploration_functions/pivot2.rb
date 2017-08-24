@@ -1,11 +1,6 @@
 module Explorable
   class Pivot < Explorable::Operation
-    attr_accessor :queriable
-    def queriable?
-      @queriable
-    end
     
-
     def prepare(args)
       if(!@result_hash.nil?)
         return
@@ -20,24 +15,15 @@ module Explorable
       position = args[:position] || "image"
       items = input_set.each_item
       @limit = args[:limit] || items.size
-      # @queriable = true
+
       relations.each do |r|
         r.server = r.server || input_set.server
-        if r.is_a?(PathRelation)
-          r.limit = @limit 
-          # @queriable = r.can_fire_path_query
-        end
-        if(@limit > 5000)
-          offset = 0
-          local_limit = 5000
-          while(local_limit < @limit) do
-            result_pairs += r.restricted_image(items[0..@limit], [], args[:limit].to_i)
-          end
-          
-        else
-          result_pairs += r.restricted_image(items[0..@limit], [], args[:limit].to_i)
+        if r.is_a?(PathRelation) && args[:limit]
+          r.limit = args[:limit]
+
         end
         
+        result_pairs = r.restricted_image(items[0..@limit], [], args[:limit].to_i)
 
       end
       puts "START PARSING PAIRS INPIVOT PREPARE"

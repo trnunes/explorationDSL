@@ -35,6 +35,7 @@ module Xpair
       @@namespace_map[prefix] = self
     end
   end
+  Xpair::Namespace.new("xplain", "http://tecweb.puc-rio.br/xplain/")
   Xpair::Namespace.new("owl", "http://www.w3.org/2002/07/owl#")
   Xpair::Namespace.new("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
   Xpair::Namespace.new("xsd", "http://www.w3.org/2001/XMLSchema#")
