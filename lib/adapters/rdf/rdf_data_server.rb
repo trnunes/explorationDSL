@@ -1,6 +1,6 @@
 require 'rdf'
 require 'sparql/client'
-
+require 'time'
 class RDFDataServer
   attr_accessor :graph, :limit , :offset, :namespace_map, :label_property, :items_limit, :use_select, :content_type, :api_key, :cache, :last_query
   
@@ -58,8 +58,9 @@ class RDFDataServer
   end
   
   def get_xsd_timestamp
-    timestamp = Time.new
-    datetime = timestamp.year.to_s + "-" + timestamp.month.to_s + "-" + timestamp.day.to_s + "T" + timestamp.hour.to_s + ":" + timestamp.min.to_s + ":" + timestamp.sec.to_s
+    # timestamp = Time.new
+    # datetime = timestamp.year.to_s + "-" + timestamp.month.to_s + "-" + timestamp.day.to_s + "T" + timestamp.hour.to_s + ":" + timestamp.min.to_s + ":" + timestamp.sec.to_s
+    datetime = Time.now.iso8601
     "\"#{datetime}\"^^xsd:dateTime"
   end
   
