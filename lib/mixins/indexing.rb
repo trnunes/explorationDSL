@@ -42,7 +42,7 @@ module Indexing
   def each_item(&block)
     
     items = leaves.map{|leaf_entry| leaf_entry.indexed_items}.flatten
-    # binding.pry
+
     if(block_given?)
       items.each &block
     else
@@ -155,7 +155,7 @@ module Indexing
     
     def add_child(entry)
       entry.parent = self
-      # binding.pry
+
       @children << entry
     end
     
@@ -381,6 +381,7 @@ module Indexing
   
 
 end
+
 # require 'set'
 # class Pair
 #   attr_accessor :index, :item

@@ -85,7 +85,7 @@ module Explorable
               @mappings[item] = Set.new([partial_results].compact)
             end
             
-            # binding.pry
+
 
             next if(delayed_result? && !(item == index_entry.indexed_items.last))
             next if(partial_results.nil?)
@@ -181,7 +181,7 @@ module Explorable
         input_index_structure_copy = input_set.index.copy
 
         if input_set.root?
-          binding.pry
+
           input_index_structure_copy.indexed_items = self.eval_root_set(input_set)
           return 
         else

@@ -1,4 +1,19 @@
-module Xpair
+module Xplain
+  
+  # class BaseNamespaceClass
+  #   def method_missing(m, *args, &block)
+  #     operation_instance = nil
+  #     # begin
+  #     operation_klass = Object.const_get m.capitalize
+  #     args.unshift(self)
+  #     operation_instance = operation_klass.new(*args, &block)
+  #     # rescue
+  #     #   raise "Operation not Supported!"
+  #     # end
+  #     operation_instance.execute
+  #   end
+  # end
+  
   class Namespace
     @@namespace_map = {}
     attr_accessor :prefix, :uri
@@ -35,12 +50,12 @@ module Xpair
       @@namespace_map[prefix] = self
     end
   end
-  Xpair::Namespace.new("owl", "http://www.w3.org/2002/07/owl#")
-  Xpair::Namespace.new("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
-  Xpair::Namespace.new("xsd", "http://www.w3.org/2001/XMLSchema#")
-  Xpair::Namespace.new("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-  Xpair::Namespace.new("dcterms", "http://purl.org/dc/terms/")
-  Xpair::Namespace.new("foaf", "http://xmlns.com/foaf/0.1/")
-  Xpair::Namespace.new("rss", "http://purl.org/rss/1.0/")
+  Xplain::Namespace.new("owl", "http://www.w3.org/2002/07/owl#")
+  Xplain::Namespace.new("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
+  Xplain::Namespace.new("xsd", "http://www.w3.org/2001/XMLSchema#")
+  Xplain::Namespace.new("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+  Xplain::Namespace.new("dcterms", "http://purl.org/dc/terms/")
+  Xplain::Namespace.new("foaf", "http://xmlns.com/foaf/0.1/")
+  Xplain::Namespace.new("rss", "http://purl.org/rss/1.0/")
   
 end

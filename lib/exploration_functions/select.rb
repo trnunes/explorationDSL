@@ -11,10 +11,10 @@ module Explorable
       result_items = Set.new
       index_entries.each do |entry|
         items_to_search.each do |item|
-          # binding.pry
+
           retrieved_item = search_item(entry, item)
           result_items << retrieved_item.clone if(retrieved_item)
-          # binding.pry
+
         end
       end
       index_entries.first.children = []
@@ -28,13 +28,13 @@ module Explorable
     end
     
     def search_item(index, item)
-      # binding.pry
+
       if index.indexing_item == item
         return index.indexing_item
       else
         indexed_item = index.indexed_items.select{|indexed_item| indexed_item == item}.first
         # puts "tried select"
-        # binding.pry
+
         if(indexed_item)
           return indexed_item
         else

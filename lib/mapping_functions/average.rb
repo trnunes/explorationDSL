@@ -12,7 +12,7 @@ module Mapping
     end
     
     def map(item)
-      # binding.pry
+
       if(!item.is_a? Xpair::Literal)
         raise "Mapping function should receive only literals as arugments! (#{item.inspect})"
       end
@@ -20,7 +20,7 @@ module Mapping
       @count += 1
       @aggregated_value.value = Xpair::Literal.new(@sum.to_f/@count.to_f).value
       @aggregated_value
-      # binding.pry
+
     end
     
     def expression

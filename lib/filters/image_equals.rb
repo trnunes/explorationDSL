@@ -22,11 +22,11 @@ module Filtering
     end
     
     def call
-      # binding.pry 
+ 
       @images.each do |item|
         
         image_set = @set.trace_image_items(item, @relations.dup)
-        # binding.pry
+
         
         if @values.size == 1
           if !image_set.include?(@values.first)
@@ -88,13 +88,13 @@ module Filtering
         executor.shutdown()
         #
         #
-        # # binding.pry
+
         # set.each_image do |item|
         #   relations = set.order_relations(@relations.dup)
         #
         #   image_set = set.trace_image_items(item, set.order_relations(@relations.dup))
         #   # if(item.id == "http://data.semanticweb.org/workshop/cold/2011/proceedings")
-        #   #   binding.pry
+
         #   # end
         #
         #

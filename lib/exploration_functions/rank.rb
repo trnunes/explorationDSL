@@ -77,7 +77,7 @@ module Explorable
             sorted_entries = index_entry.indexed_items.sort do |item1, item2|
               compare(item1, item2)
             end
-            # binding.pry
+
             index_entry.indexed_items = sorted_entries
           else
             eval_set(index_entry.children)

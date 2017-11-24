@@ -24,7 +24,7 @@ module Grouping
       if !image_set.empty?
         image_set = image_set.each_item
       end
-      # binding.pry
+
 
       if self.relations.size > 1
         self.relations.each{|r| r.server = server if r.server.nil?}
@@ -35,7 +35,7 @@ module Grouping
       end
       
       @image_by_domain_hash = {}
-      # binding.pry
+
       relation.restricted_image(items_to_group, image_set, args[:limit].to_i).each do |pair|
         if !@image_by_domain_hash.has_key?(pair.domain)
           @image_by_domain_hash[pair.domain] = []
@@ -47,7 +47,7 @@ module Grouping
     
     def group(item, groups)
       grouping_items = Set.new
-      # binding.pry
+
       if(@image_by_domain_hash.has_key?(item))
         @image_by_domain_hash[item].each do |image_item|
           grouping_items << image_item

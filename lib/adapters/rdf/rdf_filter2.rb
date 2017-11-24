@@ -102,7 +102,7 @@ module SPARQLQuery
       object_index = SPARQLFilter.next_object_index
       @construct_stmts << "#{path_string(relations)} ?o#{object_index}"
       @where_stmts << SimpleFilter.new("?s #{path_string(relations)} ?o#{object_index}. FILTER(#{SPARQLQuery.get_literal_type(min)}(?o#{object_index}) >= \"#{min.value.to_s}\"^^#{SPARQLQuery.get_literal_type(min)} && #{SPARQLQuery.get_literal_type(max)}(?o#{object_index}) <= \"#{max.value.to_s}\"^^#{SPARQLQuery.get_literal_type(max)})")
-      # binding.pry
+
     end
   
     def regex(pattern)
@@ -180,7 +180,7 @@ module SPARQLQuery
       #   construct_expression += "} "
       #   first_stmt = construct_expression
       # end
-      # binding.pry
+
       query = "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> #{first_stmt} WHERE{ #{where_stmt}. VALUES ?s {#{@entities.to_a.join(" ")}} "
       # query << " FILTER(" + filter_stmt + ")." if !filter_stmt.empty?
       query << "}"

@@ -44,7 +44,7 @@ module Filtering
     def expression
       
       relation_exp = ""
-      # binding.pry
+
       
       relation_exp = @relations.map{|r| r.text}.join(", ")
       

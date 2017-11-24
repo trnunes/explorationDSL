@@ -1,226 +1,415 @@
+require 'forwardable'
 require "test/unit"
 require "rdf"
-
-require './mixins/xpair'
-require './mixins/hash_explorable'
-require './mixins/explorable'
-require './mixins/auxiliary_operations'
+require 'linkeddata'
+require 'pry'
 require './mixins/enumerable'
-require './mixins/persistable'
-require './mixins/graph'
+require './mixins/relation'
 
-require './filters/filtering'
-require './filters/contains'
-require './filters/equals'
-require './filters/keyword_match'
-require './filters/match'
-require './filters/in_range'
-require './model/item'
-require './model/xset'
-require './model/literal'
+require './model/node'
+require './model/edge'
 require './model/entity'
-require './model/relation'
-require './model/type'
-require './model/ranked_set'
+require './model/literal'
+require './model/schema_relation'
+require './model/path_relation'
 require './model/namespace'
+require './mixins/model_factory'
 
-require './aux/grouping_expression.rb'
-require './aux/ranking_functions'
-require './aux/mapping_functions'
-require './aux/hash_helper'
+require './filters/filter_factory'
+require './filters/filtering'
 
-require 'set'
+require './adapters/filterable'
+require './adapters/navigational'
+require './adapters/searchable'
+require './adapters/data_server'
+require './adapters/rdf/cache'
+require './adapters/rdf/rdf_navigational'
+require './adapters/rdf/sparql_helper'
+require './adapters/rdf/filter_interpreter'
+require './adapters/rdf/rdf_data_server'
+require './visualization/visualization'
+require 'securerandom'
 
-require './adapters/rdf/rdf_data_server.rb'
-require './adapters/rdf/rdf_filter.rb'
-require './adapters/rdf/rdf_nav_query.rb'
-require './adapters/rdf/cache.rb'
 
 
 class FilterTest < Test::Unit::TestCase
-  
-  def setup   
 
-    @graph = RDF::Graph.new do |graph|
-      graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o1")]
-      graph << [RDF::URI("_:p1"),  RDF::URI("_:r1"), RDF::URI("_:o2")]      
-      graph << [RDF::URI("_:p1"),  RDF::URI("_:r2"), RDF::URI("_:o2")]      
-      graph << [RDF::URI("_:p2"),  RDF::URI("_:r2"), RDF::URI("_:o2")]
-      graph << [RDF::URI("_:p3"),  RDF::URI("_:r3"), RDF::URI("_:o4")]
-      graph << [RDF::URI("_:p4"),  RDF::URI("_:r4"), RDF::URI("_:o3")]
-      graph << [RDF::URI("_:o3"),  RDF::URI("_:r5"), RDF::URI("_:o5")]      
+  def setup
+
+    papers_graph = RDF::Graph.new do |graph|
+      graph << [RDF::URI("_:paper1"),  RDF::URI("_:cite"), RDF::URI("_:p2")]
+      graph << [RDF::URI("_:paper1"),  RDF::URI("_:cite"), RDF::URI("_:p3")]
+      graph << [RDF::URI("_:paper1"),  RDF::URI("_:cite"), RDF::URI("_:p4")]
+      graph << [RDF::URI("_:p6"),  RDF::URI("_:cite"), RDF::URI("_:p2")]
+      graph << [RDF::URI("_:p6"),  RDF::URI("_:cite"), RDF::URI("_:p3")]
+      graph << [RDF::URI("_:p6"),  RDF::URI("_:cite"), RDF::URI("_:p5")]
+      graph << [RDF::URI("_:p7"),  RDF::URI("_:cite"), RDF::URI("_:p3")]
+      graph << [RDF::URI("_:p7"),  RDF::URI("_:cite"), RDF::URI("_:p5")]
+      graph << [RDF::URI("_:p8"),  RDF::URI("_:cite"), RDF::URI("_:p5")]
+      graph << [RDF::URI("_:p8"),  RDF::URI("_:cite"), RDF::URI("_:p3")]
+      graph << [RDF::URI("_:p9"),  RDF::URI("_:cite"), RDF::URI("_:p5")]
+      graph << [RDF::URI("_:p10"),  RDF::URI("_:cite"), RDF::URI("_:p5")]
       
-    end
-    
+      graph << [RDF::URI("_:paper1"),  RDF::URI("_:submittedTo"), RDF::URI("_:journal1")]
+      
+      graph << [RDF::URI("_:paper1"),  RDF::URI("_:author"),RDF::URI("_:a1") ]
+      graph << [RDF::URI("_:paper1"),  RDF::URI("_:author"),RDF::URI("_:a2") ]
+      graph << [RDF::URI("_:p2"),  RDF::URI("_:author"), RDF::URI("_:a1")]
+      graph << [RDF::URI("_:p3"),  RDF::URI("_:author"), RDF::URI("_:a2")]
+      graph << [RDF::URI("_:p5"),  RDF::URI("_:author"), RDF::URI("_:a1")]
+      graph << [RDF::URI("_:p5"),  RDF::URI("_:author"), RDF::URI("_:a2")]
+      graph << [RDF::URI("_:p6"),  RDF::URI("_:author"), RDF::URI("_:a2")]
+      graph << [RDF::URI("_:p20"),  RDF::URI("_:author"), RDF::URI("_:a3")]
 
-    
-    @server = RDFDataServer.new(@graph)
-  end
-  
-  def test_union
-    filter = @server.begin_filter do |f|      
-      f.union do |u|
-        u.equals(Entity.new("_:p1"))
-        u.equals(Entity.new("_:p2"))
-      end      
+      graph << [RDF::URI("_:p2"),  RDF::URI("_:publishedOn"), RDF::URI("_:journal1")]
+      graph << [RDF::URI("_:p3"),  RDF::URI("_:publishedOn"), RDF::URI("_:journal2")]
+      graph << [RDF::URI("_:p4"),  RDF::URI("_:publishedOn"), RDF::URI("_:journal1")]
+      
+      graph << [RDF::URI("_:journal1"),  RDF::URI("_:releaseYear"), RDF::Literal.new("2005", datatype: RDF::XSD.string)]
+      graph << [RDF::URI("_:journal2"),  RDF::URI("_:releaseYear"), RDF::Literal.new("2010", datatype: RDF::XSD.string)]
+      
+      graph << [RDF::URI("_:paper1"),  RDF::URI("_:keywords"), RDF::URI("_:k1")]
+      graph << [RDF::URI("_:paper1"),  RDF::URI("_:keywords"), RDF::URI("_:k2")]
+      graph << [RDF::URI("_:paper1"),  RDF::URI("_:keywords"), RDF::URI("_:k3")]
+      
+      graph << [RDF::URI("_:p2"),  RDF::URI("_:keywords"), RDF::URI("_:k3")]      
+      graph << [RDF::URI("_:p3"),  RDF::URI("_:keywords"), RDF::URI("_:k2")]
+      graph << [RDF::URI("_:p5"),  RDF::URI("_:keywords"), RDF::URI("_:k1")]
+      
+      graph << [RDF::URI("_:p2"),  RDF::URI("_:publicationYear"), RDF::Literal.new("2000", datatype: RDF::XSD.string)]
+      graph << [RDF::URI("_:p3"),  RDF::URI("_:publicationYear"), RDF::Literal.new("1998", datatype: RDF::XSD.string)]
+      graph << [RDF::URI("_:p4"),  RDF::URI("_:publicationYear"), RDF::Literal.new("2010", datatype: RDF::XSD.string)]     
     end
-    expected_results = Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
-    
-    
-    assert_equal expected_results, filter.eval
+
+    @papers_server = RDFDataServer.new(papers_graph)
+
   end
   
-  def test_relation_filter
-    filter = @server.begin_filter do |f|
-      f.union do |u|
-        u.equals(Entity.new("_:p1"))
-        u.equals(Entity.new("_:p2"))
-        u.equals(Entity.new("_:p3"))
-        u.equals(Entity.new("_:p4"))
+  def create_nodes(items)
+    items.map{|item| Node.new(item)}
+  end
+  
+  def test_filter_empty_input
+    input_nodes = []
+    f = Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
+
+    rs = @papers_server.filter(input_nodes, f)
+    
+    assert_true rs.empty?, rs.inspect
+  end
+  
+  def test_filter_empty_relation
+    input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
+    begin
+      f = Xplain::Filtering::Equals.new(nil, Xplain::Entity.new("_:p2"))
+    rescue Exception => e
+      assert true
+      return
+    end
+    assert false
+  end
+  
+  def test_filter_empty_value
+    input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
+    begin
+      f = Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), nil)
+    rescue Exception => e
+      assert true
+      return
+    end
+    assert false
+    
+  end
+  
+  def test_and_less_than_2
+    input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
+    
+    f = Xplain::Filtering::And.new([
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
+    ])
+
+    rs = @papers_server.filter(input_nodes, f)
+    
+    assert_equal [Xplain::Entity.new("_:paper1")], rs.map{|n|n.item}
+    
+  end
+  
+  def test_or_less_than_2
+    input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
+    
+    f = Xplain::Filtering::Or.new([
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
+    ])
+
+    rs = @papers_server.filter(input_nodes, f)
+    
+    assert_equal [Xplain::Entity.new("_:paper1")], rs.map{|n|n.item}
+    
+  end
+
+  def test_filter_equal
+    input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
+    f = Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
+
+    rs = @papers_server.filter(input_nodes, f)
+    
+    assert_equal [Xplain::Entity.new("_:paper1")], rs.map{|n|n.item}
+  end
+  
+  
+  def test_filter_equal_literal
+    input_nodes = create_nodes [Xplain::Entity.new("_:journal2"), Xplain::Entity.new("_:journal1")]
+    f = Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:releaseYear"), Xplain::Literal.new("2005"))
+
+    rs = @papers_server.filter(input_nodes, f)
+    
+    assert_equal [Xplain::Entity.new("_:journal1")], rs.map{|n|n.item}
+  end
+
+  def test_filter_equal_literal_OR_same_relation
+    input_nodes = create_nodes [
+      Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), 
+      Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), 
+      Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6"), 
+      Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"),
+      Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10")
+    ]
+    expected_output_nodes = create_nodes [
+      Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6"), 
+      Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8")
+    ]
+    
+    f = Xplain::Filtering::Or.new([
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p3"))
+    ])
+    rs = @papers_server.filter(input_nodes, f)
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
+  end
+
+  def test_filter_equal_literal_OR_different_relation
+    input_nodes = create_nodes [
+      Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), 
+      Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), 
+      Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6"), 
+      Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"),
+      Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10")
+    ]
+    expected_output_nodes = create_nodes [
+      Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6"), 
+      Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p5")
+    ]
+    
+    f = Xplain::Filtering::Or.new([
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a1"))
+    ])
+    rs = @papers_server.filter(input_nodes, f)
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
+  end
+  
+
+  def test_filter_equal_literal_AND_same_relation
+    input_nodes = create_nodes [
+      Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), 
+      Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), 
+      Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6"), 
+      Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"),
+      Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10")
+    ]
+    expected_output_nodes = create_nodes [
+      Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p5")
+    ]
+    
+    f = Xplain::Filtering::And.new([
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a1")),
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a2"))
+    ])
+    rs = @papers_server.filter(input_nodes, f)
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
+  end
+
+  def test_filter_equal_literal_AND_different_relation
+    input_nodes = create_nodes [
+      Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), 
+      Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), 
+      Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6"), 
+      Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"),
+      Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10")
+    ]
+    expected_output_nodes = create_nodes [
+      Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6")
+    ]
+    
+    f = Xplain::Filtering::And.new([
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a2"))
+    ])
+    rs = @papers_server.filter(input_nodes, f)
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
+  end
+  
+  def test_filter_property_path
+    input_nodes = create_nodes [
+      Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), 
+      Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), 
+      Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6"), 
+      Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"),
+      Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10")
+    ]
+    expected_output_nodes = create_nodes [
+      Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p4")
+    ]
+    path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:publishedOn"), Xplain::SchemaRelation.new(id: "_:releaseYear")])
+    
+    f = Xplain::Filtering::Equals.new(path, Xplain::Literal.new("2005"))
+      
+    rs = @papers_server.filter(input_nodes, f)
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
+  end
+  
+  def test_filter_inverse_property_path
+    input_nodes = create_nodes [
+      Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2"), 
+      Xplain::Entity.new("_:a3"), Xplain::Entity.new("_:a4")
+    ]
+    expected_output_nodes = create_nodes [
+      Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")
+    ]
+    path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:author", inverse: true), Xplain::SchemaRelation.new(id: "_:cite", inverse: true)])
+    
+    f = Xplain::Filtering::Equals.new(path, Xplain::Entity.new("_:p10"))
+    
+    rs = @papers_server.filter(input_nodes, f)
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
+  end
+  
+  def test_filter_mixed_property_path
+    input_nodes = create_nodes [Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
+    expected_output_nodes = create_nodes [
+      Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")
+    ]
+    
+    path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:cite", inverse: true), Xplain::SchemaRelation.new(id: "_:author")])
+    f = Xplain::Filtering::Equals.new(path, Xplain::Entity.new("_:a1"))
+
+    rs = @papers_server.filter(input_nodes, f)
         
-      end
-      f.relation_equals([Entity.new("_:r1")], Entity.new("_:o1"))
-    end
-    expected_results = Set.new([Entity.new("_:p1")])
-    
-    assert_equal expected_results, filter.eval
-    
-    filter = @server.begin_filter do |f|
-      f.relation_equals([Entity.new("_:r2")], Entity.new("_:o2"))
-    end
-    expected_results = Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
-    assert_equal expected_results, filter.eval
-    
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})    
   end
   
-  def test_relation_path_filter
-    filter = @server.begin_filter do |f|
+  def test_dataset_filter_equal
+    f = Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
+    rs = @papers_server.dataset_filter(f)
+    assert_equal [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6")], rs.map{|n|n.item}
+  end
+  
+  
+  def test_dataset_filter_equal_literal
+    f = Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:releaseYear"), Xplain::Literal.new("2005"))
 
-      f.relation_equals([Entity.new("_:r6"), Entity.new("_:r7")], Xpair::Literal.new("path"))
-    end
+    rs = @papers_server.dataset_filter(f)
+    
+    assert_equal [Xplain::Entity.new("_:journal1")], rs.map{|n|n.item}
+  end
+
+  def test_dataset_filter_equal_literal_OR_same_relation
+    expected_output_nodes = create_nodes [
+      Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6"), 
+      Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8")
+    ]
+    
+    f = Xplain::Filtering::Or.new([
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p3"))
+    ])
+    rs = @papers_server.dataset_filter(f)
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
+  end
+
+  def test_dataset_filter_equal_literal_OR_different_relation
+    expected_output_nodes = create_nodes [
+      Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6"), 
+      Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p5")
+    ]
+    
+    f = Xplain::Filtering::Or.new([
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a1"))
+    ])
+    rs = @papers_server.dataset_filter(f)
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
   end
   
-  def test_conjunctive_relation_filter
-    filter = @server.begin_filter do |f|
-      f.relation_equals([Entity.new("_:r1")], Entity.new("_:o1"))
-      f.relation_equals([Entity.new("_:r2")], Entity.new("_:o2"))
-    end
-    expected_results = Set.new([Entity.new("_:p1")])
+
+  def test_dataset_filter_equal_literal_AND_same_relation
+    input_nodes = create_nodes [
+      Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), 
+      Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), 
+      Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6"), 
+      Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"),
+      Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10")
+    ]
+    expected_output_nodes = create_nodes [
+      Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p5")
+    ]
     
-    assert_equal expected_results, filter.eval
+    f = Xplain::Filtering::And.new([
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a1")),
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a2"))
+    ])
+    rs = @papers_server.dataset_filter(f)
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
+  end
+
+  def test_dataset_filter_equal_literal_AND_different_relation
+    expected_output_nodes = create_nodes [
+      Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6")
+    ]
+    
+    f = Xplain::Filtering::And.new([
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
+      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a2"))
+    ])
+    rs = @papers_server.dataset_filter(f)
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
   end
   
-  def test_disjunctive_itens_conjunctive_relation
-    filter = @server.begin_filter do |f|
-      f.union do |u|
-        u.equals(Entity.new("_:p1"))
-        u.equals(Entity.new("_:p2"))
-      end
-      f.relation_equals([Entity.new("_:r1")], Entity.new("_:o1"))
-    end
+  def test_dataset_filter_property_path
+    expected_output_nodes = create_nodes [
+      Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p4")
+    ]
+    path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:publishedOn"), Xplain::SchemaRelation.new(id: "_:releaseYear")])
     
-    expected_results = Set.new [Entity.new("_:p1")]
-    
-    assert_equal expected_results, filter.eval
-  end
-  
-  def test_disjunctive_itens_conjunctive_relation_two_items
-    filter = @server.begin_filter do |f|
-      f.union do |u|
-        u.equals(Entity.new("_:p1"))
-        u.equals(Entity.new("_:p2"))
-      end
-      f.relation_equals([Entity.new("_:r2")], Entity.new("_:o2"))
-    end
-    
-    expected_results = Set.new [Entity.new("_:p1"), Entity.new("_:p2")]    
-    assert_equal expected_results, filter.eval
-  end
-  
-  def test_disjunctive_itens_two_conjunctive_relation
-    filter = @server.begin_filter do |f|
-      f.union do |u|
-        u.equals(Entity.new("_:p1"))
-        u.equals(Entity.new("_:p2"))
-      end
-      f.relation_equals([Entity.new("_:r1")], Entity.new("_:o2"))
-      f.relation_equals([Entity.new("_:r2")], Entity.new("_:o2"))
-    end
-    
-    expected_results = Set.new [Entity.new("_:p1")]    
-    assert_equal expected_results, filter.eval
-  end
-  
-  def test_disjunctive_relation_filter
-    filter = @server.begin_filter do |f|
-      f.union do |u|
-        u.relation_equals([Entity.new("_:r1")], Entity.new("_:o1"))
-        u.relation_equals([Entity.new("_:r2")], Entity.new("_:o2"))
-      end      
-    end
-    
-    expected_results = Set.new [Entity.new("_:p1"), Entity.new("_:p2")]  
-    assert_equal expected_results, filter.eval
-  end
-  
-  def test_regex
-    filter = @server.begin_filter do |f|      
-      f.regex("2")
-    end
-    expected_results = Set.new([Entity.new("_:p2")])
-    
-    
-    assert_equal expected_results, filter.eval
-  end
-  
-  def test_relation_regex
-    filter = @server.begin_filter do |f|      
-      f.relation_regex([Entity.new("_:r1")], "2")
-    end
-    expected_results = Set.new([Entity.new("_:p1")])
-    
-    
-    assert_equal expected_results, filter.eval
-  end
-  
-  def test_union_regex
-    filter = @server.begin_filter do |f|      
-      f.union do |u|
-        u.regex("p1")
-        u.regex("p2")
-      end      
-    end
-    expected_results = Set.new([Entity.new("_:p1"), Entity.new("_:p2")])
-    
-    
-    assert_equal expected_results, filter.eval
-  end
-  
-  def test_union_relation_regex
-    filter = @server.begin_filter do |f|
-      f.union do |u|
-        u.relation_regex([Entity.new("_:r1")], "1")
-        u.relation_regex([Entity.new("_:r2")], "o2")
-      end      
-    end
-    
-    expected_results = Set.new [Entity.new("_:p1"), Entity.new("_:p2")]  
-    assert_equal expected_results, filter.eval
-  end
-  
-  def test_union_relation_regex_conjunction
-    filter = @server.begin_filter do |f|
-      f.union do |u|
-        u.relation_regex([Entity.new("_:r1")], "1")
-        u.relation_regex([Entity.new("_:r2")], "o2")
-      end
+    f = Xplain::Filtering::Equals.new(path, Xplain::Literal.new("2005"))
       
-      f.relation_equals([Entity.new("_:r1")], Entity.new("_:o2")) 
-    end
-    
-    expected_results = Set.new [Entity.new("_:p1")]  
-    assert_equal expected_results, filter.eval
+    rs = @papers_server.dataset_filter(f)
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
   end
   
+  def test_dataset_filter_inverse_property_path
+    expected_output_nodes = create_nodes [
+      Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")
+    ]
+    path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:author", inverse: true), Xplain::SchemaRelation.new(id: "_:cite", inverse: true)])
+    
+    f = Xplain::Filtering::Equals.new(path, Xplain::Entity.new("_:p10"))
+    
+    rs = @papers_server.dataset_filter(f)
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
+  end
   
+  def test_dataset_filter_mixed_property_path
+    expected_output_nodes = create_nodes [
+      Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p2")
+    ]
+    
+    path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:cite", inverse: true), Xplain::SchemaRelation.new(id: "_:author")])
+    f = Xplain::Filtering::Equals.new(path, Xplain::Entity.new("_:a1"))
+
+    rs = @papers_server.dataset_filter(f)
+        
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})    
+  end 
+
 end

@@ -16,7 +16,7 @@ module Xpair
     def add_set(xset)
       sets << xset
       xset.title ||= "S" + (@current_index += 1).to_s
-      # binding.pry
+
     end
     
     

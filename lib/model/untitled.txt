@@ -1,0 +1,13 @@
+class Edge
+  attr_accessor :origin, :target, :annotations
+  def initialize(origin, target)
+    @origin = origin
+    @target = target
+    @annotations = []
+  end
+  
+  def annotate(annotation)
+    @annotations << annotation
+  end
+  
+end

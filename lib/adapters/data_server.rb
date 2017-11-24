@@ -1,27 +1,31 @@
+require 'rdf'
+require 'sparql/client'
+
 class DataServer
+  include Searchable
+  include Navigational
+  include Filterable
   
-  def begin_transaction
-    
+  def accept_path_query?
+    false
   end
-  
-  def end_transaction
     
-  end
   
+
   def find_relations(entity)
-        
+  end
+ 
+  def execute(query, options = {})
+    []
   end
   
-  def restricted_image(entity, relation)
-    
+  def sort(items, sorting_relation)
   end
   
-  def inverse_image(entity, relation)
-    
+  def group(items, grouping_relation)
   end
   
-  def execute
-    
-  end  
+  def correlate(origin_item, target_item)
+  end
   
 end

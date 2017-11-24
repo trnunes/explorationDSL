@@ -6,7 +6,7 @@ module Ranking
     
     def score(item)
       domain = item.domain
-      # binding.pry
+
       if(domain.is_a?(Xpair::Literal))
         domain.value
       else

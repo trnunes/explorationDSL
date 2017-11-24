@@ -26,7 +26,7 @@ module Explorable
         source_index_entries = source_intersection.map{|entry| entry.children}.flatten
         target_index_entries = target_intersection.map{|entry| entry.children}.flatten
       end
-      # binding.pry
+
       finish_time = Time.now
       puts "EXECUTED Join: " << (finish_time - start_time).to_s
     end

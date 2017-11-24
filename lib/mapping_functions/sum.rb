@@ -10,13 +10,13 @@ module Mapping
     end
     
     def map(item)
-      # binding.pry
+
       if(!item.is_a? Xpair::Literal)
         raise "Mapping function should receive only literals as arugments! (#{item.inspect})"
       end
       @sum.value += item.value.to_f
       @sum
-      # binding.pry
+
     end
     
     def expression

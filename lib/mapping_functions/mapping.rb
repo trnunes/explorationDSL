@@ -2,7 +2,7 @@ module Mapping
     
   def self.method_missing(function_name, options)
     mapping_function = Mapping::Function.load(function_name.to_s)
-    # binding.pry
+
    unless mapping_function.nil?
      mapping_function.prepare(options)
      mapping_function

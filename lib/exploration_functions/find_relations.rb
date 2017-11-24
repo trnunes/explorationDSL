@@ -30,7 +30,7 @@ module Explorable
         @limit = args[:limit] || entities.size
         @relations = Set.new input_set.server.begin_nav_query.find_relations(entities[0..@limit], out_offset, out_limit)        
       end
-      # binding.pry
+
 
       finish_time = Time.now
 
@@ -53,13 +53,13 @@ module Explorable
   
   def relations(args = {})
     args[:direction] = "backward"
-    # binding.pry
+
     execute_exploration_operation(FindRelations, args)
   end
 
   def v_relations(args = {})
     args[:direction] = "backward"
-    # binding.pry
+
     execute_visualization_operation(FindRelations, args)
   end
   

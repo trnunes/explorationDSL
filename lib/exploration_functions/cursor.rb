@@ -47,7 +47,7 @@ class Cursor
     
     (page_number - 1).times{|pg| pg_offset += @limit}
     items_to_filter = @pages_cache.values.map{|i| i.indexed_items}.flatten
-    binding.pry
+
     @pages_cache[page_number] = @operation.execute(pg_offset - items_to_filter.size, @limit, items_to_filter)
     @result_set.index = @pages_cache[page_number]
     @result_set.index.indexed_items

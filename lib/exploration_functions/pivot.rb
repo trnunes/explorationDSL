@@ -55,7 +55,7 @@ module Explorable
           end
         end
       end
-      # binding.pry
+
       
       return mappings
     end
@@ -98,10 +98,10 @@ module Explorable
                 items += pivot_values
               end
             end
-            # binding.pry
+
           end
           mappings = local_mappings
-          # binding.pry
+
         else
           if(!relations.respond_to?(:each))
             relations = [relations]
@@ -140,7 +140,7 @@ module Explorable
 
           HashHelper.leaves(values).each do |result_item|
             if(result_item.to_s.include?("Held"))
-              # binding.pry
+
             end
             item_subset[result_item] = {}
           end

@@ -55,7 +55,7 @@ module Filtering
     
     def self.in(values_set)
       Comparator.new( lambda do |item| 
-        # binding.pry
+
         found = false
         values_set.each do |value|
           

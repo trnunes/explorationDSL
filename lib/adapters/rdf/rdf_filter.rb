@@ -121,7 +121,7 @@ module SPARQLQuery
       @server.execute(build_query).each do |solution|
 
         if(solution.is_a? RDF::Query::Solution)
-                  # binding.pry
+
           result_set << Entity.new(solution.to_a[0][1].to_s)
         else
           result_set << Entity.new(solution[0].to_s)

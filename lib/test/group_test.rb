@@ -1,6 +1,10 @@
-require './test/xpair_unit_test'
+# require './test/xpair_unit_test'
+require "test/unit"
+require "rdf"
+require 'linkeddata'
+require './filters/dsl_prototype'
 
-class GroupTest < XpairUnitTest
+class GroupTest < Test::Unit::TestCase
 
   def setup
     @graph = RDF::Graph.new do |graph|
@@ -88,247 +92,303 @@ class GroupTest < XpairUnitTest
     end
 
     @papers_server = RDFDataServer.new(papers_graph)
-      
+    Explorable.server = @papers_server
   end
   
   def test_group_by
-    test_set = Xset.new('test', '')
+    s = Xset.new{entities "_:paper1", "_:p2", "_:p3"}
+    author_relation = Xplain::SchemaRelation.new("_:author", inverse: true)
+    # s.server = @server
     
-    test_set.add_pair Pair.new(Entity.new("_:p1"), Entity.new("_:p1"))
-    test_set.add_pair Pair.new(Entity.new("_:p2"), Entity.new("_:p2"))
-    test_set.add_pair Pair.new(Entity.new("_:p3"), Entity.new("_:p3"))
+    rs = s.group do
+      by_image relation("_:author")
+    end
+
+    assert_equal Set.new(rs.each), Set.new([Entity.new("_:a1"), Entity.new("_:a2")])
+    assert_equal Set.new(rs.leaves), Set.new([Entity.new("_:paper1"), Entity.new("_:p2"), Entity.new("_:p3")])
+    a1 = rs.each.select{|a| a.id == "_:a1"}.first
+    a2 = rs.each.select{|a| a.id == "_:a2"}.first
+    assert_equal [author_relation], a1.children.map{|c| c.item}
+    assert_equal [author_relation], a2.children.map{|c| c.item}
+    author_relation_a1 = a1.children.first
+    author_relation_a2 = a2.children.first
+
     
-    test_set.server = @server
+    assert_equal Set.new([Entity.new("_:paper1"), Entity.new("_:p2")]), Set.new(author_relation_a1.children)
+
+    assert_equal Set.new([Entity.new("_:paper1"), Entity.new("_:p3")]), Set.new(author_relation_a1.children)
     
-    rs = test_set.group{|gf| gf.by_relation(relations: [SchemaRelation.new("_:r1", @server)])}
+  end
+  
+  def test_nested_group_by
+    s = Xset.new{entities "_:paper1", "_:p2", "_:p3"}
     
-    expected_pairs = Set.new([
-      Pair.new(Entity.new("_:o1"), Entity.new("_:p1"), "_:o1"),
-      Pair.new(Entity.new("_:o2"), Entity.new("_:p1"), "_:o2"),
-      Pair.new(Entity.new("_:o2"), Entity.new("_:p2"), "_:o2"),
-      Pair.new(Entity.new("_:o3"), Entity.new("_:p3"), "_:o3")
-    ])
+    # s.server = @server
     
-    assert_equal expected_pairs, Set.new(rs.each_relation[0].each_pair + rs.each_relation[1].each_pair + rs.each_relation[2].each_pair)
+    rs = s.group do
+      by_image relation("_:author")
+    end.group do 
+      by_image relation("_:publishedOn")
+    end
+        
+    assert_equal Set.new(rs.root.children), Set.new([Entity.new("_:a1"), Entity.new("_:a2")])
+    assert_equal Set.new(rs.leaves), Set.new([Entity.new("_:p2"), Entity.new("_:p3")])
+    a1 = rs.root.children.select{|a| a.id == "_:a1"}.first
+    a2 = rs.root.children.select{|a| a.id == "_:a2"}.first
+    
+
+    assert_equal Set.new([Entity.new("_:journal1")]), Set.new(a1.children)
+
+    assert_equal Set.new([Entity.new("_:journal2")]), Set.new(a2.children)
+    
+    j1 = a1.children.select{|j| j.id == "_:journal1"}.first
+    j2 = a2.children.select{|j| j.id == "_:journal2"}.first
+    
+    assert_equal Set.new([Entity.new("_:p2")]), Set.new(j1.children)
+    assert_equal Set.new([Entity.new("_:p3")]), Set.new(j2.children)
   end
   
   def test_group_by_computed_relation
-    test_set = Xset.new('test', '')
-    test_set.add_pair(Entity.new("_:p1"), Entity.new("_:p1"))
-    test_set.add_pair(Entity.new("_:p2"), Entity.new("_:p2"))
-    test_set.add_pair(Entity.new("_:p3"), Entity.new("_:p3"))
-
+    s = Xset.new{entities "_:p1", "_:p2", "_:p3", "_:p4"}
+    r = ComputedRelation.new("root")
+    e1 = Entity.new("_:p1")
+    e1.children = Entity.new("_:i1")
+    e2 = Entity.new("_:p2")
+    e2.children = Entity.new("_:i2")
+    e3 = Entity.new("_:p3")
+    e3.children = Entity.new("_:i1")
+    e4 = Entity.new("_:p4")
+    e4.children = Entity.new("_:i2")   
     
-    test_set.server = @server
+    r.root.set_children [e1, e2, e3, e4]
     
-    pivot_rs = test_set.pivot_forward(relations: [SchemaRelation.new("_:r1", @papers_server)])
+    rs = s.group{by_image r}
+    assert_equal Set.new(rs.root.children), Set.new([Entity.new("_i1"), Entity.new("_:i2")])
+    assert_equal Set.new(rs.leaves), Set.new([Entity.new("_:p1"), Entity.new("_:p2"), Entity.new("_:p3"), Entity.new("_:p4")])
     
-    rs = test_set.group{|gf| gf.by_relation(relations: [pivot_rs])}
     
-    expected_set = Xset.new do |s|
-      s.extension = {
-        Entity.new("_:o1") => Xsubset.new("key"){|s|
-          s.extension = {
-            Entity.new("_:p1")=>{}
-          }
-        },
-        Entity.new("_:o2") => Xsubset.new("key"){|s|
-          s.extension = {
-            Entity.new("_:p1")=>{},
-            Entity.new("_:p2")=>{}
-          }
-        },
-        Entity.new("_:o3") => Xsubset.new("key"){|s|
-          s.extension = {
-            Entity.new("_:p3")=>{}
-          }
-        },
-      }
-    end
-    assert_equal expected_set.extension[Entity.new("_:o1")].extension, rs.extension[Entity.new("_:o1")].extension
-    assert_equal expected_set.extension[Entity.new("_:o2")].extension, rs.extension[Entity.new("_:o2")].extension
-    assert_equal expected_set.extension[Entity.new("_:o3")].extension, rs.extension[Entity.new("_:o3")].extension
-
+    i1 = rs.root.children.select{|a| a.id == "_:i1"}.first
+    i2 = rs.root.children.select{|a| a.id == "_:i2"}.first
+    assert_equal Set.new([Entity.new("_:p1"), Entity.new("_:p2")]), Set.new(i1.children)
+    assert_equal Set.new([Entity.new("_:p3"), Entity.new("_:p4")]), Set.new(i2.children)
   end
-  
-  
-  def test_group_by_keep_structure
-    test_set = Xset.new do |s| 
-      s << Entity.new("_:p1")
-      s << Entity.new("_:p2")
-      s << Entity.new("_:p3")
-    end
-    
-    test_set.server = @server
-    
-    rs1 = test_set.group{|gf| gf.by_relation(relations: [Relation.new("_:r1")])}
-
-    expected_set = Xset.new do |s|
-      s.extension = {
-        Entity.new("_:o1") => Xsubset.new("key"){|s|
-          s.extension = {
-            Entity.new("_:p1")=>{}
-          }
-        },
-        Entity.new("_:o2") => Xsubset.new("key"){|s|
-          s.extension = {
-            Entity.new("_:p1")=>{},
-            Entity.new("_:p2")=>{}
-          }
-        },
-        Entity.new("_:o3") => Xsubset.new("key"){|s|
-          s.extension = {
-            Entity.new("_:p3")=>{}
-          }
-        },
-      }
-    end
-    expected_set.server = @server
-    
-    # assert_equal expected_set.extension, rs1.extension
-    binding.pry
-    rs = rs1.group{|gf| gf.by_relation(relations: [Relation.new("_:year")])}
-    
-    key1 = Xsubset.new("key"){|s|
-      s.extension = {
-        Entity.new("_:p1")=>{}
-      }
-    }
-    key2 = Xsubset.new("key"){|s|
-      s.extension = {
-        Entity.new("_:p1")=>{},
-        Entity.new("_:p2")=>{}
-      }
-    }
-    key3 =  Xsubset.new("key"){|s|
-      s.extension = {
-        Entity.new("_:p3")=>{}
-      }
-    }
-    group1 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:p1")=>{}}}
-    group2 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:p1")=>{}, Entity.new("_:p2")=>{}}}
-    group3 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:p3")=>{}}}
-    
-    group4 = Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(2005)=>group1}}
-    group5 = Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(2005)=>group2}}
-    group6 = Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(2010)=>group3}}
-    
-    expected_extension = {
-      Xsubset.new("key"){|s|
-        s.extension = {
-          Entity.new("_:p1")=>{}
-        }
-      } => group4,
-      Xsubset.new("key"){|s|
-        s.extension = {
-          Entity.new("_:p1")=>{},
-          Entity.new("_:p2")=>{}
-        }
-      } => group5,
-      Xsubset.new("key"){|s|
-        s.extension = {
-          Entity.new("_:p3")=>{}
-        }
-      }=> group6
-    }
-    
-
-    rs.extension.each do |key, values|
-
-
-      HashHelper.print_hash key.extension
-
-
-      values.extension.each do |key, values|
-
-
-        HashHelper.print_hash values.extension
-      end
-        
-      
-    end
-
-    rs.extension.keys.each do |key|
-
-      HashHelper.print_hash key.extension
-    end
-
-    expected_extension.keys.each do |key|
-
-      HashHelper.print_hash key.extension
-    end
-    
-    assert_equal Set.new(rs.extension.keys), Set.new(expected_extension.keys)
-    assert_equal rs.extension[key1], expected_extension[key1]
-
-    assert_equal expected_extension, rs.extension
-  end
-  
-  def test_group_by_domain
-    test_set = Xset.new do |s| 
-      s << Entity.new("_:p1")
-      s << Entity.new("_:p2")
-      s << Entity.new("_:p3")
-    end
-    
-    test_set.server = @server
-    test_set.id = "s1"
-    pivot_rs = test_set.pivot_forward(relations: [Relation.new("_:r1")])
-    group_rs = pivot_rs.group{|g| g.by_domain(relations: [test_set])}
-    
-    expected_extension = {
-      Entity.new("_:p1")=>Xsubset.new("key"){|s| s.extension = {Entity.new("_:o1")=>{},Entity.new("_:o2")=>{}}},
-      Entity.new("_:p2")=>Xsubset.new("key"){|s| s.extension = {Entity.new("_:o2")=>{}}},
-      Entity.new("_:p3")=>Xsubset.new("key"){|s| s.extension = {Entity.new("_:o3")=>{}}}
-    }
-    
-    assert_equal expected_extension[Entity.new("_:p1")].extension, group_rs.extension[Entity.new("_:p1")].extension
-    assert_equal expected_extension[Entity.new("_:p2")].extension, group_rs.extension[Entity.new("_:p2")].extension
-    assert_equal expected_extension[Entity.new("_:p3")].extension, group_rs.extension[Entity.new("_:p3")].extension
-    
-  end
-  
-  def test_group_by_relation
-    test_set = Xset.new do |s| 
-      s << Entity.new("_:paper1")
-      s << Entity.new("_:p2")
-      s << Entity.new("_:p3")
-      s << Entity.new("_:p4")
-      s << Entity.new("_:p5")
-      s << Entity.new("_:p6")
-      s << Entity.new("_:p7")
-      s << Entity.new("_:p8")
-      s << Entity.new("_:p9")
-      s << Entity.new("_:p10")
-    end
-    test_set.server = @papers_server
-    test_set.id = "s1"
-    pivot_rs = test_set.pivot_forward(relations: [Relation.new("_:author")])
-    pivot_rs.id = "spivot"
-    group_rs = test_set.group{|g| g.by_relation(relations: [pivot_rs])}
-    assert_equal 2, group_rs.each_image.size
-  end
-  
-  def test_group_by_group
-    test_set = Xset.new do |s| 
-      s << Entity.new("_:paper1")
-      s << Entity.new("_:p2")
-      s << Entity.new("_:p3")
-      s << Entity.new("_:p4")
-      s << Entity.new("_:p5")
-      s << Entity.new("_:p6")
-      s << Entity.new("_:p7")
-      s << Entity.new("_:p8")
-      s << Entity.new("_:p9")
-      s << Entity.new("_:p10")
-    end
-    test_set.server = @papers_server
-    test_set.id = "s1"
-    pivot_rs = test_set.group{|g| g.by_relation(relations: [Relation.new("_:author")])}
-    pivot_rs.id = "spivot"
-    group_rs = pivot_rs.group{|g| g.by_relation(relations: [Relation.new("_:cite")])}
-    binding.pry
-    assert_equal 2, group_rs.each_image.size
-  end
+  # def test_group_by_computed_relation
+  #   test_set = Xset.new('test', '')
+  #   test_set.add_pair(Entity.new("_:p1"), Entity.new("_:p1"))
+  #   test_set.add_pair(Entity.new("_:p2"), Entity.new("_:p2"))
+  #   test_set.add_pair(Entity.new("_:p3"), Entity.new("_:p3"))
+  #
+  #
+  #   test_set.server = @server
+  #
+  #   pivot_rs = test_set.pivot_forward(relations: [SchemaRelation.new("_:r1", @papers_server)])
+  #
+  #   rs = test_set.group{|gf| gf.by_relation(relations: [pivot_rs])}
+  #
+  #   expected_set = Xset.new do |s|
+  #     s.extension = {
+  #       Entity.new("_:o1") => Xsubset.new("key"){|s|
+  #         s.extension = {
+  #           Entity.new("_:p1")=>{}
+  #         }
+  #       },
+  #       Entity.new("_:o2") => Xsubset.new("key"){|s|
+  #         s.extension = {
+  #           Entity.new("_:p1")=>{},
+  #           Entity.new("_:p2")=>{}
+  #         }
+  #       },
+  #       Entity.new("_:o3") => Xsubset.new("key"){|s|
+  #         s.extension = {
+  #           Entity.new("_:p3")=>{}
+  #         }
+  #       },
+  #     }
+  #   end
+  #   assert_equal expected_set.extension[Entity.new("_:o1")].extension, rs.extension[Entity.new("_:o1")].extension
+  #   assert_equal expected_set.extension[Entity.new("_:o2")].extension, rs.extension[Entity.new("_:o2")].extension
+  #   assert_equal expected_set.extension[Entity.new("_:o3")].extension, rs.extension[Entity.new("_:o3")].extension
+  #
+  # end
+  #
+  #
+  # def test_group_by_keep_structure
+  #   test_set = Xset.new do |s|
+  #     s << Entity.new("_:p1")
+  #     s << Entity.new("_:p2")
+  #     s << Entity.new("_:p3")
+  #   end
+  #
+  #   test_set.server = @server
+  #
+  #   rs1 = test_set.group{|gf| gf.by_relation(relations: [Relation.new("_:r1")])}
+  #
+  #   expected_set = Xset.new do |s|
+  #     s.extension = {
+  #       Entity.new("_:o1") => Xsubset.new("key"){|s|
+  #         s.extension = {
+  #           Entity.new("_:p1")=>{}
+  #         }
+  #       },
+  #       Entity.new("_:o2") => Xsubset.new("key"){|s|
+  #         s.extension = {
+  #           Entity.new("_:p1")=>{},
+  #           Entity.new("_:p2")=>{}
+  #         }
+  #       },
+  #       Entity.new("_:o3") => Xsubset.new("key"){|s|
+  #         s.extension = {
+  #           Entity.new("_:p3")=>{}
+  #         }
+  #       },
+  #     }
+  #   end
+  #   expected_set.server = @server
+  #
+  #   # assert_equal expected_set.extension, rs1.extension
+  #
+  #   rs = rs1.group{|gf| gf.by_relation(relations: [Relation.new("_:year")])}
+  #
+  #   key1 = Xsubset.new("key"){|s|
+  #     s.extension = {
+  #       Entity.new("_:p1")=>{}
+  #     }
+  #   }
+  #   key2 = Xsubset.new("key"){|s|
+  #     s.extension = {
+  #       Entity.new("_:p1")=>{},
+  #       Entity.new("_:p2")=>{}
+  #     }
+  #   }
+  #   key3 =  Xsubset.new("key"){|s|
+  #     s.extension = {
+  #       Entity.new("_:p3")=>{}
+  #     }
+  #   }
+  #   group1 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:p1")=>{}}}
+  #   group2 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:p1")=>{}, Entity.new("_:p2")=>{}}}
+  #   group3 = Xsubset.new("key"){|s| s.extension = {Entity.new("_:p3")=>{}}}
+  #
+  #   group4 = Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(2005)=>group1}}
+  #   group5 = Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(2005)=>group2}}
+  #   group6 = Xsubset.new("key"){|s| s.extension = {Xpair::Literal.new(2010)=>group3}}
+  #
+  #   expected_extension = {
+  #     Xsubset.new("key"){|s|
+  #       s.extension = {
+  #         Entity.new("_:p1")=>{}
+  #       }
+  #     } => group4,
+  #     Xsubset.new("key"){|s|
+  #       s.extension = {
+  #         Entity.new("_:p1")=>{},
+  #         Entity.new("_:p2")=>{}
+  #       }
+  #     } => group5,
+  #     Xsubset.new("key"){|s|
+  #       s.extension = {
+  #         Entity.new("_:p3")=>{}
+  #       }
+  #     }=> group6
+  #   }
+  #
+  #
+  #   rs.extension.each do |key, values|
+  #
+  #
+  #     HashHelper.print_hash key.extension
+  #
+  #
+  #     values.extension.each do |key, values|
+  #
+  #
+  #       HashHelper.print_hash values.extension
+  #     end
+  #
+  #
+  #   end
+  #
+  #   rs.extension.keys.each do |key|
+  #
+  #     HashHelper.print_hash key.extension
+  #   end
+  #
+  #   expected_extension.keys.each do |key|
+  #
+  #     HashHelper.print_hash key.extension
+  #   end
+  #
+  #   assert_equal Set.new(rs.extension.keys), Set.new(expected_extension.keys)
+  #   assert_equal rs.extension[key1], expected_extension[key1]
+  #
+  #   assert_equal expected_extension, rs.extension
+  # end
+  #
+  # def test_group_by_domain
+  #   test_set = Xset.new do |s|
+  #     s << Entity.new("_:p1")
+  #     s << Entity.new("_:p2")
+  #     s << Entity.new("_:p3")
+  #   end
+  #
+  #   test_set.server = @server
+  #   test_set.id = "s1"
+  #   pivot_rs = test_set.pivot_forward(relations: [Relation.new("_:r1")])
+  #   group_rs = pivot_rs.group{|g| g.by_domain(relations: [test_set])}
+  #
+  #   expected_extension = {
+  #     Entity.new("_:p1")=>Xsubset.new("key"){|s| s.extension = {Entity.new("_:o1")=>{},Entity.new("_:o2")=>{}}},
+  #     Entity.new("_:p2")=>Xsubset.new("key"){|s| s.extension = {Entity.new("_:o2")=>{}}},
+  #     Entity.new("_:p3")=>Xsubset.new("key"){|s| s.extension = {Entity.new("_:o3")=>{}}}
+  #   }
+  #
+  #   assert_equal expected_extension[Entity.new("_:p1")].extension, group_rs.extension[Entity.new("_:p1")].extension
+  #   assert_equal expected_extension[Entity.new("_:p2")].extension, group_rs.extension[Entity.new("_:p2")].extension
+  #   assert_equal expected_extension[Entity.new("_:p3")].extension, group_rs.extension[Entity.new("_:p3")].extension
+  #
+  # end
+  #
+  # def test_group_by_relation
+  #   test_set = Xset.new do |s|
+  #     s << Entity.new("_:paper1")
+  #     s << Entity.new("_:p2")
+  #     s << Entity.new("_:p3")
+  #     s << Entity.new("_:p4")
+  #     s << Entity.new("_:p5")
+  #     s << Entity.new("_:p6")
+  #     s << Entity.new("_:p7")
+  #     s << Entity.new("_:p8")
+  #     s << Entity.new("_:p9")
+  #     s << Entity.new("_:p10")
+  #   end
+  #   test_set.server = @papers_server
+  #   test_set.id = "s1"
+  #   pivot_rs = test_set.pivot_forward(relations: [Relation.new("_:author")])
+  #   pivot_rs.id = "spivot"
+  #   group_rs = test_set.group{|g| g.by_relation(relations: [pivot_rs])}
+  #   assert_equal 2, group_rs.each_image.size
+  # end
+  #
+  # def test_group_by_group
+  #   test_set = Xset.new do |s|
+  #     s << Entity.new("_:paper1")
+  #     s << Entity.new("_:p2")
+  #     s << Entity.new("_:p3")
+  #     s << Entity.new("_:p4")
+  #     s << Entity.new("_:p5")
+  #     s << Entity.new("_:p6")
+  #     s << Entity.new("_:p7")
+  #     s << Entity.new("_:p8")
+  #     s << Entity.new("_:p9")
+  #     s << Entity.new("_:p10")
+  #   end
+  #   test_set.server = @papers_server
+  #   test_set.id = "s1"
+  #   pivot_rs = test_set.group{|g| g.by_relation(relations: [Relation.new("_:author")])}
+  #   pivot_rs.id = "spivot"
+  #   group_rs = pivot_rs.group{|g| g.by_relation(relations: [Relation.new("_:cite")])}
+  #
+  #   assert_equal 2, group_rs.each_image.size
+  # end
   
 end

@@ -1,81 +1,56 @@
-module Filtering
+module Xplain
+  module Filtering
+    attr_accessor :filters
   
-  def self.add_filter(filter)
-    @@filters ||= []
-    @@filters << filter
-  end
-  
-  def self.get_filters
-    @@filters
-  end
-  
-  def self.set_server(server)
-    @@server = server
-  end  
-  
-  def self.prepare(items, server)
-    @@filters.each do |f| 
-      f.server = server
-      f.prepare(items, server)
-    end
-  end
-  
-  def self.eval_filters(item)
-        
-    is_filtered = true
-    @@filters.each do |f|
-      is_filtered = is_filtered && f.filter(item)
-    end
-    is_filtered
-  end
-  
-  def self.expression
-    @@filters.map{|f| f.expression}.join
-  end
-  
-  def self.clear
-    @@filters = []
-  end
-  
-  class Filter
-    attr_accessor :server
-
-    def initialize(*args)     
-    end
-    
-
-    
-    def build_query_filter(items)
-      if(@relations)
-        if(@relations[0].is_a? Xset)
-          @filter = LocalFilter::LocalANDFilter.new(items)
-          return @filter
+    class SimpleFilter
+      attr_accessor :relation, :values
+      def initialize(relation, *values)
+        if(relation.nil?)
+          raise "The filtering relation cannot be nil!"
         end
+        if(values.compact.empty?)
+          raise "You should provide at least one filtering value!"
+        end
+        @relation = relation
+        @values = values
       end
-      
-      @filter = server.begin_filter do |f|
-        f.union do |u|
-          items.each do |item|
-            u.equals(item)
-          end
-        end
-      end      
-
-      @filter
     end
     
-    def build_nav_query(items)
-      @nav_query = @server.begin_nav_query do |nav_query|
-        items.each do |item|
-          nav_query.on(item)
-        end
+    class Equals < SimpleFilter
+    end
+  
+    class Lt < SimpleFilter
+    end
+  
+    class LtEql < SimpleFilter
+    end
+  
+    class Grt < SimpleFilter
+    end
+
+    class GrtEql < SimpleFilter
+    end
+  
+    class Not < SimpleFilter
+    end
+   
+    class EqualsOne < SimpleFilter
+    end
+  
+    class Contains < SimpleFilter
+    end
+    
+    class CompositeFilter
+      attr_accessor :filters
+      def initialize(filters)
+        @filters = filters
       end
-
-      @nav_query
     end
-    
-    def filter(item)
-      return false
+  
+    class And < CompositeFilter
+    end
+
+    class Or < CompositeFilter
     end
   end
 end

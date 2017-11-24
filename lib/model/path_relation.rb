@@ -1,168 +1,198 @@
-class PathRelation
-  attr_accessor :id, :server, :inverse, :text, :relations, :limit
-
-  def initialize(relations, limit=nil)
-    @limit = limit
-    @relations = relations
-  end
+module Xplain
+  class PathRelation
+    include Xplain::Relation
+    extend Forwardable
+    attr_accessor :id, :server, :inverse, :text, :relations, :limit, :root
+    def_delegators :@relations, :map, :each, :size
   
-  def can_fire_path_query
-    are_all_schema_relations = (@relations.select{|r| r.is_a? SchemaRelation}.size == @relations.size)
-
-    are_all_single_direction = (@relations.map{|r| r.inverse}.uniq.size == 1)
-
-    # is_single_server = (@relations.map{|r| r.server}.uniq.size == 1)
-    # (are_all_schema_relations && are_all_single_direction && s_single_server)
-    # binding.pry
-    (are_all_schema_relations && are_all_single_direction)
-  end
   
-  def domain()
-    @relations.first.domain
-  end
-  
-  def server=(server)
-    @server = server
-    @relations.each{|r| r.server = server}
-  end
-  def image()
-    @relations.last.image
-  end
-  
-  def mixed_path_restricted_image(items, image_items, offset, limit)
-    relations = @relations
-    result_pairs = []
+    def initialize(args = {})
+      @limit = args[:limit]
+      @relations = args[:relations]
+      @id = args[:id]
+      @server = args[:server]
+      @domain_restriction = args[:domain_restriction] || []
+      @image_restriction = args[:image_restriction] || []
 
-    result_pairs = items.map{|i| Pair.new(i, i)}
-
-    relations.each do |r|
+      @root = Xplain::Entity.new(@relations.map{|r| r.id}.join("/"))
+      @cursor = Xplain::Cursor.new(self)
+    end
+  
+    def reverse
+      args = {}
+      args[:relations] = relations.map{|r| r.reverse}
+      args[:limit] = @limit
+      args[:server] = @server
+      args[:domain_restriction] = @domain_restriction
+      args[:image_restriction] = @image_restriction
       
-      restriction = result_pairs.map{|pair| pair.image}
-      @limit ||= restriction.size
-      partial_pairs = r.restricted_image(Set.new(restriction[0..@limit]), image_items, offset, limit)
-      partial_pairs_hash = {}
-      partial_pairs.each do |pair| 
-        if(!partial_pairs_hash.has_key? pair.domain)
-          partial_pairs_hash[pair.domain] = []
-        end
-        partial_pairs_hash[pair.domain] << pair.image
+      Xplain::PathRelation.new(args)
+    end
+    
+    def id
+      @relations.map{|r| r.id}.join("/")
+    end
+  
+    def can_fire_path_query
+      are_all_schema_relations = (@relations.select{|r| !r.schema?}.size == 0)
+      are_all_schema_relations
+    end
+  
+    def inverse?
+      (@relations.select{|r| r.inverse?}.size == @relations.size)
+    end
+  
+  
+    def image(offset=0, limit=-1)
+        build_image_results(@server.image(self, [], offset, limit))
+    end
+  
+    def domain(offset=0, limit=-1)
+        build_domain_results(@server.domain(self, [], offset, limit))    
+    end
+  
+    def restricted?
+      !(@image_restriction.empty? && @domain_restriction.empty?)
+    end
+  
+    def each_domain(offset=0, limit=-1, &block)
+      # #binding.pry
+      domains = domain(offset, limit)
+      domains.each &block
+      domains
+    end
+  
+  
+    def server=(server)
+      @server = server
+      @relations.each{|r| r.server = server}
+    end
+  
+    
+    def mixed_path_restricted_image(items, options = {})
+      relations = @relations
+
+      result_items = items
+
+      relations.each do |r|
+      
+        partial_images = r.restricted_image(Set.new(result_items), options)
+
+        partial_images_hash = {}
+
+        partial_images.each do |item| 
+          if(!partial_images_hash.has_key? item.parent)
+            partial_images_hash[item.parent] = []
+          end
+          partial_images_hash[item.parent] << item
         
-      end
+        end
       
-      new_result_pairs = []
-      result_pairs.each do |pair|
-        if(partial_pairs_hash.has_key? pair.image)
-          partial_pairs_hash[pair.image].each do |next_image|
-            new_result_pairs << Pair.new(pair.domain, next_image)
+        new_result_items = []
+        result_items.each do |item|
+        
+          if(partial_images_hash.has_key? item)
+            partial_images_hash[item].each do |next_image|
+            
+              next_image.parent = item
+              new_result_items << next_image
+            end
           end
         end
-      end
-      result_pairs = new_result_pairs
 
+        result_items = new_result_items
+
+      end
+      build_results result_items
     end
-    result_pairs
-  end
   
-  def mixed_path_restricted_domain(items, image_items, offset, limit)
-    relations = @relations
-    result_pairs = []
-    inverse = (@args[:direction] == "backward")
-    result_pairs = items.map{|i| Pair.new(i, i)}
-    relations.each do |r|
-      
-      partial_pairs = r.restricted_domain(Set.new(result_pairs.map{|pair| pair.image}), offset, limit)
-      partial_pairs_hash = partial_pairs.map{|pair| [pair.domain, pair.image]}.to_h
-      
-      result_pairs.each do |pair|
-        if(partial_pairs_hash.has_key? pair.image)
-          pair.image = partial_pairs[pair.image]
+    def mixed_path_restricted_domain(items, options = {})
+      relations = @relations.reverse
+      result_pairs = []
+      result_pairs = items
+      relations.each do |r|
+        result_pairs = r.restricted_domain(Set.new(result_pairs), options)
+      end
+      build_results result_pairs
+    end
+    
+    def schema_restricted_image(restriction, options = {})
+      server = Explorable.server
+      result_items = []
+      options[:restriction] = restriction
+      options[:relation] = self
+      partial_path_results = @server.restricted_image(options)
+
+      build_results(partial_path_results)
+    end
+  
+    def build_results(result_items)
+      if(result_items.first.is_a? Xplain::Entity)
+        Set.new(result_items)
+      else
+        result_items
+      end    
+    end
+  
+    def schema_restricted_domain(restriction, options = {})
+      result_items = []
+      options[:restriction] = restriction
+      options[:relation] = self
+      partial_path_results =Explorable.server.restricted_domain(options)
+      build_results(partial_path_results)
+    end
+  
+    def fetch_restricted_image(restriction, options = {})
+
+      if can_fire_path_query
+          schema_restricted_image(restriction, options)
+      else
+          mixed_path_restricted_image(restriction, options)
+      end
+    end
+  
+    def fetch_restricted_domain(restriction, options = {})
+      if can_fire_path_query
+          schema_restricted_domain(restriction, options)
+      else
+          mixed_path_restricted_domain(restriction, options)
+      end
+    end
+  
+    def get_level(level, parents_restriction = [], children_restriction = [], offset = 0, limit = -1)
+      if(level == 2)
+        if(!children_restriction.empty?)
+          fetch_restricted_domain(children_restriction, {offset: offset, limit: limit})
         else
-          result_pairs.delete(pair)
+          domain(offset, limit)
         end
-      end
-    end
-    result_pairs
-  end
-    
-  def schema_restricted_image(restriction, image_items, offset, limit)
-    if(@relations.first.inverse)
-      @relations.first.inverse = false
-      return schema_restricted_domain(restriction, image_items, limit)
-    end
-    server = @relations.first.server
-    result_pairs = []
-    query = server.begin_nav_query(offset: offset, limit: limit) do |q|
-      restriction.each do |item|
-        q.on(item)
-      end
-      q.restricted_image(@relations.map{|r| r.id}, image_items)
-    end
-    # binding.pry
-    partial_path_results = query.execute
-    # binding.pry
-    partial_path_results.each do |item, relations_hash|
-      relations_hash.each do |key, values|
-        values.each do |v|
-          result_pairs << Pair.new(item, v)
-        end
-      end
-    end
-    result_pairs
-  end
-  
-  def schema_restricted_domain(restriction, image_items, offset, limit)
-    if(@relations.first.inverse)
-      @relations.first.inverse = false
-      return schema_restricted_image(restriction, image_items, offset, limit)
-    end
-    
-    result_pairs = []
-    query = @server.begin_nav_query(offset: offset, limit: limit) do |q|
-      restriction.each do |item|
-        q.on(item)
-      end
-      q.restricted_domain(@relations.map{|r| r.id})
-    end
-    partial_path_results = query.execute
-    
-    partial_path_results.each do |item, relations_hash|
-      relations_hash.each do |relation, values|
-        values.each do |value|
-          result_pairs << Pair.new(value, item)
-        end
-      end  
-    end
-    result_pairs
-  end
-  
-  def restricted_image(restriction, image_items = [], offset = 0, limit=-1)
-    if can_fire_path_query
-      schema_restricted_image(restriction, image_items, offset, limit)
-    else
-      mixed_path_restricted_image(restriction, image_items, offset, limit)
-    end
-  end
-  
-  def restricted_domain(restriction, image_items = [], offset = 0, limit=-1)
-    if can_fire_path_query
-      schema_restricted_domain(restriction, image_items, offset, limit)
-    else
-      mixed_path_restricted_domain(restriction, image_items, offset, limit)
-    end
-  end
+      elsif (level == 3)
+        if(!parents_restriction.empty?)
+          fetch_restricted_image(parents_restriction, {offset: offset, limit: limit})
+        else
+          image(offset, limit)
+        end      
       
-  def text
-    @relations.map{|r| r.text}.join("/")
+      end
+    end
+  
+        
+    def text
+      @relations.map{|r| r.text}.join("/")
+    end
+  
+    def eql?(relation)
+      (self.id == relation.id) && (relation.inverse == self.inverse)
+    end
+  
+    def hash
+      @id.hash * inverse.hash
+    end
+  
+    def leaves
+      image()
+    end
+  
+    alias == eql?
   end
-  
-  def eql?(relation)
-    (self.id == relation.id) && (relation.inverse == self.inverse)
-  end
-  
-  def hash
-    @id.hash * inverse.hash
-  end
-  
-  alias == eql?
-  
 end

@@ -189,7 +189,7 @@ class MapTest < XpairUnitTest
     
     rs = set.map{|mf| mf.avg}
     # expected_pairs = Set.new([Pair.new(Xpair::Literal.new(2.5), Xpair::Literal.new(2.5))])
-    # binding.pry
+
     # assert_equal expected_pairs, Set.new(rs.each_relation.first.each_pair)
     puts "test_average"
     puts rs.inspect
@@ -243,7 +243,7 @@ class MapTest < XpairUnitTest
     options[:function_type] = Mapping::Aggregator
     options[:name] = "count_ud"
     
-    # binding.pry
+
     
     origin_set = Xset.new("test", '') 
     
@@ -253,7 +253,7 @@ class MapTest < XpairUnitTest
     origin_set.add_item Entity.new("_:i4")
 
     # expected_pairs = Set.new([Pair.new(Xpair::Literal.new(4), Xpair::Literal.new(4))])
-    # binding.pry
+
     # assert_equal expected_pairs, Set.new(origin_set.map{|mf| mf.count_ud(options)}.each_relation.first.each_pair)
     # assert_equal expected_pairs, Set.new(origin_set.map{|mf| mf.count_ud(options)}.each_relation.first.each_pair)
     rs = origin_set.map{|mf| mf.count_ud(options)}

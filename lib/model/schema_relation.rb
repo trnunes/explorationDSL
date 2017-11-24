@@ -1,127 +1,104 @@
-class SchemaRelation
-  attr_accessor :id, :server, :inverse, :text, :parents, :index, :limit
-
-  def initialize(id, inverse=false, server=nil)
-    @id = id
-    @text = @id
-    @server = server
-    @inverse = inverse
-    @parents = []
-    @index = Indexing::Entry.new('root')
-  end
-  def inverse?
-    @inverse
-  end
-  def clone
-    cloned_item = self.class.new(@id)
-    cloned_item.text = @text
-    cloned_item.server = @server
-    cloned_item.inverse = @inverse
-    cloned_item.index = @index.copy
-    cloned_item
-  end
+module Xplain
+  class SchemaRelation
+    include Xplain::Relation
+    attr_accessor :id, :server, :root, :inverse, :cursor, :text
   
-  def shallow_clone
-    cloned_item = self.class.new(@id)
-    cloned_item.text = @text
-    cloned_item.server = @server
-    cloned_item.inverse = @inverse
-    cloned_item
-  end
-  
-  def domain()
-    return @server.image(self) if @inverse
-    @server.domain(self)
-  end
-  
-  def image()
-    return @server.domain(self) if @inverse
-    @server.image(self)
-  end
-  
-  def restricted_image(restriction, image_items = [], items_to_filter = [], offset = 0, limit = -1)
-    return [] if restriction.empty?
-    # binding.pry
-    if @inverse
-      @inverse = false
-      return restricted_domain(restriction, image_items, items_to_filter, offset, limit)
+    def initialize(args={})
+      @id = args[:id]
+      @text = args[:text]
+      @server = server
+      @inverse = args[:inverse] || false
+      @server = args[:server]
+      @root = Node.new(self)
     end
-    result_pairs = []
-    
-    query = @server.begin_nav_query(offset: offset, limit: limit, items_to_filter: items_to_filter) do |q|
-      restriction.each do |item|
-        q.on(item)
-      end
-      # binding.pry
-      q.restricted_image(self.id, image_items)
+  
+    def fetch_graph(items, limit=nil, offset=nil)
+      restricted_image(items, {limit: limit, offset: offset}).map{|item| item.parent}.uniq
     end
-    partial_path_results = query.execute
+  
+    def schema?
+      true
+    end
     
-    partial_path_results.each do |item, relations_hash|
-      relations_hash.each do |key, values|
-        values.each do |v|
-          result_pairs << Pair.new(item, v)
+    def reverse
+      Xplain::SchemaRelation.new(id: id, inverse: !inverse?)
+    end
+  
+    def to_s
+      @id
+    end
+  
+    def get_level(level, parents_restriction = [], children_restriction = [], offset = 0, limit = -1)
+      if(level == 2)
+        if(!children_restriction.empty?)
+          fetch_restricted_domain(children_restriction, {offset: offset, limit: limit})
+        else
+          domain(offset, limit)
         end
+      elsif (level == 3)
+        if(!parents_restriction.empty?)
+          fetch_restricted_image(parents_restriction, {offset: offset, limit: limit})
+        else
+          image(offset, limit)
+        end      
+      
       end
     end
+  
+  
+    def image(offset=0, limit=nil)
+        @server.image(self, [], offset, limit)
+    end
+  
+    def domain(offset=0, limit=-1)
+        @server.domain(self, [], offset, limit)
+    end
+  
+  
+    def each_domain(offset=0, limit=-1, &block)
 
-    result_pairs
-  end
+      domains = domain(offset, limit)
+      domains.each &block
+      domains
+    end
   
-  def restricted_domain(restriction, image_items = [], items_to_filter = [], offset = 0, limit = -1)
-    
-    return [] if restriction.empty?
-    if @inverse
-      @inverse = false
-      return restricted_image(restriction, image_items, offset, limit)
+    def each_image(offset=0, limit=-1, &block)
+      image(offset, limit).each &block    
+    end
+  
+    def fetch_restricted_image(restriction, options= {})
+      options[:restriction] = restriction
+      options[:relation] = self
+      @server.restricted_image(options)
+    end
+  
+    def fetch_restricted_domain(restriction, options = {})
+      options[:restriction] = restriction
+      options[:relation] = self
+      @server.restricted_domain(options)
+    end
+  
+    def leaves()
+      image()
+    end
+  
+    def inverse?
+      @inverse
+    end
+  
+    def inspect
+      to_s
     end
     
-    result_pairs = []
-    query = @server.begin_nav_query(offset: offset, limit: limit, items_to_filter: items_to_filter) do |q|
-      restriction.each do |item|
-        q.on(item)
-      end
-      q.restricted_domain(self.id, image_items)
+    def eql?(relation)
+      relation.is_a?(self.class) && relation.id == self.id && relation.inverse? == self.inverse?
     end
-    partial_path_results = query.execute
+  
+    def hash
+      @id.hash * @inverse.hash
+    end
+  
+    alias == eql?
     
-    partial_path_results.each do |item, relations_hash|
-      relations_hash.each do |relation, values|
-        values.each do |value|
-          result_pairs << Pair.new(value, item)
-        end
-      end  
-    end
-
-
-    result_pairs
   end
-  
-  def text
-    t = @text.dup
-    if(@inverse)
-      t + " of"
-    else
-      t
-    end
-  end
-  
-  def expression
-    "SchemaRelation.new('" + @id + "', " + @inverse.to_s + ")"
-  end
-  
-  def to_s
-    self.id
-  end
-  
-  def eql?(relation)
-    (self.id == relation.id) && (relation.inverse == self.inverse)
-  end
-  
-  def hash
-    @id.hash * inverse.hash
-  end
-  
-  alias == eql?
-  
 end

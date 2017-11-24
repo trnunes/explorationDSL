@@ -16,7 +16,7 @@ class Pair
   end
   
   def to_s
-    # binding.pry
+
     "(" + @relation + ": " +  (@domain.is_a?(Xpair::Literal)? @domain.value.to_s : @domain.id) + ", " + (@image.is_a?(Xpair::Literal)? @image.value.to_s : @image.id) + ")"
   end
   

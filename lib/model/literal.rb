@@ -1,60 +1,53 @@
-module Xpair
+module Xplain
   class Literal
-    include Xpair::Graph
-    include Indexable
-    attr_accessor :value, :datatype, :index, :entry, :parents
-    
-    def initialize(value, datatype=nil)
-      @datatype = datatype
+    extend Forwardable
+  
+    attr_accessor :value, :datatype, :parent, :children
+    def_delegators :@children, :<<
+  
+    def initialize(value, type=nil)
       @value = value
-      @index = Indexing::Entry.new('root')
-      @entry = Indexing::Entry.new('root')
-      @parents = []
-    end
-    
-    def clone
-      cloned_item = self.class.new(@value, @datatype)
-      cloned_item.index = @index.copy
-      cloned_item
-    end
-    
-    def shallow_clone
-      self.class.new(@value, @datatype)
-    end
-    
-    def has_datatype?
-      !(datatype.nil? || datatype.empty?)
-    end
-    
-    def expression
-      if @value.is_a?(Numeric)
-        value_str = @value.to_s 
-      else
-        value_str = "\"" + @value.to_s + "\""
-      end
-      expr = "Xpair::Literal.new(" + value_str + ""
-      if(@datatype)
-        expr += ", \"" + @datatype + "\""
-      end
-      expr += ")"
-      expr
-    end
-
-    def eql?(obj)
-      self.class == obj.class && @value.to_s == obj.value.to_s
-    end
-
-    def hash
-      @value.to_s.hash
-    end
-    
-    def text
-      @value.to_s
+      @datatype = type
+      @children = []
     end
   
-    def to_s
-      @value.to_s
+    def set_parent(parent)
+      @parent = parent
     end
+  
+    def add_child(item)
+      @children << item
+      item.set_parent(self)
+    end
+  
+    def set_children(children_set)
+      @children = children_set
+      children_set.each{|c| c.set_parent self}
+    end
+  
+    def copy
+      self_copy = Literal.new(@value, @datatype)
+      @children.each{|child| self_copy.add_child child.copy}
+      self_copy
+    end
+    
+    def eql?(literal)
+      literal.is_a?(self.class) && literal.value == @value
+    end
+    
+    def hash
+      @value.hash
+    end
+  
     alias == eql?
+    
+  
+    def to_s
+      "Literal: " + @value.to_s
+    end
+  
+    def inspect
+      to_s
+    end
   end
 end

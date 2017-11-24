@@ -27,7 +27,7 @@ module Mapping
   
     def map(pair, *args)
       begin
-        # binding.pry
+
         eval(@map_code)
       rescue Exception => e
         raise "Something went wrong with the function code: #{e.to_s}"

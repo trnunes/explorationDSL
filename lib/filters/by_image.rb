@@ -2,7 +2,7 @@ module Filtering
   class ImageFilter < Filtering::Filter
     
     def initialize(args={})
-      # binding.pry
+
       super(args)
       
       @restriction = args[:restriction]
@@ -16,7 +16,7 @@ module Filtering
     end
     
     def filter(item)
-      # binding.pry
+
       !eval(@restriction)
     end
     

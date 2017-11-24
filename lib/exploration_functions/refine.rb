@@ -21,7 +21,7 @@ module Explorable
     end
     
     def eval_item(item)
-      # binding.pry
+
       
       item_to_eval = item
       if @args[:position] == "domain"

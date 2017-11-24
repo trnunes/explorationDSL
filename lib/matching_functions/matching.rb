@@ -2,7 +2,7 @@ module Matching
     
   def self.method_missing(function_name, options)
     matching_function = Matching::Function.load(function_name.to_s)
-    # binding.pry
+
    unless matching_function.nil?
      matching_function.init(options)
      matching_function

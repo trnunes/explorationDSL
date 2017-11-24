@@ -6,7 +6,7 @@ module Filtering
     end
     
     def prepare(items, server, args)
-      binding.pry
+
       input_set = args[:input]
       if input_set.root?
         @filtered_items = server.match_all(@keyword_pattern, args[:out_offset] || 0, args[:out_limit] || 0)
@@ -23,7 +23,7 @@ module Filtering
           @filtered_items << item if !keep_item
         end
       end
-      binding.pry
+
       @filtered_items
     end
     
@@ -40,8 +40,8 @@ module Filtering
     if args[:keywords].nil?
       raise "MISSING KEYWORD PATTERN!"
     end
-    binding.pry
+
     self.add_filter KeywordMatchAll.new(args[:keywords])
-    binding.pry
+
   end
 end
