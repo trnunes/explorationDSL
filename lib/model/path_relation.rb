@@ -44,11 +44,11 @@ module Xplain
   
   
     def image(offset=0, limit=-1)
-        build_image_results(@server.image(self, [], offset, limit))
+      ResultSet.new build_image_results(@server.image(self, [], offset, limit))
     end
   
     def domain(offset=0, limit=-1)
-        build_domain_results(@server.domain(self, [], offset, limit))    
+      ResultSet.new build_domain_results(@server.domain(self, [], offset, limit))    
     end
   
     def restricted?
@@ -113,36 +113,22 @@ module Xplain
       relations.each do |r|
         result_pairs = r.restricted_domain(Set.new(result_pairs), options)
       end
-      build_results result_pairs
+      ResultSet.new build_results(result_pairs)
     end
     
     def schema_restricted_image(restriction, options = {})
-      server = Explorable.server
-      result_items = []
       options[:restriction] = restriction
       options[:relation] = self
-      partial_path_results = @server.restricted_image(options)
-
-      build_results(partial_path_results)
+      ResultSet.new @server.restricted_image(options)
     end
-  
-    def build_results(result_items)
-      if(result_items.first.is_a? Xplain::Entity)
-        Set.new(result_items)
-      else
-        result_items
-      end    
-    end
-  
+    
     def schema_restricted_domain(restriction, options = {})
-      result_items = []
       options[:restriction] = restriction
       options[:relation] = self
-      partial_path_results =Explorable.server.restricted_domain(options)
-      build_results(partial_path_results)
+      ResultSet.new @server.restricted_domain(options)
     end
   
-    def fetch_restricted_image(restriction, options = {})
+    def restricted_image(restriction, options = {})
 
       if can_fire_path_query
           schema_restricted_image(restriction, options)
@@ -151,7 +137,7 @@ module Xplain
       end
     end
   
-    def fetch_restricted_domain(restriction, options = {})
+    def restricted_domain(restriction, options = {})
       if can_fire_path_query
           schema_restricted_domain(restriction, options)
       else
@@ -174,6 +160,10 @@ module Xplain
         end      
       
       end
+    end
+  
+    def group_by_image(nodes)
+      @server.group_by(nodes, self)
     end
   
         

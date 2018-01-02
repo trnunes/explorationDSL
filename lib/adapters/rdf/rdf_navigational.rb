@@ -22,7 +22,7 @@ module RDFNavigational
   end
   
   def restricted_image(args)
-    restriction_items = args[:restriction] || [] 
+    restriction_items = args[:restriction].map{|node|node.item} || [] 
     relation = args[:relation] || nil
     image_filter_items = args[:image_filter] || []
           
@@ -43,7 +43,7 @@ module RDFNavigational
   end
 
   def restricted_domain(args)
-    restriction_items = args[:restriction] || [] 
+    restriction_items = args[:restriction].map{|node|node.item} || [] 
     relation = args[:relation] || nil
     domain_items = args[:domain_filter] || []
     

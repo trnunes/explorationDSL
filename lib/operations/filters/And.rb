@@ -1,0 +1,3 @@
+
+  class And < CompositeFilter
+  end

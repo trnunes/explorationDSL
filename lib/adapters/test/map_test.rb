@@ -93,64 +93,68 @@ class RDFDataServerTest < Test::Unit::TestCase
 
   end
 
+  def create_nodes(items)
+    items.map{|item| Node.new(item)}
+  end
+
   def test_sum_by_single_relation_0
-    input_items = [Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7")]
-    rs = @papers_server.sum(input_items, Xplain::SchemaRelation.new(id: "_:relevance"))
+    input_items = create_nodes [Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7")]
+    rs = @papers_server.sum(input_items, Xplain::SchemaRelation.new(id: "_:relevance", server: @papers_server))
     
     assert_equal [], rs
   end
   
   def test_sum_by_not_number
-    input_items = [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
+    input_items = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
 
-    rs = @papers_server.sum(input_items, Xplain::SchemaRelation.new(id: "_:cite"))
+    rs = @papers_server.sum(input_items, Xplain::SchemaRelation.new(id: "_:cite", server: @papers_server))
     assert_true rs.empty?
   end
   
   def test_sum_single_relation
-    input_items = [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
-    rs = @papers_server.sum(input_items, Xplain::SchemaRelation.new(id: "_:relevance"))
-    # binding.pry
-    assert_equal Set.new([Xplain::Literal.new(20), Xplain::Literal.new(24), Xplain::Literal.new(30)]), Set.new(rs.map{|n| n.children}.flatten.map{|i|i.item})
+    input_items = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
+    rs = @papers_server.sum(input_items, Xplain::SchemaRelation.new(id: "_:relevance", server: @papers_server))
+
+    assert_equal Set.new([Xplain::Literal.new(20), Xplain::Literal.new(24), Xplain::Literal.new(30)]), Set.new(rs.children.map{|n| n.children}.flatten.map{|i|i.item})
     
-    rs.map!{|node| node.children}.flatten!
+    rs.children.map!{|node| node.children}.flatten!
     assert_equal Set.new([rs[0].parent.item, rs[1].parent.item, rs[2].parent.item]), Set.new([Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3")])
     
   end
   
   def test_count_by_single_relation_with_restriction
-    input_items = [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:paper1")]
-    rs = @papers_server.count(input_items, Xplain::SchemaRelation.new(id: "_:cite"), [Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")])
-    assert_equal [Xplain::Literal.new(2), Xplain::Literal.new(2)], rs.map{|n| n.children}.flatten.map{|i|i.item}
-    rs.map!{|node| node.children}.flatten!
+    input_items = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:paper1")]
+    rs = @papers_server.count(input_items, Xplain::SchemaRelation.new(id: "_:cite", server: @papers_server), [Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")])
+    assert_equal [Xplain::Literal.new(2), Xplain::Literal.new(2)], rs.children.map{|n| n.children}.flatten.map{|i|i.item}
+    rs.children.map!{|node| node.children}.flatten!
 
     assert_equal Set.new([rs[0].parent.item, rs[1].parent.item]), Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6")])
   end
 
   def test_count_by_single_relation
-    input_items = [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:paper1")]
-    rs = @papers_server.count(input_items, Xplain::SchemaRelation.new(id: "_:cite"))
-    assert_equal [Xplain::Literal.new(3), Xplain::Literal.new(3)], rs.map{|n| n.children}.flatten.map{|i|i.item}
-    rs.map!{|node| node.children}.flatten!
+    input_items = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:paper1")]
+    rs = @papers_server.count(input_items, Xplain::SchemaRelation.new(id: "_:cite", server: @papers_server))
+    assert_equal [Xplain::Literal.new(3), Xplain::Literal.new(3)], rs.children.map{|n| n.children}.flatten.map{|i|i.item}
+    rs.children.map!{|node| node.children}.flatten!
 
     assert_equal Set.new([rs[0].parent.item, rs[1].parent.item]), Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6")])
   end
 
   def test_count_by_inverse_relation
-    input_items = [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3")]
+    input_items = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3")]
     
-    rs = @papers_server.count(input_items, Xplain::SchemaRelation.new(id: "_:cite", inverse: true))
-    assert_equal Set.new([Xplain::Literal.new(2), Xplain::Literal.new(4)]), Set.new(rs.map{|n| n.children}.flatten.map{|i|i.item})
+    rs = @papers_server.count(input_items, Xplain::SchemaRelation.new(id: "_:cite", inverse: true, server: @papers_server))
+    assert_equal Set.new([Xplain::Literal.new(2), Xplain::Literal.new(4)]), Set.new(rs.children.map{|n| n.children}.flatten.map{|i|i.item})
     # binding.pry
-    rs.map!{|node| node.children}.flatten!
+    rs.children.map!{|node| node.children}.flatten!
     assert_equal Set.new([rs[0].parent.item, rs[1].parent.item]), Set.new([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3")])
   end
   
   def test_average
-    input_items = [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
-    rs = @papers_server.avg(input_items, Xplain::SchemaRelation.new(id: "_:relevance"))
-    assert_equal Set.new([Xplain::Literal.new(15.0), Xplain::Literal.new(12.0), Xplain::Literal.new(10.0)]), Set.new(rs.map{|n| n.children}.flatten.map{|i|i.item})
-    rs.map!{|node| node.children}.flatten!
+    input_items = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
+    rs = @papers_server.avg(input_items, Xplain::SchemaRelation.new(id: "_:relevance", server: @papers_server))
+    assert_equal Set.new([Xplain::Literal.new(15.0), Xplain::Literal.new(12.0), Xplain::Literal.new(10.0)]), Set.new(rs.children.map{|n| n.children}.flatten.map{|i|i.item})
+    rs.children.map!{|node| node.children}.flatten!
     assert_equal Set.new([rs[0].parent.item, rs[1].parent.item, rs[2].parent.item]), Set.new([Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3")])
   end
   
@@ -158,9 +162,9 @@ class RDFDataServerTest < Test::Unit::TestCase
   #   input_items = [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
   #   rs = @papers_server.sum(input_items, Xplain::SchemaRelation.new(id: "_:relevance"), [Xplain::Literal.new(20), Xplain::Literal.new(8), Xplain::Literal.new(15)])
   #
-  #   assert_equal Set.new([Xplain::Literal.new(15), Xplain::Literal.new(24), Xplain::Literal.new(20)]), Set.new(rs.map{|n| n.children}.flatten.map{|i|i.item})
+  #   assert_equal Set.new([Xplain::Literal.new(15), Xplain::Literal.new(24), Xplain::Literal.new(20)]), Set.new(rs.children.map{|n| n.children}.flatten.map{|i|i.item})
   #
-  #   rs.map!{|node| node.children}.flatten!
+  #   rs.children.map!{|node| node.children}.flatten!
   #   assert_equal Set.new([rs[0].parent.item, rs[1].parent.item, rs[2].parent.item]), Set.new([Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3")])
   #
   # end

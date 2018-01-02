@@ -1,0 +1,2 @@
+class EqualsOne < SimpleFilter
+end

@@ -1,0 +1,3 @@
+
+  class GreaterThan < SimpleFilter
+  end

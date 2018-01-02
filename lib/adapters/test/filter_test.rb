@@ -32,6 +32,7 @@ require 'securerandom'
 
 
 
+
 class FilterTest < Test::Unit::TestCase
 
   def setup
@@ -91,7 +92,7 @@ class FilterTest < Test::Unit::TestCase
   
   def test_filter_empty_input
     input_nodes = []
-    f = Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
+    f = Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
 
     rs = @papers_server.filter(input_nodes, f)
     
@@ -101,7 +102,7 @@ class FilterTest < Test::Unit::TestCase
   def test_filter_empty_relation
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
     begin
-      f = Xplain::Filtering::Equals.new(nil, Xplain::Entity.new("_:p2"))
+      f = Equals.new(nil, Xplain::Entity.new("_:p2"))
     rescue Exception => e
       assert true
       return
@@ -112,7 +113,7 @@ class FilterTest < Test::Unit::TestCase
   def test_filter_empty_value
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
     begin
-      f = Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), nil)
+      f = Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), nil)
     rescue Exception => e
       assert true
       return
@@ -124,8 +125,8 @@ class FilterTest < Test::Unit::TestCase
   def test_and_less_than_2
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
     
-    f = Xplain::Filtering::And.new([
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
+    f = And.new([
+      Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
     ])
 
     rs = @papers_server.filter(input_nodes, f)
@@ -137,8 +138,8 @@ class FilterTest < Test::Unit::TestCase
   def test_or_less_than_2
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
     
-    f = Xplain::Filtering::Or.new([
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
+    f = Or.new([
+      Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
     ])
 
     rs = @papers_server.filter(input_nodes, f)
@@ -149,7 +150,7 @@ class FilterTest < Test::Unit::TestCase
 
   def test_filter_equal
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
-    f = Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
+    f = Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
 
     rs = @papers_server.filter(input_nodes, f)
     
@@ -159,7 +160,7 @@ class FilterTest < Test::Unit::TestCase
   
   def test_filter_equal_literal
     input_nodes = create_nodes [Xplain::Entity.new("_:journal2"), Xplain::Entity.new("_:journal1")]
-    f = Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:releaseYear"), Xplain::Literal.new("2005"))
+    f = Equals.new(Xplain::SchemaRelation.new(id: "_:releaseYear"), Xplain::Literal.new("2005"))
 
     rs = @papers_server.filter(input_nodes, f)
     
@@ -179,9 +180,9 @@ class FilterTest < Test::Unit::TestCase
       Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8")
     ]
     
-    f = Xplain::Filtering::Or.new([
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p3"))
+    f = Or.new([
+      Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
+      Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p3"))
     ])
     rs = @papers_server.filter(input_nodes, f)
     assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
@@ -200,9 +201,9 @@ class FilterTest < Test::Unit::TestCase
       Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p5")
     ]
     
-    f = Xplain::Filtering::Or.new([
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a1"))
+    f = Or.new([
+      Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
+      Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a1"))
     ])
     rs = @papers_server.filter(input_nodes, f)
     assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
@@ -221,9 +222,9 @@ class FilterTest < Test::Unit::TestCase
       Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p5")
     ]
     
-    f = Xplain::Filtering::And.new([
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a1")),
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a2"))
+    f = And.new([
+      Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a1")),
+      Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a2"))
     ])
     rs = @papers_server.filter(input_nodes, f)
     assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
@@ -241,9 +242,9 @@ class FilterTest < Test::Unit::TestCase
       Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6")
     ]
     
-    f = Xplain::Filtering::And.new([
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a2"))
+    f = And.new([
+      Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
+      Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a2"))
     ])
     rs = @papers_server.filter(input_nodes, f)
     assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
@@ -262,7 +263,7 @@ class FilterTest < Test::Unit::TestCase
     ]
     path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:publishedOn"), Xplain::SchemaRelation.new(id: "_:releaseYear")])
     
-    f = Xplain::Filtering::Equals.new(path, Xplain::Literal.new("2005"))
+    f = Equals.new(path, Xplain::Literal.new("2005"))
       
     rs = @papers_server.filter(input_nodes, f)
     assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
@@ -278,7 +279,7 @@ class FilterTest < Test::Unit::TestCase
     ]
     path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:author", inverse: true), Xplain::SchemaRelation.new(id: "_:cite", inverse: true)])
     
-    f = Xplain::Filtering::Equals.new(path, Xplain::Entity.new("_:p10"))
+    f = Equals.new(path, Xplain::Entity.new("_:p10"))
     
     rs = @papers_server.filter(input_nodes, f)
     assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
@@ -291,7 +292,7 @@ class FilterTest < Test::Unit::TestCase
     ]
     
     path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:cite", inverse: true), Xplain::SchemaRelation.new(id: "_:author")])
-    f = Xplain::Filtering::Equals.new(path, Xplain::Entity.new("_:a1"))
+    f = Equals.new(path, Xplain::Entity.new("_:a1"))
 
     rs = @papers_server.filter(input_nodes, f)
         
@@ -299,14 +300,14 @@ class FilterTest < Test::Unit::TestCase
   end
   
   def test_dataset_filter_equal
-    f = Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
+    f = Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2"))
     rs = @papers_server.dataset_filter(f)
-    assert_equal [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6")], rs.map{|n|n.item}
+    assert_equal Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6")]), Set.new(rs.map{|n|n.item})
   end
   
   
   def test_dataset_filter_equal_literal
-    f = Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:releaseYear"), Xplain::Literal.new("2005"))
+    f = Equals.new(Xplain::SchemaRelation.new(id: "_:releaseYear"), Xplain::Literal.new("2005"))
 
     rs = @papers_server.dataset_filter(f)
     
@@ -319,9 +320,9 @@ class FilterTest < Test::Unit::TestCase
       Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8")
     ]
     
-    f = Xplain::Filtering::Or.new([
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p3"))
+    f = Or.new([
+      Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
+      Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p3"))
     ])
     rs = @papers_server.dataset_filter(f)
     assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
@@ -333,9 +334,9 @@ class FilterTest < Test::Unit::TestCase
       Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p5")
     ]
     
-    f = Xplain::Filtering::Or.new([
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a1"))
+    f = Or.new([
+      Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
+      Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a1"))
     ])
     rs = @papers_server.dataset_filter(f)
     assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
@@ -354,9 +355,9 @@ class FilterTest < Test::Unit::TestCase
       Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p5")
     ]
     
-    f = Xplain::Filtering::And.new([
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a1")),
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a2"))
+    f = And.new([
+      Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a1")),
+      Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a2"))
     ])
     rs = @papers_server.dataset_filter(f)
     assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
@@ -367,9 +368,9 @@ class FilterTest < Test::Unit::TestCase
       Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6")
     ]
     
-    f = Xplain::Filtering::And.new([
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
-      Xplain::Filtering::Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a2"))
+    f = And.new([
+      Equals.new(Xplain::SchemaRelation.new(id: "_:cite"), Xplain::Entity.new("_:p2")),
+      Equals.new(Xplain::SchemaRelation.new(id: "_:author"), Xplain::Entity.new("_:a2"))
     ])
     rs = @papers_server.dataset_filter(f)
     assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
@@ -381,7 +382,7 @@ class FilterTest < Test::Unit::TestCase
     ]
     path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:publishedOn"), Xplain::SchemaRelation.new(id: "_:releaseYear")])
     
-    f = Xplain::Filtering::Equals.new(path, Xplain::Literal.new("2005"))
+    f = Equals.new(path, Xplain::Literal.new("2005"))
       
     rs = @papers_server.dataset_filter(f)
     assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
@@ -393,7 +394,7 @@ class FilterTest < Test::Unit::TestCase
     ]
     path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:author", inverse: true), Xplain::SchemaRelation.new(id: "_:cite", inverse: true)])
     
-    f = Xplain::Filtering::Equals.new(path, Xplain::Entity.new("_:p10"))
+    f = Equals.new(path, Xplain::Entity.new("_:p10"))
     
     rs = @papers_server.dataset_filter(f)
     assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(rs.map{|n|n.item})
@@ -405,7 +406,7 @@ class FilterTest < Test::Unit::TestCase
     ]
     
     path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:cite", inverse: true), Xplain::SchemaRelation.new(id: "_:author")])
-    f = Xplain::Filtering::Equals.new(path, Xplain::Entity.new("_:a1"))
+    f = Equals.new(path, Xplain::Entity.new("_:a1"))
 
     rs = @papers_server.dataset_filter(f)
         

@@ -1,0 +1,3 @@
+
+  class Or < CompositeFilter
+  end

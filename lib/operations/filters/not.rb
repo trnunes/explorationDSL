@@ -1,0 +1,2 @@
+class Not
+end

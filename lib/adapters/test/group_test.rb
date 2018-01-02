@@ -6,6 +6,7 @@ require 'pry'
 require './mixins/enumerable'
 require './mixins/relation'
 require './exceptions/missing_relation_exception'
+require './exceptions/invalid_input_exception'
 
 require './model/node'
 require './model/edge'
@@ -31,6 +32,15 @@ require './visualization/visualization'
 require 'securerandom'
 
 
+class InputProxy
+  attr_accessor :input_nodes
+  def initialize(input_nodes)
+    @input_nodes = input_nodes
+  end
+  def leaves()
+    @input_nodes
+  end
+end
 
 class RDFDataServerTest < Test::Unit::TestCase
 

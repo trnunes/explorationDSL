@@ -26,6 +26,7 @@ class SPARQLFilterInterpreter
   def parse(f)
 
     filters = generate_filters(f)
+
     query = ""
     query << filters.keys.join(". ")
     filters_clauses = filters.values.flatten
@@ -52,12 +53,12 @@ class SPARQLFilterInterpreter
 
     hash = {}
     filter_clause = 
-    if f.class == Xplain::Filtering::Equals
+    if f.class == Equals
       
-      generate_where_hash(f.relation, "=", f.values.first)
-    elsif f.class == Xplain::Filtering::Contains
+      generate_where_hash(f.frelation, "=", f.values.first)
+    elsif f.class == Contains
       if(f.respond_to? :frelation)
-        where_clause = "?s <#{f.relation}> ?o#{@relations_index+=1}"
+        where_clause = "?s <#{f.frelation}> ?o#{@relations_index+=1}"
        
         where_clause << " VALUES ?o#{@relations_index}{" + f.values.map{|item| parse_item(item)}.join(" ") + "}"
       else
@@ -65,25 +66,25 @@ class SPARQLFilterInterpreter
       end 
       {where_clause => []}
       
-    elsif f.class == Xplain::Filtering::EqualsOne      
+    elsif f.class == EqualsOne
 
      if(f.respond_to? :frelation)
-       where_clause = "?s <#{f.relation}> ?o#{@relations_index+=1}"
+       where_clause = "?s <#{f.frelation}> ?o#{@relations_index+=1}"
        
        where_clause << " VALUES ?o#{@relations_index}{" + f.values.map{|item| parse_item(item)}.join(" ") + "}"
      else
 #.*subject.*
      end 
      {where_clause => []}
-    elsif f.class ==  Xplain::Filtering::Lt
+    elsif f.class ==  LessThan
       generate_where_hash(f.frelation, "<", f.values.first)
-    elsif f.class == Xplain::Filtering::LtEql
+    elsif f.class == LessThanEqual
       generate_where_hash(f.frelation, "<=", f.values.first)
-    elsif f.class == Xplain::Filtering::Grt
+    elsif f.class == GreaterThan
       generate_where_hash(f.frelation, ">", f.values.first)
-    elsif f.class == Xplain::Filtering::GrtEql
+    elsif f.class == GreaterThanEqual
       generate_where_hash(f.frelation, ">=", f.values.first)
-    elsif f.class == Xplain::Filtering::And
+    elsif f.class == And
       hash = {}
       where_clauses = []
       filters = []
@@ -98,7 +99,7 @@ class SPARQLFilterInterpreter
       where_clause = where_clauses.join(". ") << " Filter(" + filters.join(" && ") + ")"
       {where_clause => []}    
       
-    elsif f.class == Xplain::Filtering::Or
+    elsif f.class == Or
       hash = {}
       where_clauses = []
 
@@ -117,7 +118,7 @@ class SPARQLFilterInterpreter
 
       where_clause = where_clauses.join(" UNION ") 
       {where_clause => []}    
-    elsif f.class == Xplain::Filtering::Not
+    elsif f.class == Not
       "not implemented"        
     end
     filter_clause

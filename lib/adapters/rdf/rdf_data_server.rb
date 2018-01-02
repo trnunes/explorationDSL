@@ -252,17 +252,17 @@ class RDFDataServer < DataServer
     if relation.nil?
       raise MissingRelationException
     end
-    images = restricted_image(relation: relation, restriction: nodes.map{|node| node.item})
+    images = restricted_image(relation: relation, restriction: nodes)
     reversed_relation = relation.reverse
     
     groups_hash = {}
     images.each do |node|
       if(!groups_hash.has_key? node.item)
-        groups_hash[node.item] = node
-        groups_hash[node.item].children_edges = Set.new
+        groups_hash[node.item] = Node.new(node.item)
       end
       
-      reversed_relation_node = groups_hash[node.item].children.first
+      reversed_relation_node = groups_hash[node.item].children[0]
+      # binding.pry
       if !reversed_relation_node
         reversed_relation_node = Node.new(reversed_relation)
         if(node.parent.is_a? Xplain::Literal)
@@ -270,15 +270,23 @@ class RDFDataServer < DataServer
         else
           reversed_relation_node.children_edges = Set.new
         end        
-        groups_hash[node.item].children_edges << Edge.new(groups_hash[node.item], reversed_relation_node)
+        groups_hash[node.item].children_edges = [Edge.new(groups_hash[node.item], reversed_relation_node)]
       end
-      reversed_relation_node.children_edges << Edge.new(node, node.parent)
+      # binding.pry
+      reversed_relation_node.children_edges << Edge.new(reversed_relation_node, Node.new(node.parent.item))
     end
     # binding.pry
     groups_hash.values
   end
   
-  def aggregate(items, relation, aggregate_function, restriction = [])
+  def aggregate(nodes, relation, aggregate_function, restriction = [])
+    if nodes.empty?
+      return []
+    end
+    if relation.nil?
+      raise MissingRelationException
+    end
+    items = nodes.map{|node| node.item}
     values_stmt = "VALUES ?s {#{items.map{|item| "<" + Xplain::Namespace.expand_uri(item.id) + ">"}.join(" ")}}"
     query_stmt = "SELECT ?s (#{aggregate_function}(?o) as ?o) where{#{values_stmt} #{path_clause(relation)} #{values_clause("?o", restriction)} #{path_clause_as_subselect(relation, values_stmt, "?s", limit, offset)}. }"
     query_stmt << " GROUP BY ?s"

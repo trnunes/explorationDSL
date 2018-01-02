@@ -2,6 +2,8 @@ module Explorable
   class Intersection < Explorable::Operation
     
     def eval_set(index_entries)
+      
+      
       start_time = Time.now
       source_index_entries = index_entries
       target_index_entries = [@args[:target].index]
