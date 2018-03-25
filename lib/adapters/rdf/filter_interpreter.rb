@@ -1,5 +1,6 @@
 class SPARQLFilterInterpreter
   include SPARQLHelper
+  @@accepted_filters =   [And, Or, Equals, Contains, EqualsOne, LessThan, LessThanEqual, GreaterThan, GreaterThanEqual]
   
   def accept_path_clause?
     false
@@ -20,6 +21,23 @@ class SPARQLFilterInterpreter
     else
       "#{var} #{operator} #{parse_item(value)}"
     end    
+  end
+  
+  def validate_filters(filter_expr, invalid_filters = [])
+    invalid_filters << filter_expr if !@@accepted_filters.include?(filter_expr.class)
+    if filter_expr.respond_to? :filters
+      filter_expr.filters.each{|filter| validate_filters(filter, invalid_filters)}
+    end
+    return invalid_filters
+  end
+  
+  def can_filter?(filter_expr)
+
+    if filter_expr.respond_to? :filters
+      return filter_expr.filters.inject(false){|boolean, filter| boolean || can_filter?(filter)}
+    end
+
+    return @@accepted_filters.include? filter_expr.class
   end
   
   

@@ -45,6 +45,7 @@ module RDFNavigational
   def restricted_domain(args)
     restriction_items = args[:restriction].map{|node|node.item} || [] 
     relation = args[:relation] || nil
+    
     domain_items = args[:domain_filter] || []
     
     label_clause = mount_label_clause("?s", restriction_items, relation)
@@ -63,7 +64,7 @@ module RDFNavigational
   
   def find_forward_relations(items)
 
-    query = "SELECT distinct ?p WHERE{ VALUES ?s {#{items.map{|i| "<" + i.id + ">"}.join(" ")}}. ?s ?p ?o.}"
+    query = "SELECT distinct ?p WHERE{ VALUES ?s {#{items.map{|i| "<" + i.item.id + ">"}.join(" ")}}. ?s ?p ?o.}"
     results = []
     
     execute(query).each do |s|
@@ -75,7 +76,7 @@ module RDFNavigational
   
   def find_backward_relations(items)
 
-    query = "SELECT distinct ?p WHERE{ VALUES ?o {#{items.map{|i| "<" + i.id + ">"}.join(" ")}}. ?s ?p ?o.}"
+    query = "SELECT distinct ?p WHERE{ VALUES ?o {#{items.map{|i| "<" + i.item.id + ">"}.join(" ")}}. ?s ?p ?o.}"
     results = []
     execute(query).each do |s|
       results << Xplain::Namespace.colapse_uri(solution[:p].to_s)
@@ -87,9 +88,9 @@ module RDFNavigational
 
     are_literals = !items.empty? && items[0].is_a?(Xplain::Literal)
     if(are_literals)
-      query = "SELECT distinct ?pf WHERE{ {VALUES ?o {#{items.map{|i| convert_literal(i)}.join(" ")}}. ?s ?pf ?o.}}"
+      query = "SELECT distinct ?pf WHERE{ {VALUES ?o {#{items.map{|i| convert_literal(i.item)}.join(" ")}}. ?s ?pf ?o.}}"
     else
-      query = "SELECT distinct ?pf ?pb WHERE{ {VALUES ?o {#{items.map{|i| "<" + i.id + ">"}.join(" ")}}. ?s ?pf ?o.} UNION {VALUES ?s {#{items.map{|i| "<" + i.id + ">"}.join(" ")}}. ?s ?pb ?o.}}"
+      query = "SELECT distinct ?pf ?pb WHERE{ {VALUES ?o {#{items.map{|i| "<" + i.item.id + ">"}.join(" ")}}. ?s ?pf ?o.} UNION {VALUES ?s {#{items.map{|i| "<" + i.item.id + ">"}.join(" ")}}. ?s ?pb ?o.}}"
     end
     
     results = Set.new

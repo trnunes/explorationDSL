@@ -8,14 +8,10 @@ module Xplain
       @text = args[:text]
       @server = server
       @inverse = args[:inverse] || false
-      @server = args[:server]
+      @server = args[:server] || Xplain.default_server
       @root = Node.new(self)
     end
-  
-    def fetch_graph(items, limit=nil, offset=nil)
-      restricted_image(items, {limit: limit, offset: offset}).map{|item| item.parent}.uniq
-    end
-  
+    
     def schema?
       true
     end

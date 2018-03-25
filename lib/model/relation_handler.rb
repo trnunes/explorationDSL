@@ -1,0 +1,20 @@
+class RelationHandler
+  def initialize(item)
+    @item = Node.new item
+  end
+  
+  def handle_call(m, *args, &block)
+    relation_id = ""
+    relation_ns = ""
+    relation_name = m.to_s
+    if m.to_s.include?('__')
+      relation_ns = m.to_s.split('__').first
+      relation_name = m.to_s.split('__').last
+      relation_id = relation_ns + ':'
+    end
+    relation_id += relation_name
+    
+    relation = Xplain::SchemaRelation.new(server: Xplain.default_server, id: relation_id)
+    Set.new(relation.restricted_image([@item]).map{|node| node.item})
+  end
+end

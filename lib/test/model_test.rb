@@ -1,5 +1,6 @@
 require './test/xplain_unit_test'
 
+
 class ModelTest < XplainUnitTest
   
   def test_empty
@@ -157,6 +158,14 @@ class ModelTest < XplainUnitTest
     assert_equal Set.new(p5_children), Set.new(actual_p5_children)
     
   end
+  
+  def test_entity_namespace
+    Xplain::Namespace.new("xplain", "http://xplain/")
+    paper1 = Xplain::Entity.new("_:paper1")
+    expected_results = Set.new([Xplain::Entity.new('_:p2'), Xplain::Entity.new('_:p3'), Xplain::Entity.new('_:p4')])
+    assert_equal expected_results, paper1.xplain__cites
+  end
+  
   # def test_cursor_relation_path
   #   cite = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(server: @papers_server, id: "_:cite"), Xplain::SchemaRelation.new(server: @papers_server, id: "_:author")])
   #   domain_set = Set.new([Xplain::Entity.new("_:p10"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"), Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:paper1")])

@@ -10,7 +10,7 @@ module Xplain
       @limit = args[:limit]
       @relations = args[:relations]
       @id = args[:id]
-      @server = args[:server]
+      @server = args[:server] || Xplain.default_server
       @domain_restriction = args[:domain_restriction] || []
       @image_restriction = args[:image_restriction] || []
 
@@ -22,7 +22,7 @@ module Xplain
       args = {}
       args[:relations] = relations.map{|r| r.reverse}
       args[:limit] = @limit
-      args[:server] = @server
+      args[:server] = @server || Xplain.default_server
       args[:domain_restriction] = @domain_restriction
       args[:image_restriction] = @image_restriction
       

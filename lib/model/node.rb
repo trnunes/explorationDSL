@@ -1,10 +1,11 @@
 class Node
-  attr_accessor :item, :parent_edges, :children_edges, :annotations
+  attr_accessor :item, :parent_edges, :children_edges, :annotations, :intention
   
-  def initialize(item, annotations = [])
+  def initialize(item, intention = nil, annotations = [])
     @children_edges = []
     @annotations = annotations
     @item = item
+    @intention = intention
     @parent_edges = []
   end
   

@@ -6,8 +6,8 @@ class RDFDataServer < DataServer
   attr_accessor :graph, :namespace_map, :label_property, :items_limit, :content_type, :api_key, :cache, :filter_intepreter
 
 
-  def initialize(graph, options = {})
-    @graph = SPARQL::Client.new graph, options
+  def initialize(options = {})
+    @graph = SPARQL::Client.new options[:graph], options
     @label_property = options[:label_property]
     @namespace_map = {}
     @content_type = options[:content_type]
@@ -332,6 +332,16 @@ class RDFDataServer < DataServer
     dataset_filter(input_nodes, filter_expr)
   end
   
+  def validate_filters(filter_expr)
+    interpreter = SPARQLFilterInterpreter.new()
+    invalid_filters = interpreter.validate_filters(filter_expr)
+    return invalid_filters
+  end
+  
+  def can_filter?(filter_expr)
+    interpreter = SPARQLFilterInterpreter.new()
+    interpreter.can_filter? filter_expr
+  end
   
   def dataset_filter(input_nodes = [], filter_expr)
     interpreter = SPARQLFilterInterpreter.new()

@@ -10,7 +10,7 @@ class Map < Operation
   end
   
   def get_results
-    @input_set = @input[0]
+    @input_set = @input
     if @input_set.nil? || @input_set.children.empty?
       return []
     end

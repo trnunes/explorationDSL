@@ -13,7 +13,7 @@ class Pivot < Operation
   end
   
   def get_results()
-    @input_set = @input[0]
+    @input_set = @input
     if server
       @relation.server = server
     end

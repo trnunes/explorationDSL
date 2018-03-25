@@ -30,14 +30,15 @@ class WorkflowTest < XplainUnitTest
     super
     Xplain.reset_workflow
   end
+  
   def test_chain_two_operations
     wf = Xplain.new_workflow
-    op = wf.refine(input: Node.new('root'), server: @papers_server) do
+    op = wf.refine(input: Node.new('root')) do
       equals do
         relation "_:author"
         entity "_:p2"
       end
-    end.pivot(server: @papers_server){relation "_:author"}
+    end.pivot(){relation "_:author"}
     
     assert_false op.nil?
     assert_equal Pivot, op.class
@@ -49,13 +50,13 @@ class WorkflowTest < XplainUnitTest
   
   def test_chain_intersect
     wf = Xplain.new_workflow
-    ref = wf.refine(input: Node.new('root'), server: @papers_server) do
+    ref = wf.refine(input: Node.new('root')) do
       equals do
         relation "_:author"
         entity "_:p2"
       end
     end
-    pivot = wf.pivot(input: Node.new('root'), server: @papers_server){relation "_:author"}
+    pivot = wf.pivot(input: Node.new('root')){relation "_:author"}
     op = pivot.intersect ref
     workflow = Xplain.get_current_workflow
     intersect_node = workflow.nodes.select{|node| node.item.is_a? Intersect}.first
@@ -65,13 +66,13 @@ class WorkflowTest < XplainUnitTest
   
   def test_chain_unite
     wf = Xplain.new_workflow
-    ref = wf.refine(input: Node.new('root'), server: @papers_server) do
+    ref = wf.refine(input: Node.new('root')) do
       equals do
         relation "_:author"
         entity "_:p2"
       end
     end
-    pivot = wf.pivot(input: Node.new('root'), server: @papers_server){relation "_:author"}
+    pivot = wf.pivot(input: Node.new('root')){relation "_:author"}
     op = pivot.unite ref
     workflow = Xplain.get_current_workflow
     intersect_node = workflow.nodes.select{|node| node.item.is_a? Unite}.first
@@ -81,13 +82,13 @@ class WorkflowTest < XplainUnitTest
   
   def test_chain_diff
     wf = Xplain.new_workflow
-    ref = wf.refine(input: Node.new('root'), server: @papers_server) do
+    ref = wf.refine(input: Node.new('root')) do
       equals do
         relation "_:author"
         entity "_:p2"
       end
     end
-    pivot = wf.pivot(input: Node.new('root'), server: @papers_server){relation "_:author"}
+    pivot = wf.pivot(input: Node.new('root')){relation "_:author"}
     op = pivot.diff ref
     workflow = Xplain.get_current_workflow
     intersect_node = workflow.nodes.select{|node| node.item.is_a? Diff}.first
@@ -109,7 +110,7 @@ class WorkflowTest < XplainUnitTest
     root.children = input_nodes
     expected_results = Set.new([Xplain::Entity.new("_:p5")])
     wf = Xplain.get_current_workflow
-    op = wf.pivot(input: root, server: @papers_server){relation "_:cite"}.refine do
+    op = wf.pivot(input: root){relation "_:cite"}.refine do
       And do [
         equals do
           relation "_:author"
@@ -140,13 +141,13 @@ class WorkflowTest < XplainUnitTest
      root.children = input_nodes
      expected_results = Set.new([Xplain::Entity.new("_:p5")])
      wf = Xplain.get_current_workflow
-     op = wf.pivot(input: root, server: @papers_server){relation "_:cite"}.refine do
+     op = wf.pivot(input: root){relation "_:cite"}.refine do
          equals do
            relation "_:author"
            entity "_:a1"
          end
      end.intersect( 
-       wf.pivot(input: root, server: @papers_server){relation "_:cite"}.refine do
+       wf.pivot(input: root){relation "_:cite"}.refine do
          equals do
            relation "_:author"
            entity "_:a2"
@@ -175,13 +176,13 @@ class WorkflowTest < XplainUnitTest
      root.children = input_nodes
      expected_results = Set.new([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5")])
      wf = Xplain.get_current_workflow
-     op = wf.pivot(input: root, server: @papers_server){relation "_:cite"}.refine do
+     op = wf.pivot(input: root){relation "_:cite"}.refine do
          equals do
            relation "_:author"
            entity "_:a1"
          end
      end.unite( 
-       wf.pivot(input: root, server: @papers_server){relation "_:cite"}.refine do
+       wf.pivot(input: root){relation "_:cite"}.refine do
          equals do
            relation "_:author"
            entity "_:a2"

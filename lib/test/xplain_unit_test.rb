@@ -1,10 +1,11 @@
 require 'forwardable'
 require "test/unit"
-require "rdf"
+
 require 'linkeddata'
 require 'pry'
 require './mixins/operation_factory'
 require './execution/workflow.rb'
+require './model/model_config'
 require './mixins/xplain.rb'
 
 require './mixins/enumerable'
@@ -25,6 +26,8 @@ require './model/computed_relation'
 require './model/path_relation'
 require './model/namespace'
 require './model/result_set'
+require './model/relation_handler'
+
 require './mixins/model_factory'
 
 require './adapters/filterable'
@@ -93,6 +96,9 @@ class XplainUnitTest < Test::Unit::TestCase
       graph << [RDF::URI("_:paper1"),  RDF::URI("_:cite"), RDF::URI("_:p2")]
       graph << [RDF::URI("_:paper1"),  RDF::URI("_:cite"), RDF::URI("_:p3")]
       graph << [RDF::URI("_:paper1"),  RDF::URI("_:cite"), RDF::URI("_:p4")]
+      graph << [RDF::URI("_:paper1"),  RDF::URI("http://xplain/cites"), RDF::URI("_:p2")]
+      graph << [RDF::URI("_:paper1"),  RDF::URI("http://xplain/cites"), RDF::URI("_:p3")]
+      graph << [RDF::URI("_:paper1"),  RDF::URI("http://xplain/cites"), RDF::URI("_:p4")]      
       graph << [RDF::URI("_:p6"),  RDF::URI("_:cite"), RDF::URI("_:p2")]
       graph << [RDF::URI("_:p6"),  RDF::URI("_:cite"), RDF::URI("_:p3")]
       graph << [RDF::URI("_:p6"),  RDF::URI("_:cite"), RDF::URI("_:p5")]
@@ -142,8 +148,8 @@ class XplainUnitTest < Test::Unit::TestCase
       
     end
 
-    @papers_server = RDFDataServer.new(papers_graph)
-    
+    @papers_server = RDFDataServer.new graph: papers_graph
+    Xplain.set_default_server class: RDFDataServer, graph: papers_graph
   end
   
   def load_simple_server
@@ -163,7 +169,7 @@ class XplainUnitTest < Test::Unit::TestCase
       graph << [RDF::URI("_:o2"),  RDF::RDFS.label, RDF::Literal('lo2')]
     end
 
-    @server = RDFDataServer.new(@graph)    
+    @server = RDFDataServer.new graph: @graph
   end
   
   def create_nodes(items)

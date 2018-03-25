@@ -41,7 +41,7 @@ module Xplain
           end
         end
         return uri
-      end    
+      end
     end
   
     def initialize(prefix, uri)

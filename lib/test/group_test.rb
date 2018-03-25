@@ -13,7 +13,7 @@ class GroupTest < XplainUnitTest
     input.children = input_nodes
     
     begin
-      rs = Group.new(input: input, server: @papers_server, grouping_relation: Grouping::ByImage.new(nil)).execute
+      rs = Group.new(input: input, grouping_relation: Grouping::ByImage.new(nil)).execute
       assert false, rs.inspect
     rescue MissingRelationException => e
       assert true, e.to_s
@@ -24,7 +24,7 @@ class GroupTest < XplainUnitTest
   
   def test_group_by_nil_input_set
     begin
-      rs = Group.new(input: nil, server: @papers_server).execute
+      rs = Group.new(input: nil).execute
       assert false
     rescue InvalidInputException => e
       assert true, e.to_s
@@ -36,7 +36,7 @@ class GroupTest < XplainUnitTest
   def test_group_by_empty_input_set
     root = Node.new("root")
 
-    rs = Group.new(input: root, server: @papers_server).execute
+    rs = Group.new(input: root).execute
     
     assert_true rs.children.empty?, rs.inspect
   end
@@ -47,7 +47,7 @@ class GroupTest < XplainUnitTest
     input.children = input_nodes
     
     author_relation = Xplain::SchemaRelation.new(id: "_:author", inverse: true)
-    rs = Group.new(input: input, server: @papers_server, grouping_relation: Grouping::ByImage.new(Xplain::SchemaRelation.new(id: "_:author", server: @papers_server))).execute
+    rs = Group.new(input: input, grouping_relation: Grouping::ByImage.new(Xplain::SchemaRelation.new(id: "_:author"))).execute
     # binding.pry
     assert_equal Set.new([Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")]), Set.new(rs.children.map{|node| node.item})
  
@@ -73,7 +73,7 @@ class GroupTest < XplainUnitTest
     input.children = input_nodes
     
     keywords_relation = Xplain::SchemaRelation.new(id: "_:keywords")
-    rs = Group.new(input: input, server: @papers_server, grouping_relation: Grouping::ByImage.new(Xplain::SchemaRelation.new(id: "_:keywords", inverse: true, server: @papers_server))).execute
+    rs = Group.new(input: input, grouping_relation: Grouping::ByImage.new(Xplain::SchemaRelation.new(id: "_:keywords", inverse: true))).execute
     # binding.pry
     assert_equal Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5")]), Set.new(rs.children.map{|node| node.item})
 
@@ -95,12 +95,12 @@ class GroupTest < XplainUnitTest
   
   def test_group_by_path_relation
     input_nodes = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
-    path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:publishedOn"), Xplain::SchemaRelation.new(id: "_:releaseYear")], server: @papers_server)
+    path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:publishedOn"), Xplain::SchemaRelation.new(id: "_:releaseYear")])
     inverse_path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:publishedOn", inverse: true), Xplain::SchemaRelation.new(id: "_:releaseYear", inverse: true)])
     input = Node.new('root')
     input.children = input_nodes
 
-    rs = Group.new(input: input, server: @papers_server, grouping_relation: Grouping::ByImage.new(path)).execute
+    rs = Group.new(input: input, grouping_relation: Grouping::ByImage.new(path)).execute
 
     assert_equal Set.new([Xplain::Literal.new(2005), Xplain::Literal.new(2010)]), Set.new(rs.children.map{|node| node.item})
 
@@ -116,12 +116,12 @@ class GroupTest < XplainUnitTest
   
   def test_group_by_inverse_path_relation
     input_nodes = create_nodes [Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")]
-    path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:author", inverse: true), Xplain::SchemaRelation.new(id: "_:cite", inverse: true)], server: @papers_server)
+    path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:author", inverse: true), Xplain::SchemaRelation.new(id: "_:cite", inverse: true)])
     inverse_path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:author"), Xplain::SchemaRelation.new(id: "_:cite")])
     input = Node.new('root')
     input.children = input_nodes
 
-    rs = Group.new(input: input, server: @papers_server, grouping_relation: Grouping::ByImage.new(path)).execute
+    rs = Group.new(input: input, grouping_relation: Grouping::ByImage.new(path)).execute
 
     expected_groups = Set.new([Xplain::Entity.new("_:p7"),Xplain::Entity.new("_:p8"), Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:paper1")])
     assert_equal expected_groups, Set.new(rs.children.map{|node| node.item})
@@ -149,12 +149,12 @@ class GroupTest < XplainUnitTest
   
   def test_group_by_mixed_path
     input_nodes = create_nodes [Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
-    path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:cite", inverse: true), Xplain::SchemaRelation.new(id: "_:author")], server: @papers_server)
+    path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:cite", inverse: true), Xplain::SchemaRelation.new(id: "_:author")])
     inverse_path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:cite"), Xplain::SchemaRelation.new(id: "_:author", inverse: true)])
     input = Node.new('root')
     input.children = input_nodes
 
-    rs = Group.new(input: input, server: @papers_server, grouping_relation: Grouping::ByImage.new(path)).execute
+    rs = Group.new(input: input, grouping_relation: Grouping::ByImage.new(path)).execute
     
     assert_equal Set.new([Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")]), Set.new(rs.children.map{|node| node.item})
     a1 = rs.children.select{|g| g.item.id == "_:a1"}.first
@@ -178,9 +178,8 @@ class GroupTest < XplainUnitTest
     input.children = input_nodes
 
     rs = Group.new(
-      input: Group.new(input: input, server: @papers_server, grouping_relation: Grouping::ByImage.new(Xplain::SchemaRelation.new(id: "_:author", server: @papers_server))).execute, 
-      server: @papers_server, 
-      grouping_relation: Grouping::ByImage.new(Xplain::SchemaRelation.new(id: "_:publicationYear", server: @papers_server))
+      input: Group.new(input: input, grouping_relation: Grouping::ByImage.new(Xplain::SchemaRelation.new(id: "_:author"))).execute, 
+      grouping_relation: Grouping::ByImage.new(Xplain::SchemaRelation.new(id: "_:publicationYear"))
     ).execute
     
     inverse_author = Xplain::SchemaRelation.new(id: "_:author", inverse: true)

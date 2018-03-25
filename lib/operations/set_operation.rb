@@ -19,4 +19,9 @@ class SetOperation < Operation
     target = target.copy
     compute(input, target)
   end
+  
+  def accept_multiple_sets?
+    return true
+  end
+    
 end

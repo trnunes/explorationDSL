@@ -8,11 +8,20 @@ class Refine < Operation
   end
   
   def get_results()
-    @input_set = @input[0]
-    if(@input_set.children.empty?)
+    input_set = @input
+    nodes_to_filter = @input.leaves
+    if(input_set.children.empty?)
       return []
     end
-    @server.filter(@input_set.leaves, @auxiliar_function)
+    non_interpretable_filters = @server.validate_filters(@auxiliar_function)
+    if !non_interpretable_filters.empty?
+      interpreter = InMemoryFilterInterpreter.new(non_interpretable_filters, nodes_to_filter)
+      nodes_to_filter = @auxiliar_function.accept(interpreter)
+    end
+
+    if @server.can_filter? @auxiliar_function
+      nodes_to_filter = @server.filter(nodes_to_filter, @auxiliar_function)
+    end
+    nodes_to_filter
   end
-  
 end

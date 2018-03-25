@@ -1,9 +1,10 @@
 class Filter
+  def accept(filter_interpreter)
+    filter_interpreter.visit(self)
+  end
+  
   def initialize(&block)
     self.instance_eval &block
-  end
-
-  def filter(nodes)
   end
   
   def method_missing(m, *args, &block)

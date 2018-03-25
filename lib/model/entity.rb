@@ -59,12 +59,16 @@ module Xplain
         return false
       end
       @id == item.id
-    end
+    end    
   
     def hash
       @id.hash
     end
   
     alias == eql?
+    
+    def method_missing(m, *args, &block)
+      RelationHandler.new(self).handle_call(m, *args, &block)
+    end
   end
 end
