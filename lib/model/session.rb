@@ -36,7 +36,9 @@ module Xpair
     end
     
     def save
-      Persistable::session_repository.save_session(self)
+      if Persistable::session_repository
+        Persistable::session_repository.save_session(self)      
+      end
       Persistable::repository[self.id] = self
       return true;
     end

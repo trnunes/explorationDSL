@@ -199,17 +199,19 @@ class RDFDataServer
     unions = []
     items = []
     keyword_pattern.each do |pattern|
-      filters << "(regex(str(?o), \"#{pattern}\"))"
+      filters << "(regex(str(?o), \".*#{pattern}.*\"))"
     end
 
-    label_clause = SPARQLQuery.label_where_clause("?s", "rdfs:Resource")
-    query = "SELECT distinct ?s ?lo WHERE{?s ?p ?o. #{label_clause}  FILTER(#{filters.join(" && ")}) } "
+    label_clause = SPARQLQuery.label_where_clause("?s", Xpair::Visualization.label_relations_for("rdfs:Resource"))
+    label_clause = " OPTIONAL " + label_clause if !label_clause.empty?
+    query = "SELECT distinct ?s ?ls WHERE{?s ?p ?o. #{label_clause}  FILTER(#{filters.join(" && ")}) } "
     execute(query,content_type: content_type ).each do |s|
-      item = Entity.new(Xpair::Namespace.colapse_uri(s[:s].to_s))
+      item = Entity.new(Xpair::Namespace.colapse_uri(s[:s].to_s),  "rdfs:Resource")
+      item.text = s[:ls].to_s
       item.add_server(self)
       items << item
     end
-    items
+    items.sort{|i1, i2| i1.text <=> i2.text}    
   end
   
   def blaze_graph_search(keyword_pattern)
@@ -347,8 +349,12 @@ class RDFDataServer
   
   def execute_update(query, options = {})
     puts query
-    rs = @graph.update(query) 
-    puts "UPDATE RESULTS: " << rs.inspect
+    begin 
+      rs = @graph.update(query)
+    rescue RDF::ReaderError => e
+       
+    end  
+    
   end
   
   class QueryResults
