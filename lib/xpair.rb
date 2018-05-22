@@ -1,6 +1,6 @@
 Dir["/Users/tnunes/development/xpair/mixins/*.rb"].each {|file| require file }
 Dir["/Users/tnunes/development/xpair/model/*.rb"].each {|file| require file }
-Dir["/Users/tnunes/development/xpair/aux/*.rb"].each {|file| require file }
+Dir["/Users/tnunes/development/xpair/auxiliar/*.rb"].each {|file| require file }
 Dir["/Users/tnunes/development/xpair/adapters/rdf/*.rb"].each {|file| require file }
 
 require 'mixins/xpair'
@@ -70,10 +70,10 @@ require 'mapping_functions/count'
 require 'mapping_functions/image_count'
 require 'mapping_functions/user_defined'
 
-require 'aux/grouping_expression.rb'
-require 'aux/ranking_functions'
-require 'aux/mapping_functions'
-require 'aux/hash_helper'
+require 'auxiliar/grouping_expression.rb'
+require 'auxiliar/ranking_functions'
+require 'auxiliar/mapping_functions'
+require 'auxiliar/hash_helper'
 
 require 'visualization/visualization'
 
