@@ -17,6 +17,10 @@ class PathRelation
     (are_all_schema_relations && are_all_single_direction)
   end
   
+  def inverse?()
+    (@relations.select{|r| r.inverse?}.size == @relations.size)
+  end
+  
   def domain()
     @relations.first.domain
   end

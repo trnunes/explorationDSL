@@ -6,6 +6,12 @@ module Xpair
       def each(&block)
         @@namespace_map.values.each &block
       end
+      
+      def update(ns_map)
+        @@namespace_map = {}
+        ns_map.each{|prefix, uri| Xpair::Namespace.new(prefix, uri)}
+      end
+                
     
       def expand_uri(uri)
         prefix, suffix = uri.to_s.split(":", 2)

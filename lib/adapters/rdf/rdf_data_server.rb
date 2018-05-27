@@ -7,6 +7,10 @@ class RDFDataServer
 
 
   def initialize(graph, options = {})
+    set_params(graph, options)    
+  end
+  
+  def set_params(graph, options)
     options[:read_timeout] = 3000
     @graph = SPARQL::Client.new graph, options
     @limit = options[:limit]
@@ -25,8 +29,6 @@ class RDFDataServer
     @cache_max_size ||= 20000
     @cache = {}
     @last_query = "select * where{?s ?p ?o} limit 20"
-    
-    
   end
 
   def add_namespace(namespace_prefix, namespace)
@@ -77,7 +79,7 @@ class RDFDataServer
   
   def save_session(session)
     property = "http://tecweb.inf.puc-rio.br/sessionStart"
-    session
+    
     if session.id.nil?
       session.id = "http://tecweb.inf.puc-rio.br/session/" + SecureRandom.uuid
       query = "INSERT DATA{ <#{session.id}> <#{property}> #{get_xsd_timestamp}.}"
@@ -143,7 +145,7 @@ class RDFDataServer
       types_values_clause = "VALUES ?t {#{types.map{|t| "<" + Xpair::Namespace.expand_uri(t) + ">"}.join(" ")}}"
       items_values_clause = "VALUES ?s {#{items[0..5].map{|i| "<" + Xpair::Namespace.expand_uri(i.id) + ">"}.join(" ")}}"
       if inverse
-        query = "SELECT distinct ?t WHERE{#{items_values_clause}. #{types_values_clause}. ?o #{relation_uri} ?s. ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?t}"
+        query = "SELECT distinct ?t WHERE{#{items_values_clause}. #{types_values_clause}. ?o #{relation_uri} ?s. ?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?t}"
       else
         query = "SELECT distinct ?t WHERE{#{items_values_clause}. #{types_values_clause}. ?s #{relation_uri} ?o. ?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?t}"
       end
@@ -152,6 +154,7 @@ class RDFDataServer
         retrieved_types << Xpair::Namespace.expand_uri(s[:t].to_s)
       end
     end
+    
     types_with_vis_properties = (retrieved_types & types)
     types_with_vis_properties.empty? ? "rdfs:Resource" : types_with_vis_properties.first
   end

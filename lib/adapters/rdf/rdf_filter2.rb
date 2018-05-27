@@ -49,11 +49,16 @@ module SPARQLQuery
     
     def compare(relation, comparator, value)
       object_index = SPARQLFilter.next_object_index
-      @construct_stmts << "#{path_string(relation)} ?o#{object_index}"
+      sbj_var = "?s"
+      obj_var = "?o"+ object_index.to_s
+      
+      
+      @construct_stmts << "#{path_string(relation)} #{obj_var}"
       filter_exp = ""
       
       if(comparator == "in" && value.respond_to?(:each))
-        filter_exp = "VALUES ?o#{object_index} {" + value.each_item.map do |item| 
+        
+        filter_exp = "VALUES #{obj_var} {" + value.each_item.map do |item| 
           if(item.is_a? Xpair::Literal)
             "\"#{item.value.to_s}\"^^#{SPARQLQuery.get_literal_type(item)}"
           else
@@ -62,14 +67,19 @@ module SPARQLQuery
         end.join(" ") + "}"
       else
         if(value.is_a? Xpair::Literal)
-          filter_exp = "FILTER(#{SPARQLQuery.get_literal_type(value)}(?o#{object_index}) #{comparator.to_s} \"#{value.value.to_s}\"^^#{SPARQLQuery.get_literal_type(value)})"
+          filter_exp = "FILTER(#{SPARQLQuery.get_literal_type(value)}(#{obj_var}) #{comparator.to_s} \"#{value.value.to_s}\"^^#{SPARQLQuery.get_literal_type(value)})"
         else
-          filter_exp = "FILTER(?o#{object_index} #{comparator.to_s} <#{Xpair::Namespace.expand_uri(value.id)}>)"
+          filter_exp = "FILTER(#{obj_var} #{comparator.to_s} <#{Xpair::Namespace.expand_uri(value.id)}>)"
         end
         
       end
       
-      @where_stmts << SimpleFilter.new("?s #{path_string(relation)} ?o#{object_index}. #{filter_exp}")
+      if relation.inverse?
+        sbj_var, obj_var = obj_var, sbj_var
+      end
+      @where_stmts << SimpleFilter.new("#{sbj_var} #{path_string(relation)} #{obj_var}. #{filter_exp}")
+
+      
       
     end
     
@@ -169,7 +179,7 @@ module SPARQLQuery
       clauses = []
       # binding.pry
       while offset < items.size
-        limit = (items.size > 10000)? 10000 : items.size
+        limit = (items.size > @server.items_limit)? @server.items_limit : items.size
         # binding.pry
         clauses << "VALUES ?s {#{items[offset..(offset+limit)].to_a.join(" ")}" 
         offset += limit

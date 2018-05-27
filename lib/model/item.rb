@@ -53,7 +53,7 @@ class Item
   
   def text
     if @text.to_s.empty?
-      @text = Xpair::Namespace.colapse_uri(id)
+      return Xpair::Namespace.colapse_uri(id)
     end
     @text
   end

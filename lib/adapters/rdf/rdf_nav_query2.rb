@@ -84,7 +84,7 @@ module SPARQLQuery
       clauses = []
       # binding.pry
       while offset < items.size
-        limit = (items.size > 10000)? 10000 : items.size
+        limit = (items.size > @server.items_limit)? @server.items_limit : items.size
         # binding.pry
         clauses << build_values_clause(var, items[offset..(offset+limit)])
         offset += limit
@@ -187,6 +187,7 @@ module SPARQLQuery
       results = Set.new
       # binding.pry
       @queries.each do |query|
+        # binding.pry
         @server.execute(query).each do |s|
           if(!s[:pf].nil?)
             results << SchemaRelation.new(Xpair::Namespace.colapse_uri(s[:pf].to_s), true, @server)

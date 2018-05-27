@@ -26,7 +26,7 @@ module Explorable
         result_pairs = r.restricted_image(items[0..@limit], [], args[:limit].to_i)
 
       end
-      puts "START PARSING PAIRS INPIVOT PREPARE"
+      puts "START PARSING PAIRS IN PIVOT PREPARE"
       result_pairs.each do |pair|
         if(@result_hash[pair.domain].nil?)
           @result_hash[pair.domain] = []
