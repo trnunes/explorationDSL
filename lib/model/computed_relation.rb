@@ -22,20 +22,30 @@ module Xplain
     end
     
     def image(offset=0, limit=nil)
-      ResultSet.new(Set.new(@domain_nodes.map{|dnode| dnode.children}.flatten))
+      ResultSet.new(SecureRandom.uuid, Set.new(@domain_nodes.map{|dnode| dnode.children}.flatten))
     end
   
     def domain(offset=0, limit=-1)
-      ResultSet.new(@domain_nodes.dup)
+      ResultSet.new(SecureRandom.uuid, @domain_nodes.dup)
     end
   
     def restricted_image(restriction, options= {})
-      ResultSet.new(Set.new((@domain_nodes & restriction).map{|dnode| dnode.children}.flatten))
+      ResultSet.new(SecureRandom.uuid, Set.new((@domain_nodes & restriction).map{|dnode| dnode.children}.flatten))
     end
   
     def restricted_domain(restriction, options = {})
       intersected_image = @domain_nodes.map{|dnode| dnode.children}.flatten & restriction
-      ResultSet.new(Set.new(intersected_image.map{|img_node| img_node.parent}))
+      ResultSet.new(SecureRandom.uuid, Set.new(intersected_image.map{|img_node| img_node.parent}))
+    end
+    
+    def group_by_domain_hash(domain_nodes_list)
+      image_by_domain_hash = {}
+      hash_keys = (@domain_nodes & domain_nodes_list)
+      hash_keys.each do |key_node|
+        image_by_domain_hash[key_node] = key_node.children
+      end
+      binding.pry
+      image_by_domain_hash
     end
     
     def group_by_image(nodes)
@@ -50,7 +60,7 @@ module Xplain
           groups[child.item] << Node.new(node.item)
         end
       end
-      ResultSet.new(groups.values)
+      ResultSet.new(SecureRandom.uuid, groups.values)
     end
   
   end

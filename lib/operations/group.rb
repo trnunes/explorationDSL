@@ -9,10 +9,12 @@ class Group < Operation
   
   def get_results()
     input_set = @input
-    if input_set.nil? || input_set.children.empty?
+    
+    if input_set.nil? || input_set.to_tree.children.empty?
       return []
     end
-    input_copy = input_set.copy
+    
+    input_copy = input_set.to_tree.copy
 
     next_to_last_level = input_copy.get_level(input_copy.count_levels - 1)
     nodes_to_group = []
@@ -28,7 +30,9 @@ class Group < Operation
       node.children_edges = []
       new_groups.each do |grouping_node|
         new_grouping_node = Node.new(grouping_node.item)
+        
         node.children_edges << Edge.new(node, new_grouping_node)
+        
         relation_node = grouping_node.children.first
         new_relation_node = Node.new(relation_node.item)
         new_grouping_node.children_edges = [Edge.new(new_grouping_node, new_relation_node)]

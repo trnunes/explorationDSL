@@ -8,8 +8,9 @@ class Refine < Operation
   end
   
   def get_results()
-    input_set = @input
-    nodes_to_filter = @input.leaves
+    input_set = @input.to_tree
+    
+    nodes_to_filter = input_set.leaves
     if(input_set.children.empty?)
       return []
     end
@@ -20,7 +21,7 @@ class Refine < Operation
     end
 
     if @server.can_filter? @auxiliar_function
-      nodes_to_filter = @server.filter(nodes_to_filter, @auxiliar_function)
+      nodes_to_filter = to_nodes(@server.filter(nodes_to_filter, @auxiliar_function))
     end
     nodes_to_filter
   end

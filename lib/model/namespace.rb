@@ -27,7 +27,7 @@ module Xplain
         expanded_uri = uri
         if @@namespace_map.has_key?(prefix)
           expanded_uri = @@namespace_map[prefix].uri + suffix
-        end
+        end        
         expanded_uri.gsub(" ", "%20")
       end
     

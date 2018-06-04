@@ -1,7 +1,5 @@
 class Item
-  include Xpair::Graph
-  include Indexable
-  attr_accessor :servers, :id, :text, :parents, :index, :entry, :type
+  attr_accessor :servers, :id, :text, :type
   
   def initialize(id, type="")
     @id = Xpair::Namespace.expand_uri(id.gsub(" ", "%20"))
@@ -17,43 +15,9 @@ class Item
     @servers << server
   end
   
-  def clone
-    cloned_item = self.class.new(@id)
-    cloned_item.index = @index.copy
-    cloned_item.text = self.text
-    cloned_item.servers = self.servers
-    cloned_item
-  end
-  
-  def shallow_clone
-    cloned_item = self.class.new(@id)
-    cloned_item.text = self.text
-    cloned_item
-  end
-    
-  def relation?
-    false
-  end
-  
-  def type?
-    false
-  end
-  
-  def entity?
-    false
-  end
-    
-  def literal?
-    false
-  end
-  
-  def set?
-    false
-  end
-  
   def text
     if @text.to_s.empty?
-      @text = Xpair::Namespace.colapse_uri(id)
+      @text = Xplain::Namespace.colapse_uri(id)
     end
     @text
   end

@@ -1,25 +1,28 @@
 require 'forwardable'
 require "test/unit"
-
 require 'linkeddata'
 require 'pry'
+require './mixins/config'
 require './mixins/operation_factory'
+require './mixins/writable.rb'
+require './mixins/readable.rb'
 require './execution/workflow.rb'
-require './model/model_config'
-require './mixins/xplain.rb'
 
 require './mixins/enumerable'
 require './mixins/relation'
 require './exceptions/missing_relation_exception'
+require './exceptions/missing_argument_exception'
 require './exceptions/missing_value_exception'
 require './exceptions/invalid_input_exception'
 require './exceptions/disconnected_operation_exception'
 require './exceptions/missing_auxiliary_function_exception'
 require './exceptions/numeric_item_required_exception'
 
+require './mixins/graph_converter'
 require './model/node'
 require './model/edge'
 require './model/entity'
+require './model/type'
 require './model/literal'
 require './model/schema_relation'
 require './model/computed_relation'
@@ -30,7 +33,6 @@ require './model/relation_handler'
 
 require './mixins/model_factory'
 
-require './adapters/filterable'
 require './adapters/navigational'
 require './adapters/searchable'
 require './adapters/data_server'
@@ -40,6 +42,7 @@ require './adapters/rdf/sparql_helper'
 require './adapters/rdf/rdf_data_server'
 require './visualization/visualization'
 require 'securerandom'
+require './operations/auxiliary_function'
 require './operations/operation'
 require './operations/set_operation'
 
@@ -109,6 +112,9 @@ class XplainUnitTest < Test::Unit::TestCase
       graph << [RDF::URI("_:p9"),  RDF::URI("_:cite"), RDF::URI("_:p5")]
       graph << [RDF::URI("_:p10"),  RDF::URI("_:cite"), RDF::URI("_:p5")]
       
+      graph << [RDF::URI("_:p9"),  RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), RDF::URI("_:type1")]
+      graph << [RDF::URI("_:p10"),  RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), RDF::URI("_:type2")]
+
       graph << [RDF::URI("_:paper1"),  RDF::URI("_:submittedTo"), RDF::URI("_:journal1")]
       
       graph << [RDF::URI("_:paper1"),  RDF::URI("_:author"),RDF::URI("_:a1") ]
@@ -145,6 +151,28 @@ class XplainUnitTest < Test::Unit::TestCase
       graph << [RDF::URI("_:p3"),  RDF::URI("_:relevance"), RDF::Literal.new(16, datatype: RDF::XSD.int)]
       graph << [RDF::URI("_:p4"),  RDF::URI("_:relevance"), RDF::Literal.new(5, datatype: RDF::XSD.int)]
       graph << [RDF::URI("_:p4"),  RDF::URI("_:relevance"), RDF::Literal.new(15, datatype: RDF::XSD.int)]
+    
+      graph << [RDF::URI("_:paper1"),  RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#label"), RDF::Literal.new("paper1_keyword", datatype: RDF::XSD.string)]
+      graph << [RDF::URI("_:paper1"),  RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#label"), RDF::Literal.new("common_keyword", datatype: RDF::XSD.string)]
+            
+      graph << [RDF::URI("_:p2"),  RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#label"), RDF::Literal.new("paper2_keyword1 middle paper2_keyword2", datatype: RDF::XSD.string)]
+      
+      graph << [RDF::URI("_:p2"),  RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#label"), RDF::Literal.new("common_keyword", datatype: RDF::XSD.string)]      
+      
+      graph << [RDF::URI("_:p3"),  RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#label"), RDF::Literal.new("paper3_keyword", datatype: RDF::XSD.string)]
+      graph << [RDF::URI("_:p3"),  RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#label"), RDF::Literal.new("common_keyword", datatype: RDF::XSD.string)]
+      graph << [RDF::URI("_:p3"),  RDF::URI("_:alternative_label_property"), RDF::Literal.new("common_keyword middle paper3_keyword2 end", datatype: RDF::XSD.string)]
+      
+      graph << [RDF::URI("_:p4"),  RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#label"), RDF::Literal.new("paper4_keyword", datatype: RDF::XSD.string)]
+      graph << [RDF::URI("_:p4"),  RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#label"), RDF::Literal.new("common_keyword", datatype: RDF::XSD.string)]
+      
+      graph << [RDF::URI("_:p5"),  RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#label"), RDF::Literal.new("paper5_keyword", datatype: RDF::XSD.string)]
+      graph << [RDF::URI("_:p5"),  RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#label"), RDF::Literal.new("common_keyword", datatype: RDF::XSD.string)]
+      
+      graph << [RDF::URI("_:p6"),  RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#label"), RDF::Literal.new("paper6_keyword", datatype: RDF::XSD.string)]
+      graph << [RDF::URI("_:p6"),  RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#label"), RDF::Literal.new("common_keyword", datatype: RDF::XSD.string)]
+           
+           
       
     end
 

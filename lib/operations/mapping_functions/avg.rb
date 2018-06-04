@@ -1,6 +1,6 @@
 module Mapping
   
-  class Avg
+  class Avg < AuxiliaryFunction
     def initialize(relation)
       @relation = relation
       @images_hash = {}

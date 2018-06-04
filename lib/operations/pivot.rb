@@ -1,5 +1,5 @@
 class Pivot < Operation
-  include Xplain::RelationFactory
+  include Xplain::RelationFactory  
   
   def initialize(args={}, &block)
     super(args, &block)
@@ -12,8 +12,16 @@ class Pivot < Operation
     @relation
   end
   
+  def set_relation(new_relation)
+    @relation = new_relation
+  end
+  
   def get_results()
-    @input_set = @input
+    if @input.nil? || @input.empty?
+      return []
+    end
+    
+    @input_set = @input.to_tree
     if server
       @relation.server = server
     end

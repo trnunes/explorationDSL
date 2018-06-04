@@ -24,12 +24,13 @@ class ModelTest < XplainUnitTest
   def test_restricted_image
     cite = Xplain::SchemaRelation.new(server: @papers_server, id: "_:cite")
     actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:paper1")])
+    
     expected_image = Set.new(create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")])
-    assert_equal expected_image, Set.new(actual_image.to_a)
-
-    assert_equal actual_image[0].parent.item, Xplain::Entity.new("_:paper1")
-    assert_equal actual_image[1].parent.item, Xplain::Entity.new("_:paper1")
-    assert_equal actual_image[2].parent.item, Xplain::Entity.new("_:paper1")
+    assert_equal expected_image, Set.new(actual_image)
+    actual_image_array = actual_image.to_a
+    assert_equal actual_image_array[0].parent.item, Xplain::Entity.new("_:paper1")
+    assert_equal actual_image_array[1].parent.item, Xplain::Entity.new("_:paper1")
+    assert_equal actual_image_array[2].parent.item, Xplain::Entity.new("_:paper1")
   end
   
   def test_restricted_domain
@@ -58,6 +59,7 @@ class ModelTest < XplainUnitTest
     path = Xplain::PathRelation.new(server: @papers_server, relations: [Xplain::SchemaRelation.new(server: @papers_server, id: "_:cite"), Xplain::SchemaRelation.new(server: @papers_server, id: "_:author")])
     actual_image = path.restricted_image(create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6")])
     expected_image = Set.new(create_nodes [Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")])
+
     assert_equal expected_image, Set.new(actual_image.to_a)
   end
 
@@ -114,7 +116,7 @@ class ModelTest < XplainUnitTest
     p2.children = create_nodes [Xplain::Entity.new("_:p5")]
 
     cite = Xplain::ComputedRelation.new(domain: [paper1, p2])
-    actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:paper1")])
+    actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:paper1")]).to_a
     expected_image = Set.new(create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")])
     assert_equal expected_image, Set.new(actual_image.to_a)
 
@@ -166,188 +168,91 @@ class ModelTest < XplainUnitTest
     assert_equal expected_results, paper1.xplain__cites
   end
   
-  # def test_cursor_relation_path
-  #   cite = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(server: @papers_server, id: "_:cite"), Xplain::SchemaRelation.new(server: @papers_server, id: "_:author")])
-  #   domain_set = Set.new([Xplain::Entity.new("_:p10"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"), Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:paper1")])
-  #   cursor = cite.get_cursor(2,2)
-  #   page1 = Set.new cursor.next_page
-  #   page2 = Set.new cursor.next_page
-  #   page3 = Set.new cursor.next_page
-  #
-  #   assert_equal page1.size, 2
-  #   assert_equal page2.size, 2
-  #   assert_equal page3.size, 2
-  #   assert_true (page1 & page2 & page3).empty?
-  #   assert_equal (page1 + page2 + page3), domain_set
-  #
-  #   cursor = cite.get_cursor(2, 3)
-  #   page1 = Set.new cursor.next_page
-  #   page2 = Set.new cursor.next_page
-  #   assert_equal page1.size, 3
-  #   assert_equal page2.size, 3
-  #   assert_true (page1 & page2).empty?
-  #   assert_equal (page1 + page2), domain_set
-  #
-  #   cursor = cite.get_cursor(2, 4)
-  #   page1 = Set.new cursor.next_page
-  #   page2 = Set.new cursor.next_page
-  #   assert_equal page1.size, 4
-  #   assert_equal page2.size, 2
-  #   assert_true (page1 & page2).empty?
-  #   assert_equal (page1 + page2), domain_set
-  #
-  #
-  #   p6 = (page1 + page2).select{|i| i.id == "_:p6"}.first
-  #   assert_equal Set.new(p6.children), Set.new([Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")])
-  #
-  #   paper1 = (page1 + page2).select{|i| i.id == "_:paper1"}.first
-  #   assert_equal Set.new(paper1.children), Set.new([Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")])
-  #
-  #
-  # end
-  #
-  # def test_paths
-  #   r = Xplain::PathRelation.new("root")
-  #   r.add_path [Xplain::Entity.new("i1"), Xplain::Entity.new("i1.1")]
-  #   r.add_path [Xplain::Entity.new("i2"), Xplain::Entity.new("i2.1")]
-  #
-  #   paths = r.paths
-  #
-  #   assert_equal Set.new(paths), Set.new([[Xplain::Entity.new("root"), Xplain::Entity.new("i1"), Xplain::Entity.new("i1.1")],[Xplain::Entity.new("root"), Xplain::Entity.new("i2"), Xplain::Entity.new("i2.1")]])
-  # end
-  #
-  # def test_cursor_restricted_relation_on_image
-  #   cursor = Xplain::SchemaRelation.new(server: @papers_server, id: "_:cite").restricted_domain([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5")])
-  #
-  #   cursor.paginate(4)
-  #   page1 = Set.new(cursor.next_page)
-  #   page2 = Set.new(cursor.next_page)
-  #   assert_equal page1.size, 4
-  #   assert_equal page2.size, 2
-  #   assert_true (page1 & page2).empty?
-  #   assert_equal (page1 + page2), Set.new([Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"), Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p10"), Xplain::Entity.new("_:p9")])
-  #
-  #   paper1 = (page1 + page2).select{|i| i.id == "_:paper1"}.first
-  #   p6 = (page1 + page2).select{|i| i.id == "_:p6"}.first
-  #
-  #   assert_equal Set.new(paper1.children), Set.new([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3")])
-  #   assert_equal Set.new(p6.children), Set.new([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5")])
-  #
-  #   cursor.paginate(3)
-  #
-  #   page1 = Set.new(cursor.next_page)
-  #   page2 = Set.new(cursor.next_page)
-  #   assert_equal page1.size, 3
-  #   assert_equal page2.size, 3
-  #   assert_true (page1 & page2).empty?
-  #   assert_equal (page1 + page2), Set.new([Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"), Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p10"), Xplain::Entity.new("_:p9")])
-  #
-  # end
-  #
-  # def test_cursor_restricted_relation_on_domain
-  #   cursor = Xplain::SchemaRelation.new(server: @papers_server, id: "_:cite").restricted_image([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7")])
-  #   cursor.paginate(2)
-  #
-  #   page1 = Set.new(cursor.next_page)
-  #   page2 = Set.new(cursor.next_page)
-  #   assert_equal page1.size, 2
-  #   assert_equal page2.size, 2
-  #   assert_true (page1 & page2).empty?
-  #   assert_equal (page1 + page2), Set.new([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")])
-  #
-  #   p4 = (page1 + page2).select{|i| i.id == "_:p4"}.first
-  #   p5 = (page1 + page2).select{|i| i.id == "_:p5"}.first
-  #
-  #   assert_equal p4.parent, Xplain::Entity.new("_:paper1")
-  #   assert_equal p5.parent, Xplain::Entity.new("_:p6")
-  #
-  # end
-  #
-  # def test_cursor_restricted_relation_path_on_image
-  #   cursor = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(server: @papers_server, id: "_:cite"), Xplain::SchemaRelation.new(server: @papers_server, id: "_:author")]).restricted_domain([Xplain::Entity.new("_:a1")])
-  #   domain_set = Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"), Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10")])
-  #   cursor.paginate(2)
-  #
-  #   page1 = Set.new(cursor.next_page)
-  #   page2 = Set.new(cursor.next_page)
-  #   page3 = Set.new(cursor.next_page)
-  #   assert_equal page1.size, 2
-  #   assert_equal page2.size, 2
-  #   assert_equal page3.size, 2
-  #   assert_true (page1 & page2 & page3).empty?
-  #   assert_equal (page1 + page2 + page3), domain_set
-  #
-  #   paper1 = (page1 + page2 + page3).select{|i| i.id == "_:paper1"}.first
-  #   p6 = (page1 + page2 + page3).select{|i| i.id == "_:p6"}.first
-  #   p5 = (page1 + page2 + page3).select{|i| i.id == "_:p7"}.first
-  #
-  #   assert_equal Set.new(paper1.children), Set.new([Xplain::Entity.new("_:a1")])
-  #   assert_equal Set.new(p6.children), Set.new([Xplain::Entity.new("_:a1")])
-  #   assert_equal Set.new(p5.children), Set.new([Xplain::Entity.new("_:a1")])
-  #
-  # end
-  #
-  # def test_cursor_restricted_relation_path_on_domain
-  #   cursor = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(server: @papers_server, id: "_:cite"), Xplain::SchemaRelation.new(server: @papers_server, id: "_:publishedOn")]).restricted_image([Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"), Xplain::Entity.new("_:p9")])
-  #   domain_set = Set.new([Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8")])
-  #   cursor.paginate(1)
-  #   page1 = Set.new(cursor.next_page)
-  #   assert_equal page1.size, 1
-  #
-  #   assert_equal Set.new(page1), Set.new([Xplain::Entity.new("_:journal2")])
-  #
-  #
-  # end
-  #
-  # def test_cursor_for_level_shema_relation
-  #   cite = Xplain::SchemaRelation.new(server: @papers_server, id: "_:cite")
-  #   cursor = cite.get_cursor(2, 3)
-  #   page1 = Set.new(cursor.next_page)
-  #   page2 = Set.new(cursor.next_page)
-  #
-  #   assert_equal page1.size, 3
-  #   assert_equal page2.size, 3
-  #   assert_equal Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"), Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10")]), (page1 + page2)
-  #
-  #   cursor = cite.get_cursor(3, 3)
-  #   page1 = Set.new(cursor.next_page)
-  #   page2 = Set.new(cursor.next_page)
-  #
-  #   assert_equal page1.size, 3
-  #   assert_equal page2.size, 1
-  #   assert_equal Set.new([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]), (page1 + page2)
-  #
-  # end
-  #
-  # def test_cursor_computed_relation
-  #   cr = Xplain::PathRelation.new("myXplain::PathRelation")
-  #
-  #   i11 = Xplain::Entity.new("i1.1")
-  #   i111 = Xplain::Entity.new("i1.1.1")
-  #   i112 = Xplain::Entity.new("i1.1.2")
-  #   i113 = Xplain::Entity.new("i1.1.3")
-  #   i114 = Xplain::Entity.new("i1.1.4")
-  #
-  #   i12 = Xplain::Entity.new("i1.2")
-  #   i121 = Xplain::Entity.new("i1.2.1")
-  #   i122 = Xplain::Entity.new("i1.2.2")
-  #   i123 = Xplain::Entity.new("i1.2.3")
-  #   i124 = Xplain::Entity.new("i1.2.4")
-  #
-  #   i11.children = [i111, i112, i113, i114]
-  #   i12.children = [i121, i122, i123, i124]
-  #
-  #   cr.root.children = [i11, i12]
-  #   level2_cursor = cr.get_cursor(2,1)
-  #
-  #   assert_equal Set.new([i11]), Set.new(level2_cursor.next_page)
-  #   assert_equal Set.new([i12]), Set.new(level2_cursor.next_page)
-  #
-  #   level2_cursor = cr.get_cursor(3,4)
-  #
-  #   assert_equal Set.new([i111, i112, i113, i114]), Set.new(level2_cursor.next_page)
-  #   assert_equal Set.new([i121, i122, i123, i124]), Set.new(level2_cursor.next_page)
-  #
-  # end
+  def test_relations_image
+    Xplain::Namespace.new("xplain", "http://xplain/")
+    expected_results = Set.new(create_nodes [
+        Xplain::SchemaRelation.new(id: "_:publishedOn"),
+        Xplain::SchemaRelation.new(id: "_:author"),
+        Xplain::SchemaRelation.new(id: "_:cite"), 
+        Xplain::SchemaRelation.new(id: "_:submittedTo"), 
+        Xplain::SchemaRelation.new(id: "xplain:cites"),
+        Xplain::SchemaRelation.new(id: "rdf:type"),
+        Xplain::SchemaRelation.new(id: "_:keywords"),
+        Xplain::SchemaRelation.new(id: "_:releaseYear"),
+        Xplain::SchemaRelation.new(id: "_:publicationYear"),
+        Xplain::SchemaRelation.new(id: "_:relevance"),
+        Xplain::SchemaRelation.new(id: "rdf:label"),
+        Xplain::SchemaRelation.new(id: "_:alternative_label_property"),
+             
+      ])
+      
+      relations = Xplain::SchemaRelation.new(server: @papers_server, id: "relations")
+      assert_equal expected_results, Set.new(relations.image)
+  
+  end
+  
+  def test_relations_restricted_image
+    expected_results = Set.new( create_nodes [
+        Xplain::SchemaRelation.new(id: "_:author"), 
+        Xplain::SchemaRelation.new(id: "_:keywords"),
+        Xplain::SchemaRelation.new(id: "_:cite", inverse: true),
+        Xplain::SchemaRelation.new(id: "rdf:label"),
+    ])
+      
+    relations = Xplain::SchemaRelation.new(server: @papers_server, id: "relations")
+    actual_results = relations.restricted_image(create_nodes [Xplain::Entity.new("_:p5")])
+    assert_equal expected_results, Set.new(actual_results)
+    
+  end
+  
+  def test_has_type_image
+    expected_results = Set.new(create_nodes [
+        Xplain::Type.new("_:type1"),
+        Xplain::Type.new("_:type2")         
+      ])
+      
+      has_type = Xplain::SchemaRelation.new(server: @papers_server, id: "has_type")
+      assert_equal expected_results, Set.new(has_type.image)  
+  end
+  
+  def test_has_type_restricted_image
+    expected_results = Set.new(create_nodes [
+        Xplain::Type.new("_:type1")        
+    ])
+      
+    has_type = Xplain::SchemaRelation.new(server: @papers_server, id: "has_type")
+    actual_results = has_type.restricted_image(create_nodes [Xplain::Entity.new("_:p9")])
+    assert_equal expected_results, Set.new(actual_results)
+    
+  end
+  
+  def test_relations_restricted_domain
+    expected_results = Set.new( create_nodes [      
+      Xplain::Entity.new("_:paper1"),
+      Xplain::Entity.new("_:p2"),
+      Xplain::Entity.new("_:p3"),
+      Xplain::Entity.new("_:p6"),
+      Xplain::Entity.new("_:p5"),
+      Xplain::Entity.new("_:p20")      
+     ])
+      
+    relations = Xplain::SchemaRelation.new(server: @papers_server, id: "relations")
+    actual_results = relations.restricted_domain(create_nodes [
+      Xplain::SchemaRelation.new(id: "_:author")        
+    ])
+    
+    assert_equal expected_results, Set.new(actual_results)
+  end
+  
+  def test_has_type_restricted_domain
+    expected_results = Set.new(create_nodes [
+        Xplain::Type.new("_:p9")
+    ])
+      
+    has_type = Xplain::SchemaRelation.new(server: @papers_server, id: "has_type")
+    actual_results = has_type.restricted_domain(create_nodes [Xplain::Entity.new("_:type1")])
+    assert_equal expected_results, Set.new(actual_results)
+  end
+  
   
 end

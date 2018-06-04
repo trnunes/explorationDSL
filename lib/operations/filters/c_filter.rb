@@ -1,4 +1,4 @@
-class Cfilter < SimpleFilter
+class CFilter < SimpleFilter
   def initialize(*args)
     @filter_code = args.first
     if !@filter_code

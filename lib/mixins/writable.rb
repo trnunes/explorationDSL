@@ -1,15 +1,20 @@
 require 'json'
 module Xplain
-  module Writable  
-          
-    def <<(item)
-      node = Node.new(item)
-      @root.children << node
-      node.parent = @root
+  module NodeWritable
+    def save()
+      Xplain::session_repository.save_node(self)
     end
-    
-    def save
-      File.open("./datasets/"+self.id.to_s+".json", 'w'){|f| f.write(self.to_json)}
+  end
+  
+  module WorkflowWritable
+    def save()
+      Xplain::session_repository.save_workflow(self)
+    end
+  end
+  
+  module ResultSetWritable
+    def save()
+      Xplain::session_repository.save_resultset(self)
     end
   end
 end

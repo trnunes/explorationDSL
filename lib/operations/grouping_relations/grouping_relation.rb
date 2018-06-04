@@ -1,5 +1,5 @@
 module Grouping
-  class GroupingRelation
+  class GroupingRelation < AuxiliaryFunction
   
     def initialize(*args)
     end

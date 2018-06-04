@@ -1,10 +1,15 @@
 class Workflow
   include OperationFactory
+  include Xplain::WorkflowWritable
+  include Xplain::WorkflowReadable
   
-  attr_accessor :nodes, :server
+  attr_accessor :id, :nodes, :server, :execution_cache, :history, :annotations
 
-  def initialize
+  def initialize(id=nil)
     @nodes = []
+    @history = []
+    @execution_cache = {}
+    @id = id || SecureRandom.uuid
   end
   
   def chain(input_operation, target_operation)
@@ -37,6 +42,7 @@ class Workflow
   end
   
   def execute()
+    @history = []
     roots = nodes.select{|node| node.parents.empty?}
     roots.map{|root_node| execute_node(root_node)}
   end
@@ -46,7 +52,19 @@ class Workflow
     if !inputs.empty?
       node.item.input = inputs
     end
-    node.item.execute
+    result_set = 
+      if Xplain::cache_enabled?
+        @execution_cache[node.item.id] ||= node.item.execute 
+        @execution_cache[node.item.id]
+      else
+        node.item.execute
+      end
+    @history << node.item
+    result_set
+  end
+  
+  def last_executed
+    @history.last
   end
   
   def handle_operation_instance(operation_new_instance)

@@ -7,6 +7,7 @@ class RelationHandler
     relation_id = ""
     relation_ns = ""
     relation_name = m.to_s
+    
     if m.to_s.include?('__')
       relation_ns = m.to_s.split('__').first
       relation_name = m.to_s.split('__').last

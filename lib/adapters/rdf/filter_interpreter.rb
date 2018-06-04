@@ -2,10 +2,9 @@ class SPARQLFilterInterpreter
   include SPARQLHelper
   @@accepted_filters =   [And, Or, Equals, Contains, EqualsOne, LessThan, LessThanEqual, GreaterThan, GreaterThanEqual]
   
-  def accept_path_clause?
-    false
-  end
-  
+  ACCEPT_PATH_QUERY = false
+  ACCEPT_PATH_CLAUSE = false
+    
   def initialize()
     @relations_index = 1
   end
@@ -80,7 +79,7 @@ class SPARQLFilterInterpreter
        
         where_clause << " VALUES ?o#{@relations_index}{" + f.values.map{|item| parse_item(item)}.join(" ") + "}"
       else
-#.*subject.*
+        #TODO apply the filter to the subjects
       end 
       {where_clause => []}
       
@@ -91,7 +90,7 @@ class SPARQLFilterInterpreter
        
        where_clause << " VALUES ?o#{@relations_index}{" + f.values.map{|item| parse_item(item)}.join(" ") + "}"
      else
-#.*subject.*
+      #TODO apply the filter to the subjects
      end 
      {where_clause => []}
     elsif f.class ==  LessThan

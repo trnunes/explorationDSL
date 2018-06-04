@@ -1,7 +1,7 @@
 module Xplain 
   
   module Relation
-    attr_accessor :root, :text, :inverse, :id
+    attr_accessor :root, :text, :inverse, :id   
     
     def domain(offset=0, limit=nil)
       []
@@ -10,7 +10,7 @@ module Xplain
     def image(offset=0, limit=nil)
       []
     end
-    
+       
     def restricted_domain(restriction, options={})
       []
     end

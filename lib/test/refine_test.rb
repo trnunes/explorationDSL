@@ -1,6 +1,6 @@
 
 require './test/xplain_unit_test'
-require './filters/filter_factory'
+require './operations/filters/filter_factory'
 require './operations/refine'
 require './operations/pivot'
 require './operations/filters/filter'
@@ -26,21 +26,21 @@ class RefineTest < XplainUnitTest
   
   def test_filter_empty_input
     input_nodes = []
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     actual_results = Refine.new(input: root) do
       equals do
         relation "_:cite"
         entity "_:p2"
       end
     end.execute()
-    assert_true actual_results.children.empty?, actual_results.children.inspect
+    assert_true actual_results.to_tree.children.empty?, actual_results.to_tree.children.inspect
   end
   
   def test_filter_nil_relation
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     begin
       actual_results = Refine.new(input: root) do
         equals do
@@ -56,8 +56,8 @@ class RefineTest < XplainUnitTest
 
   def test_filter_empty_relation
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     begin
       actual_results = Refine.new(input: root) do
         equals do
@@ -74,8 +74,8 @@ class RefineTest < XplainUnitTest
   
   def test_filter_absent_value
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     begin
       actual_results = Refine.new(input: root) do
         equals do
@@ -91,8 +91,8 @@ class RefineTest < XplainUnitTest
 
   def test_filter_empty_value
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     begin
       actual_results = Refine.new(input: root) do
         equals do
@@ -111,8 +111,8 @@ class RefineTest < XplainUnitTest
   def test_and_less_than_2
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
     
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     actual_results = Refine.new(input: root) do
       And do[
         equals do
@@ -122,15 +122,15 @@ class RefineTest < XplainUnitTest
       ]
       end
     end.execute()
-    assert_equal [Xplain::Entity.new("_:paper1")], actual_results.children.map{|n|n.item}
+    assert_equal [Xplain::Entity.new("_:paper1")], actual_results.to_tree.children.map{|n|n.item}
     
   end
   
   def test_or_less_than_2
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4"), Xplain::Entity.new("_:p5")]
     
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     actual_results = Refine.new(input: root) do
       Or do[
         equals do
@@ -140,7 +140,7 @@ class RefineTest < XplainUnitTest
       ]
       end
     end.execute()
-    assert_equal [Xplain::Entity.new("_:paper1")], actual_results.children.map{|n|n.item}
+    assert_equal [Xplain::Entity.new("_:paper1")], actual_results.to_tree.children.map{|n|n.item}
     
   end
   
@@ -152,8 +152,8 @@ class RefineTest < XplainUnitTest
       Node.new(Xplain::Entity.new("_:p4")),
       Node.new(Xplain::Entity.new("_:p5"))
     ]
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     expected_results = Set.new([Xplain::Entity.new("_:paper1")])
 
     actual_results = Refine.new(input: root) do
@@ -163,8 +163,8 @@ class RefineTest < XplainUnitTest
       end
     end.execute()
     
-    assert_false actual_results.children.empty?
-    assert_equal expected_results, Set.new(actual_results.children.map{|node| node.item})
+    assert_false actual_results.to_tree.children.empty?
+    assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end
   
   
@@ -173,8 +173,8 @@ class RefineTest < XplainUnitTest
       Node.new(Xplain::Entity.new("_:journal1")),
       Node.new(Xplain::Entity.new("_:journal2")),
     ]
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     expected_results = Set.new([Xplain::Entity.new("_:journal1")])
 
     actual_results = Refine.new(input: root) do
@@ -184,8 +184,8 @@ class RefineTest < XplainUnitTest
       end
     end.execute()
     
-    assert_false actual_results.children.empty?
-    assert_equal expected_results, Set.new(actual_results.children.map{|node| node.item})
+    assert_false actual_results.to_tree.children.empty?
+    assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end
 
   def test_refine_equal_literal_OR_same_relation
@@ -193,8 +193,8 @@ class RefineTest < XplainUnitTest
       Node.new(Xplain::Entity.new("_:journal1")),
       Node.new(Xplain::Entity.new("_:journal2")),
     ]
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     expected_results = Set.new([Xplain::Entity.new("_:journal1"), Xplain::Entity.new("_:journal2")])
 
     actual_results = Refine.new(input: root) do
@@ -211,8 +211,8 @@ class RefineTest < XplainUnitTest
       end
     end.execute()
     
-    assert_false actual_results.children.empty?
-    assert_equal expected_results, Set.new(actual_results.children.map{|node| node.item})
+    assert_false actual_results.to_tree.children.empty?
+    assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end
   
   def test_filter_equal_literal_OR_different_relation
@@ -223,8 +223,8 @@ class RefineTest < XplainUnitTest
       Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"),
       Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10")
     ]
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     expected_output_nodes = create_nodes [
       Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6"), 
       Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p5")
@@ -242,8 +242,8 @@ class RefineTest < XplainUnitTest
       ]
       end
     end.execute()
-    assert_false actual_results.children.empty?
-    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(actual_results.children.map{|n|n.item})
+    assert_false actual_results.to_tree.children.empty?
+    assert_equal Set.new(expected_output_nodes.map{|n| n.item}), Set.new(actual_results.to_tree.children.map{|n|n.item})
   end
   
 
@@ -256,8 +256,8 @@ class RefineTest < XplainUnitTest
       Node.new(Xplain::Entity.new("_:p5")),
       Node.new(Xplain::Entity.new("_:p6"))
     ]
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     expected_results = Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p5")])
     actual_results = Refine.new(input: root) do
       And do
@@ -273,8 +273,8 @@ class RefineTest < XplainUnitTest
         ]
       end
     end.execute()
-    assert_false actual_results.children.empty?
-    assert_equal expected_results, Set.new(actual_results.children.map{|node| node.item})
+    assert_false actual_results.to_tree.children.empty?
+    assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end
   
   def test_refine_property_path
@@ -287,8 +287,8 @@ class RefineTest < XplainUnitTest
       Node.new(Xplain::Entity.new("_:p6")),
       Node.new(Xplain::Entity.new("_:p8"))
     ]
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     expected_results = Set.new([Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p8")])
     actual_results = Refine.new(input: root) do
       And do [
@@ -303,8 +303,8 @@ class RefineTest < XplainUnitTest
       ]
       end
     end.execute()
-    assert_false actual_results.children.empty?
-    assert_equal expected_results, Set.new(actual_results.children.map{|node| node.item})
+    assert_false actual_results.to_tree.children.empty?
+    assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end
   
   def test_refine_inverse_property_path
@@ -314,8 +314,8 @@ class RefineTest < XplainUnitTest
       Node.new(Xplain::Entity.new("_:a3")),
       Node.new(Xplain::Entity.new("_:a4")),
     ]
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     expected_results = Set.new([Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")])
     actual_results = Refine.new(input: root) do 
       equals do
@@ -323,8 +323,8 @@ class RefineTest < XplainUnitTest
         entity "_:p10"
       end
     end.execute()
-    assert_false actual_results.children.empty?
-    assert_equal expected_results, Set.new(actual_results.children.map{|node| node.item})
+    assert_false actual_results.to_tree.children.empty?
+    assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end  
   
   def test_refine_custom_filter_select
@@ -334,14 +334,14 @@ class RefineTest < XplainUnitTest
       Node.new(Xplain::Entity.new("_:a3")),
       Node.new(Xplain::Entity.new("_:a4")),
     ]
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     expected_results = Set.new([Xplain::Entity.new("_:a1")])
     actual_results = Refine.new(input: root) do
-      cfilter "|e| e.id == \"_:a1\""
+      c_filter "|e| e.id == \"_:a1\""
     end.execute()
-    assert_false actual_results.children.empty?
-    assert_equal expected_results, Set.new(actual_results.children.map{|node| node.item})
+    assert_false actual_results.to_tree.children.empty?
+    assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end
   
 end

@@ -11,15 +11,16 @@ class Map < Operation
   
   def get_results
     @input_set = @input
-    if @input_set.nil? || @input_set.children.empty?
+    if @input_set.nil? || @input_set.to_tree.children.empty?
       return []
     end
-    @level ||= @input_set.count_levels
+   
+    @level ||= @input_set.to_tree.count_levels
     self.map
   end
   
   def map
-    input_copy = @input_set.copy
+    input_copy = @input_set.to_tree.copy
     nodes_to_map = input_copy.get_level(@level)
     if @mapping_visitor.respond_to? :prepare
       @mapping_visitor.prepare(nodes_to_map)

@@ -1,6 +1,6 @@
 module Mapping
   
-  class Sum
+  class Sum < AuxiliaryFunction
     def initialize(relation)
       @relation = relation
       @images_hash = {}

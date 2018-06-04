@@ -1,7 +1,12 @@
 #TODO IMPLEMENT SERVER DELEGATORS FOR OPERATIONS COVERED BY THE REPOSITORY. IF THE OPERATION IS AVAILABLE, IT MUST BE DELEGATED TO  THE REPOSITORY.
 class Operation
   include OperationFactory
-  attr_accessor :input, :server, :id
+  include Xplain::GraphConverter
+  ### Flag to inform whether the operation receives multiple sets as input or not.
+  MULTI_SET = false
+  
+  attr_accessor :input, :server, :id  
+  
   def initialize(args={}, &block)
     @id = args[:id] || SecureRandom.uuid
     setup_input args[:input]
@@ -10,23 +15,17 @@ class Operation
   end
   
   def setup_input(operation_input)
-    #test if the input is a simple array of items and transform it to a tree
-    if operation_input.respond_to?(:each) && !operation_input.respond_to?(:leaves) && !self.accept_multiple_sets?
-      root = Node.new(Xplain::Entity.new(SecureRandom.uuid))
-      root.children = operation_input.map do |input_item|
-        if !input_item.is_a? Node
-          input_item = Node.new(input_item)
-        end
-        input_item
+    #test if the input is a simple array of items and transform into a tree
+    @input = operation_input
+    if operation_input.respond_to?(:each) && !operation_input.is_a?(Xplain::ResultSet) 
+      if !self.class::accept_multiple_sets?
+        @input = operation_input.first
       end
-      @input = root
-    else
-      @input = operation_input
-    end
+    end    
   end
   
-  def accept_multiple_sets?
-    return false
+  def self.accept_multiple_sets?
+    return self::MULTI_SET
   end
   
   def input=(operation_input)
@@ -37,17 +36,12 @@ class Operation
     if @definition_block
       self.instance_eval &@definition_block
     end
-    validate
-    root = Node.new(Xplain::Entity.new(SecureRandom.uuid))
-    root.intention = self
-    root.children = get_results()
-    root
+    validate()
+    # binding.pry
+    Xplain::ResultSet.new(SecureRandom.uuid, get_results(), self)        
   end
   
   def validate
-    if input.nil?  || !(input.respond_to?(:each) || input.is_a?(Node))
-      raise InvalidInputException
-    end
     true
   end
   
@@ -60,7 +54,7 @@ class Operation
   end
   
   def handle_operation_instance(operation_new_instance)
-    Xplain.get_current_workflow.chain(operation_new_instance, self)
+    Xplain.get_current_workflow.chain(operation_new_instance, self)    
   end
   
   def eql?(operation)

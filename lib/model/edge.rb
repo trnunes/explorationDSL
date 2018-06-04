@@ -15,8 +15,12 @@ class Edge
 
   alias == eql?
   
-  def inspect
+  def to_s
     origin.item.inspect + " -> " + target.item.inspect
+  end
+  
+  def inspect
+    origin.item.inspect + " -> " + target.item.inspect + " NOTES: " + annotations.map{|note| "\"" + note.to_s + "\""}.join(", ")
   end
   
 end

@@ -1,6 +1,8 @@
 module Xplain
   class PathRelation
     include Xplain::Relation
+    include Xplain::GraphConverter
+    
     extend Forwardable
     attr_accessor :id, :server, :inverse, :text, :relations, :limit, :root
     def_delegators :@relations, :map, :each, :size
@@ -44,11 +46,11 @@ module Xplain
   
   
     def image(offset=0, limit=-1)
-      ResultSet.new build_image_results(@server.image(self, [], offset, limit))
+      ResultSet.new SecureRandom.uuid, build_image_results(@server.image(self, [], offset, limit))
     end
   
     def domain(offset=0, limit=-1)
-      ResultSet.new build_domain_results(@server.domain(self, [], offset, limit))    
+      ResultSet.new SecureRandom.uuid, build_domain_results(@server.domain(self, [], offset, limit))    
     end
   
     def restricted?
@@ -56,7 +58,7 @@ module Xplain
     end
   
     def each_domain(offset=0, limit=-1, &block)
-      # #binding.pry
+
       domains = domain(offset, limit)
       domains.each &block
       domains
@@ -113,19 +115,21 @@ module Xplain
       relations.each do |r|
         result_pairs = r.restricted_domain(Set.new(result_pairs), options)
       end
-      ResultSet.new build_results(result_pairs)
+      ResultSet.new SecureRandom.uuid, build_results(result_pairs)
     end
     
     def schema_restricted_image(restriction, options = {})
       options[:restriction] = restriction
       options[:relation] = self
-      ResultSet.new @server.restricted_image(options)
+      results = hash_to_graph(@server.restricted_image(options), true)
+
+      ResultSet.new SecureRandom.uuid, results
     end
     
     def schema_restricted_domain(restriction, options = {})
       options[:restriction] = restriction
       options[:relation] = self
-      ResultSet.new @server.restricted_domain(options)
+      ResultSet.new SecureRandom.uuid, hash_to_graph(@server.restricted_domain(options))
     end
   
     def restricted_image(restriction, options = {})
@@ -163,7 +167,8 @@ module Xplain
     end
   
     def group_by_image(nodes)
-      @server.group_by(nodes, self)
+      grouped_nodes = hash_to_graph(@server.group_by(nodes, self))
+      ResultSet.new(SecureRandom.uuid, grouped_nodes)
     end
   
         

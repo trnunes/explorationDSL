@@ -1,11 +1,14 @@
 class Node
-  attr_accessor :item, :parent_edges, :children_edges, :annotations, :intention
+  attr_accessor :id, :item, :parent_edges, :children_edges, :annotations
   
-  def initialize(item, intention = nil, annotations = [])
+  def initialize(item = nil, id = nil, annotations = [])
     @children_edges = []
     @annotations = annotations
+    if item.is_a? Node
+      raise InvalidArgumentError("The item cannot be a Node!");
+    end
     @item = item
-    @intention = intention
+    @id = id || "node:" + SecureRandom.uuid
     @parent_edges = []
   end
   
@@ -149,7 +152,15 @@ class Node
   end
   
   def to_s
-    @item.to_s
+    
+    "N " + @item.to_s
+  end
+  
+  def inspect
+    inspect_string = ""
+    
+    inspect_string << self.to_s + "\n   => ["+ @children_edges.map{|c| c.to_s }.join(", ") + "]"
+    inspect_string
   end
   
   alias == eql?

@@ -1,13 +1,18 @@
 module Mapping
   
-  class Count
-    def initialize(relation)
+  class Count < AuxiliaryFunction
+    def initialize(relation=nil)
       @relation = relation
       @images_hash = {}
     end
     
     def prepare(nodes)
-      @images_hash = @relation.restricted_image(nodes).to_h
+      @images_hash =
+        if @relation
+          @relation.group_by_domain_hash(nodes)
+        else
+          nodes.map{|node| [node, node.children]}.to_h
+        end      
     end
       
     def visit(node)

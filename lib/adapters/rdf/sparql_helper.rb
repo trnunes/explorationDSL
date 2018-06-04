@@ -17,6 +17,7 @@ module SPARQLHelper
   end
   
   def convert_item(item)
+    
     "<#{Xplain::Namespace.expand_uri(item.id)}>"
   end
   
@@ -40,7 +41,7 @@ module SPARQLHelper
   #TODO improve to generate paths with mmultiple-direction relations
   def path_clause(relations, obj_var = "?o")
     query = 
-    if accept_path_clause?
+    if self.class::ACCEPT_PATH_CLAUSE
       relations.map{|r| "<" + Xplain::Namespace.expand_uri(r.to_s) + ">"}.join("/")
     elsif relations.is_a?(Xplain::SchemaRelation)
       if(relations.inverse?)
@@ -76,7 +77,7 @@ module SPARQLHelper
         clause
       end.join(".")      
     end
-    # binding.pry
+
     query
   end
   
@@ -120,6 +121,8 @@ module SPARQLHelper
     values_clause
   end
   
+
+  
   def mount_label_clause(var, items, relation)
     
     relation_uri = parse_item(relation)
@@ -137,7 +140,7 @@ module SPARQLHelper
       label_clause = label_where_clause(var, label_relations)
     else
       type = sample_type(relation_uri, items, relation.inverse?)
-      label_clause = label_where_clause(var, Xplain::Visualization.label_relations_for(type))
+      label_clause = label_where_clause(var, Xplain::Visualization.label_relations_for(type.id))
     end
 
     label_clause = "OPTIONAL " + label_clause if !label_clause.empty?
@@ -161,7 +164,7 @@ module SPARQLHelper
     if xplain_literal.value.to_f.to_s == xplain_literal.value.to_s
       xplain_literal.value = xplain_literal.value.to_s.to_f
     end
-    # binding.pry
+
     xplain_literal
   end
   
@@ -197,47 +200,49 @@ module SPARQLHelper
     execute(query).each do |solution|
       next if(solution.to_a.empty?)
       subject_id = Xplain::Namespace.colapse_uri(solution[:s].to_s)
-      items << Node.new(Xplain::Entity.new(subject_id))
+      items << Xplain::Entity.new(subject_id)
     end
     items
   end
   
   def get_results(query, relation)
-    root = Node.new(relation)
-    
-    domain_hash = {}
+    result_hash = {}
     
     execute(query).each do |solution|
       next if(solution.to_a.empty?)
       subject_id = Xplain::Namespace.colapse_uri(solution[:s].to_s)
-      if(!domain_hash.has_key? subject_id)
-        item = Xplain::Entity.new(subject_id)
-        item.text = solution[:ls].to_s
-        item.add_server(@server)
-        item_node = Node.new(item)
-        domain_hash[subject_id] = item_node
-      end
-      item_node = domain_hash[subject_id]
-      root.children_edges << Edge.new(root, item_node)
-      item_node.parent_edge = Edge.new(root, item_node)
+      subject_item = Xplain::Entity.new(subject_id)
+      subject_item.text = solution[:ls].to_s
+      subject_item.add_server(@server)
       
-      triple_object = solution[:o]
-      
-      if(triple_object)
-        if(triple_object.literal?)
-          related_item = build_literal(triple_object)
-        else
-          related_item = Xplain::Entity.new(Xplain::Namespace.colapse_uri(triple_object.to_s))
-          related_item.type = "rdfs:Resource"
-          related_item.add_server @server
-        end
-        related_item_node = Node.new(related_item)
-        item_node.children_edges << Edge.new(item_node, related_item_node)
-        related_item_node.parent_edge = Edge.new(item_node, related_item_node)
+      object_id = solution[:o]
+      related_item = nil
+      if(object_id)
+        related_item = 
+          if(object_id.literal?)
+            build_literal(object_id)
+          else
+            related_item = Xplain::Entity.new(Xplain::Namespace.colapse_uri(object_id.to_s))
+            related_item.type = "rdfs:Resource"
+            related_item.add_server @server
+            related_item
+          end        
       end
-    end
 
-    root.children
+      if(!result_hash.has_key? subject_item)
+        result_hash[subject_item] = 
+          if related_item.is_a? Xplain::Literal
+            []
+          else
+            Set.new
+          end
+      end
+
+      result_hash[subject_item] << related_item if related_item
+    end
+    
+
+    result_hash
   end
   
     #version 1: returns a hash of the results

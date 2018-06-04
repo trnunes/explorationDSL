@@ -1,5 +1,5 @@
 require './test/xplain_unit_test'
-require './filters/filter_factory'
+require './operations/filters/filter_factory'
 require './operations/refine'
 require './operations/filters/filter'
 require './operations/filters/simple_filter'
@@ -29,6 +29,24 @@ class WorkflowTest < XplainUnitTest
   def setup
     super
     Xplain.reset_workflow
+  end
+  def test_inexistent_operation
+    wf = Xplain.new_workflow
+    assert_raise NameError do
+      op = wf.inexistent_operation(input: Node.new('root'))
+    end
+  end
+  
+  def test_inexistent_auxiliary_function
+    wf = Xplain.new_workflow
+    assert_raise NameError do
+      op = wf.refine(input: Node.new('root')) do
+        equals do
+          relation "_:author"
+          entity "_:p2"
+        end
+      end.pivot(){inexistent_aux_function "_:author"}.execute()
+    end
   end
   
   def test_chain_two_operations
@@ -106,8 +124,8 @@ class WorkflowTest < XplainUnitTest
       Node.new(Xplain::Entity.new("_:p8"))
     ]
 
-    root = Node.new("root")
-    root.children = input_nodes
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
     expected_results = Set.new([Xplain::Entity.new("_:p5")])
     wf = Xplain.get_current_workflow
     op = wf.pivot(input: root){relation "_:cite"}.refine do
@@ -123,7 +141,7 @@ class WorkflowTest < XplainUnitTest
       ]
       end
     end
-    assert_equal expected_results, Set.new(wf.execute.first.children.map{|n|n.item})
+    assert_equal expected_results, Set.new(wf.execute.first.to_tree.children.map{|n|n.item})
    end
    
    def test_pivot_refine_intersect
@@ -137,8 +155,8 @@ class WorkflowTest < XplainUnitTest
        Node.new(Xplain::Entity.new("_:p8"))
      ]
 
-     root = Node.new("root")
-     root.children = input_nodes
+     root = Xplain::ResultSet.new(nil, input_nodes)
+     
      expected_results = Set.new([Xplain::Entity.new("_:p5")])
      wf = Xplain.get_current_workflow
      op = wf.pivot(input: root){relation "_:cite"}.refine do
@@ -156,8 +174,8 @@ class WorkflowTest < XplainUnitTest
       )
     
       rs = wf.execute
-      assert_false rs.first.children.empty?
-      assert_equal expected_results, Set.new(rs.first.children.map{|node| node.item})
+      assert_false rs.first.to_tree.children.empty?
+      assert_equal expected_results, Set.new(rs.first.to_tree.children.map{|node| node.item})
      
    end
    
@@ -172,8 +190,8 @@ class WorkflowTest < XplainUnitTest
        Node.new(Xplain::Entity.new("_:p8"))
      ]
 
-     root = Node.new("root")
-     root.children = input_nodes
+     root = Xplain::ResultSet.new(nil, input_nodes)
+     
      expected_results = Set.new([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5")])
      wf = Xplain.get_current_workflow
      op = wf.pivot(input: root){relation "_:cite"}.refine do
@@ -191,8 +209,8 @@ class WorkflowTest < XplainUnitTest
       )
     
       rs = wf.execute
-      assert_false rs.first.children.empty?
-      assert_equal expected_results, Set.new(rs.first.children.map{|node| node.item})
+      assert_false rs.first.to_tree.children.empty?
+      assert_equal expected_results, Set.new(rs.first.to_tree.children.map{|node| node.item})
      
    end
    

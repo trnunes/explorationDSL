@@ -1,0 +1,2 @@
+class AuxiliaryFunction
+end

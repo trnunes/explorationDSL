@@ -23,7 +23,7 @@ class Operation
   alias == eql?
 end
 
-class SetOperation << Operation
+class SetOperation < Operation
 end
 
 o1 = Operation.new(id: "rootOp")

@@ -5,15 +5,16 @@ module Xplain
     @@domain_label_relations_hash = {}
 
     def self.label_relations_for(type)
-      @@labels_by_type[Xplain::Namespace.expand_uri(type.id)] || []
+      
+      @@labels_by_type[Xplain::Namespace.expand_uri(type)] || []
     end
   
     def self.label_for_type(type, *relations)
-      if !@@labels_by_type.has_key?(Xplain::Namespace.expand_uri(type.id))
-        @@labels_by_type[Xplain::Namespace.expand_uri(type.id)] = []
+      if !@@labels_by_type.has_key?(Xplain::Namespace.expand_uri(type))
+        @@labels_by_type[Xplain::Namespace.expand_uri(type)] = []
       end
       relations.each do |r|
-        @@labels_by_type[Xplain::Namespace.expand_uri(type.id)] << Xplain::Namespace.expand_uri(r.id)
+        @@labels_by_type[Xplain::Namespace.expand_uri(type)] << Xplain::Namespace.expand_uri(r)
       end
     end
     

@@ -1,4 +1,4 @@
 module Grouping
-  class ByDistance
+  class ByDistance < GroupingRelation
   end
 end

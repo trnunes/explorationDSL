@@ -1,4 +1,4 @@
-class Filter
+class Filter < AuxiliaryFunction 
   def accept(filter_interpreter)
     filter_interpreter.visit(self)
   end
