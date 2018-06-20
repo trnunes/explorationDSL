@@ -8,7 +8,7 @@ class DiffTest < XplainUnitTest
     origin = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    actual_results = Diff.new(input: [origin, origin]).execute()
+    actual_results = Diff.new([origin, origin]).execute()
     assert_true actual_results.to_tree.children.empty?
   end
 
@@ -17,7 +17,7 @@ class DiffTest < XplainUnitTest
     origin = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    actual_results = Diff.new(input: [origin]).execute()
+    actual_results = Diff.new([origin]).execute()
     assert_equal origin.to_tree.children, actual_results.to_tree.children
   end
   
@@ -54,7 +54,7 @@ class DiffTest < XplainUnitTest
     
     expected_results = Set.new([Xplain::Entity.new("_:p1")])
 
-    actual_results = Diff.new(input: [input_1, input_2]).execute()
+    actual_results = Diff.new([input_1, input_2]).execute()
     assert_false actual_results.to_tree.children.empty?
     assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
     
@@ -84,7 +84,7 @@ class DiffTest < XplainUnitTest
     
     expected_output = [expected_p1, expected_p2]
 
-    actual_results = Diff.new(input: [input1, input2]).execute()
+    actual_results = Diff.new([input1, input2]).execute()
     assert_false actual_results.to_tree.children.empty?
     assert_equal Set.new(expected_output), Set.new(actual_results.to_tree.children)
     

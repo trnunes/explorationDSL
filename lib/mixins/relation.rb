@@ -3,6 +3,14 @@ module Xplain
   module Relation
     attr_accessor :root, :text, :inverse, :id   
     
+    #TODO generalize it!
+    def text
+      if @text.to_s.empty?
+        return Xplain::Namespace.colapse_uri(id)
+      end
+      @text
+    end    
+
     def domain(offset=0, limit=nil)
       []
     end

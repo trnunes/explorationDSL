@@ -38,7 +38,7 @@ o6 = Operation.new(id: "diff", input: [o5, o3], arg1: "arg13", arg2: "arg14", ar
 new_bindings = {"op2" => {arg1: "newArg1", arg2: "newArg2"}, "op3" => {arg1: "newarg4"}}
 
 
-
+#TODO put the algorithm to use
 def execute(operation, new_bindings)
   operation_inputs = []
   if operation.input.empty?

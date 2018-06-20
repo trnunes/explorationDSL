@@ -8,7 +8,7 @@ class PivotTest < XplainUnitTest
     root = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    actual_results = Pivot.new(input: root,  relation: Xplain::SchemaRelation.new(id: "_:r1")).execute()
+    actual_results = Pivot.new(root,  relation: Xplain::SchemaRelation.new(id: "_:r1")).execute()
     assert_true actual_results.to_tree.children.empty?
   end
   
@@ -21,7 +21,7 @@ class PivotTest < XplainUnitTest
     
     
     begin
-      actual_results = Pivot.new(input: root).execute()
+      actual_results = Pivot.new(root).execute()
       assert false
     rescue MissingRelationException => e
       assert true
@@ -40,7 +40,7 @@ class PivotTest < XplainUnitTest
     
     
 
-    actual_results = Pivot.new(input: root,  relation: Xplain::SchemaRelation.new(id:"_:r1")).execute()
+    actual_results = Pivot.new(root,  relation: Xplain::SchemaRelation.new(id:"_:r1")).execute()
     assert_true actual_results.to_tree.children.empty?
   end
   
@@ -54,7 +54,7 @@ class PivotTest < XplainUnitTest
     
     expected_results = Set.new([Xplain::Entity.new("_:o1"), Xplain::Entity.new("_:o2")])
 
-    actual_results = Pivot.new(input: root, server: @server, relation: Xplain::SchemaRelation.new(id:"_:r1", server: @server)).execute()
+    actual_results = Pivot.new(root, server: @server, relation: Xplain::SchemaRelation.new(id:"_:r1", server: @server)).execute()
     assert_false actual_results.to_tree.children.empty?
     assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
     
@@ -70,7 +70,7 @@ class PivotTest < XplainUnitTest
     
     expected_results = Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8")])
 
-    actual_results = Pivot.new(input: root,  relation: Xplain::SchemaRelation.new(id:"_:cite", inverse: true)).execute()
+    actual_results = Pivot.new(root,  relation: Xplain::SchemaRelation.new(id:"_:cite", inverse: true)).execute()
     assert_false actual_results.to_tree.children.empty?
     assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end
@@ -84,7 +84,7 @@ class PivotTest < XplainUnitTest
     
     expected_results = Set.new([Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")])
     path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:cite"), Xplain::SchemaRelation.new(id: "_:author")])
-    actual_results = Pivot.new(input: root,  relation: path).execute()
+    actual_results = Pivot.new(root,  relation: path).execute()
     assert_false actual_results.to_tree.children.empty?
     assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end
@@ -100,7 +100,7 @@ class PivotTest < XplainUnitTest
     path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:author", inverse: true), Xplain::SchemaRelation.new(id: "_:cite", inverse: true)])
     expected_results = Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"), Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10")])
 
-    actual_results = Pivot.new(input: root,  relation: path).execute()
+    actual_results = Pivot.new(root,  relation: path).execute()
     assert_false actual_results.to_tree.children.empty?
     assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end
@@ -114,7 +114,7 @@ class PivotTest < XplainUnitTest
     
     expected_results = Set.new([Xplain::Entity.new("_:a1")])
     path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:publishedOn", inverse: true), Xplain::SchemaRelation.new(id: "_:author")])
-    actual_results = Pivot.new(input: root,  relation: path).execute()
+    actual_results = Pivot.new(root,  relation: path).execute()
     assert_false actual_results.to_tree.children.empty?
     assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end

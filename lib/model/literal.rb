@@ -34,13 +34,15 @@ module Xplain
     def eql?(literal)
       literal.is_a?(self.class) && literal.value == @value
     end
+
+
     
     def hash
       @value.hash
     end
   
     alias == eql?
-    
+    alias_method :text, :value    
   
     def to_s
       "Literal: " + @value.to_s

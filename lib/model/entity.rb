@@ -9,8 +9,15 @@ module Xplain
       @text = text
 
     end
-  
-  
+    
+    #TODO generalize it!
+    def text
+      if @text.to_s.empty?
+        return Xplain::Namespace.colapse_uri(id)
+      end
+      @text
+    end
+        
     def add_server(server)
       @server = server
     end
@@ -22,6 +29,7 @@ module Xplain
     def inspect
       to_s
     end
+    
   
     def eql?(item)
       if !item.respond_to? :id

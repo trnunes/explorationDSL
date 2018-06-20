@@ -11,7 +11,7 @@ module Xplain
     def expression
       "Xplain::Type.new(\"" + @id + "\")"
     end
-    
+        
     def to_s
       'Type: ' + self.id
     end

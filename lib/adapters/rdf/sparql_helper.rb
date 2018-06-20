@@ -142,7 +142,7 @@ module SPARQLHelper
       type = sample_type(relation_uri, items, relation.inverse?)
       label_clause = label_where_clause(var, Xplain::Visualization.label_relations_for(type.id))
     end
-
+    
     label_clause = "OPTIONAL " + label_clause if !label_clause.empty?
     label_clause
   end
@@ -200,7 +200,9 @@ module SPARQLHelper
     execute(query).each do |solution|
       next if(solution.to_a.empty?)
       subject_id = Xplain::Namespace.colapse_uri(solution[:s].to_s)
-      items << Xplain::Entity.new(subject_id)
+      item = Xplain::Entity.new(subject_id)
+      item.text = solution[:ls].to_s
+      items << item
     end
     items
   end
@@ -224,6 +226,7 @@ module SPARQLHelper
           else
             related_item = Xplain::Entity.new(Xplain::Namespace.colapse_uri(object_id.to_s))
             related_item.type = "rdfs:Resource"
+            related_item.text = solution[:lo].to_s
             related_item.add_server @server
             related_item
           end        
@@ -240,52 +243,6 @@ module SPARQLHelper
 
       result_hash[subject_item] << related_item if related_item
     end
-    
-
     result_hash
   end
-  
-    #version 1: returns a hash of the results
-  # def get_results(query, relation)
-  #   hash = {}
-  #
-  #   execute(query).each do |solution|
-  #
-  #
-  #     subject_id = Xplain::Namespace.colapse_uri(solution[:s].to_s)
-  #     if(solution[:p].nil?)
-  #       if(relation.is_a?(Array))
-  #         relation_id = relation.map{|r| r.to_s}.join("/")
-  #       else
-  #         relation_id = relation.to_s
-  #       end
-  #     else
-  #       relation_id = Xplain::Namespace.colapse_uri(solution[:p].to_s)
-  #     end
-  #     item = Entity.new(subject_id)
-  #     item.text = solution[:ls].to_s
-  #     item.add_server(@server)
-  #     relation = SchemaRelation.new(id: relation_id, server: @server)
-  #
-  #
-  #     hash[item] ||= {}
-  #     hash[item][relation] ||=[]
-  #
-  #     if(solution[:o])
-  #       if solution[:o].literal?
-  #         object = build_literal(solution[:o])
-  #       else
-  #         object = Entity.new(Xplain::Namespace.colapse_uri(solution[:o].to_s))
-  #         object.type = "rdfs:Resource"
-  #         object.text = solution[:lo].to_s
-  #         object.add_server(@server)
-  #       end
-  #       hash[item][relation] << object
-  #     end
-  #
-  #   end
-  #   hash
-  # end
-  
-  
 end

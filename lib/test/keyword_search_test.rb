@@ -41,7 +41,7 @@ class KeywordSearchTest < XplainUnitTest
     ]
     input = Xplain::ResultSet.new(nil, restriction_input)
     
-    @keyword_search_operation = KeywordSearch.new(input: input, keyword_phrase:  'common_keyword')
+    @keyword_search_operation = KeywordSearch.new(input, keyword_phrase:  'common_keyword')
     result_set =  @keyword_search_operation.execute
     
     assert_equal Set.new(input.to_tree.leaves), Set.new(result_set.to_tree.leaves)

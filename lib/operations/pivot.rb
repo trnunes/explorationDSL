@@ -1,8 +1,8 @@
 class Pivot < Operation
   include Xplain::RelationFactory  
   
-  def initialize(args={}, &block)
-    super(args, &block)
+  def initialize(inputs, args={}, &block)
+    super(inputs, args, &block)
     if !block_given? && args[:relation]
       @relation = args[:relation]
     end
@@ -16,18 +16,19 @@ class Pivot < Operation
     @relation = new_relation
   end
   
-  def get_results()
-    if @input.nil? || @input.empty?
+  def get_results(inputs)
+    if inputs.nil? || inputs.empty? || inputs.first.empty?
       return []
     end
     
-    @input_set = @input.to_tree
+    @input_set = inputs.first.to_tree
     if server
       @relation.server = server
     end
+    # binding.pry
     result_set = @relation.restricted_image(@input_set.leaves)
     result_set.uniq! if result_set.contain_literals?
-    result_set
+    result_set.nodes
   end
   
   def validate

@@ -75,6 +75,7 @@ class Workflow
     depedencies.each{|dependent_node| chain(operation_node, dependent_node)}
   end
   
+  #TODO remove this three methods
   def intersect(nodes)
     chain_set_operation(Intersect.new, nodes)
   end

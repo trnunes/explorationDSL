@@ -27,6 +27,7 @@ module RDFNavigational
         
     query_stmt = "SELECT distinct ?o where{#{values_stmt} ?s <#{Xplain::Namespace.expand_uri(relation.id)}> ?o}"
     query_stmt = insert_order_by_subject(query_stmt)
+    binding.pry
     if limit > 0
       query_stmt << " OFFSET #{offset} LIMIT #{limit}"
     end
@@ -64,7 +65,7 @@ module RDFNavigational
         where_clause = "#{values_clause("?s", page_items)} {#{path_clause(relation)}}. #{mount_label_clause("?o", page_items, relation)} #{values_clause("?o", image_filter_items)}"
       end
   
-      query = "SELECT ?s ?o ?lo where{#{where_clause} #{path_clause_as_subselect(relation, values_clause("?s", page_items), "?o", args[:limit], args[:offset])}}"
+      query = "SELECT ?s ?o ?lo where{#{where_clause} }"
       query = insert_order_by_subject(query)
     
       results_hash.merge! get_results(query, relation)

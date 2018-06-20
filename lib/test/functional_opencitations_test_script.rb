@@ -1,5 +1,5 @@
 require 'xplain'
-requrie 'pry'
+require 'pry'
 
 ###
 ### Setting the namespaces for the opencitations dataset
@@ -16,14 +16,32 @@ Xplain::Namespace.new("sparpro", "http://purl.org/spar/pro/")
 Xplain::Namespace.new("frbr", "http://purl.org/vocab/frbr/core#")
 Xplain::Namespace.new("w3iont", "https://w3id.org/oc/ontology/")
 
+#Visualization properties config
+module Xplain::Visualization
+  label_for_type "http://www.w3.org/2000/01/rdf-schema#Resource", "rdfs:label"
+  label_for_type "http://purl.org/spar/fabio/Expression", "dcterms:title"
+  label_for_type "http://purl.org/spar/fabio/JournalArticle", "dcterms:title"
+  label_for_type "foaf:Agent", "foaf:name", "foaf:givenName"
+  label_for_type "http://purl.org/spar/biro/BibliographicReference", "http://purl.org/spar/c4o/hasContent"
+  label_for_type "http://purl.org/spar/fabio/Book", "dcterms:title"
+
+  label_for_type "http://purl.org/spar/fabio/BookSeries", "dcterms:title"
+  label_for_type "http://purl.org/spar/fabio/ProceedingsPaper", "dcterms:title"
+end
+
 ###
-### Setting up the blazegraph server containing the open citations 
+### Setting up the local blazegraph server containing the open citations 
 ### dataset running at localhost, port 3001.
 ###
-graph_url = "http://192.168.0.15:3001/blazegraph/namespace/kb/sparql"
 
-# setting the blazegraph server as the default data server for the exploration tasks
+graph_url = "http://localhost:3001/blazegraph/namespace/kb/sparql"
 Xplain.set_default_server class: BlazegraphDataServer, graph: graph_url
+
+###
+### Uncoment the following two lines to setup the remote opencitations endpoint
+###
+# graph_url = "http://opencitations.net/sparql"
+# Xplain.set_default_server class: BlazegraphDataServer, graph: graph_url, method: "get",  results_limit: 10000, items_limit: 100 
 
 # instantiating the metarelation "has_type" that maps instances to their respective types 
 has_type_relation = Xplain::SchemaRelation.new(id: "has_type")
@@ -31,11 +49,23 @@ has_type_relation = Xplain::SchemaRelation.new(id: "has_type")
 # retrieving the image of the "has_type" metarelation which is the set of all types of the open citations dataset
 all_types = has_type_relation.image
 
-book_type = all_types.select{|type| type.item.id == "fabio:Book"}.first
+book_types = all_types.select{|type| type.item.id == "fabio:BookSeries"}.first
 
-workflow = Xplain.get_current_workflow
-workflow.pivot(input: Xplain::ResultSet.new(nil, [book_type])){relation inverse "has_type"}
-rs = workflow.execute()
-rs.first.to_tree.children.each{|book_node| puts book_node.item.to_s}; puts
+#Selecting a node from the book_types result set
+book_series_type = all_types.nodes_select(["fabio:BookSeries"]).execute() 
 
-relations = workflow.last_executed.pivot{relation "relations"}.execute
+#pivoting to the instances of the book series type
+book_series = book_series_type.pivot do
+  relation inverse "rdf:type"
+end.execute()
+
+puts "RESULTS"
+puts "----------BOOK SERIES----------------"
+book_series.each{|book_node| puts book_node.item.text}; puts
+puts
+
+# Pivoting to the relations of the book series
+book_series_relations = book_series.pivot{relation "relations"}.execute()
+
+puts "------------BOOK SERIES RELATIONS----------------"
+book_series_relations.each{|relation| puts relation.item.text}; puts

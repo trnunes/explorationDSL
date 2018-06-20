@@ -1,7 +1,7 @@
 class Map < Operation
   
-  def initialize(args={}, &block)
-    super(args, &block)
+  def initialize(inputs, args={}, &block)
+    super(inputs, args, &block)
     if !args[:mapping_relation]
       raise MissingAuxiliaryFunctionException
     end
@@ -9,8 +9,12 @@ class Map < Operation
     @level = args[:level]
   end
   
-  def get_results
-    @input_set = @input
+  def get_results(inputs)
+    if inputs.nil? || inputs.empty? || inputs.first.empty?
+      return []
+    end
+
+    @input_set = inputs.first
     if @input_set.nil? || @input_set.to_tree.children.empty?
       return []
     end

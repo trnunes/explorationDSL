@@ -12,6 +12,16 @@ class Node
     @parent_edges = []
   end
   
+  def result_set
+    
+    parent = self
+    while (!parent.parent.nil?)
+      parent = parent.parent
+    end
+    return parent    
+  end
+  
+  
   def annotate(annotation)
     @annotations << annotation
   end

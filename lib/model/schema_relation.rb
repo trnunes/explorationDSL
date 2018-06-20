@@ -4,7 +4,7 @@ module Xplain
     include Xplain::Relation
     include Xplain::GraphConverter
     
-    attr_accessor :id, :server, :root, :inverse, :cursor, :text
+    attr_accessor :id, :server, :root, :inverse, :cursor
     @@meta_relations = [:relations, :has_type, :relations_domain, :relations_image]
     def initialize(args={})
       @id = args[:id]
@@ -18,7 +18,6 @@ module Xplain
     def meta_relation?
       @@meta_relations.include? @id.to_sym      
     end    
-    
    
     def schema?
       true
@@ -38,7 +37,7 @@ module Xplain
           end
         return Xplain::ResultSet.new(SecureRandom.uuid, result_graph)
       end
-      Xplain::ResultSet.new(SecureRandom.uuid, hash_to_graph(@server.image(self, offset, limit)))
+      Xplain::ResultSet.new(SecureRandom.uuid, hash_to_graph(@server.image(self, offset.to_i, limit.to_i)))
     end
   
     def domain(offset=0, limit=-1)

@@ -164,8 +164,15 @@ class ModelTest < XplainUnitTest
   def test_entity_namespace
     Xplain::Namespace.new("xplain", "http://xplain/")
     paper1 = Xplain::Entity.new("_:paper1")
-    expected_results = Set.new([Xplain::Entity.new('_:p2'), Xplain::Entity.new('_:p3'), Xplain::Entity.new('_:p4')])
-    assert_equal expected_results, paper1.xplain__cites
+    expected_results = Set.new(create_nodes [Xplain::Entity.new('_:p2'), Xplain::Entity.new('_:p3'), Xplain::Entity.new('_:p4')])
+    assert_equal expected_results, Set.new(paper1.xplain__cites.nodes)
+  end
+  
+  def test_dsl_inverse_relation
+    Xplain::Namespace.new("xplain", "http://xplain/")
+    paper1 = Xplain::Entity.new("_:p2")
+    expected_results = Set.new(create_nodes [Xplain::Entity.new('_:paper1')])
+    assert_equal expected_results, Set.new(paper1.xplain__cites(:inverse).nodes)
   end
   
   def test_relations_image

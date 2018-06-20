@@ -36,7 +36,7 @@ require './mixins/model_factory'
 require './adapters/navigational'
 require './adapters/searchable'
 require './adapters/data_server'
-require './adapters/rdf/cache'
+
 require './adapters/rdf/rdf_navigational'
 require './adapters/rdf/sparql_helper'
 require './adapters/rdf/rdf_data_server'

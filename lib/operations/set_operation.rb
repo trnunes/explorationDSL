@@ -3,11 +3,11 @@ class SetOperation < Operation
   ###Informing that the instances of this class receive multiple sets as inputs
   MULTI_SET = true
   
-  def get_results()
+  def get_results(inputs)
     parent = Node.new('unite')
     
-    input = @input[0]
-    target = @input[1]
+    input = inputs[0]
+    target = inputs[1]
     
     if(input.nil? || input.to_tree.children.empty?)
       if(target)
@@ -24,13 +24,13 @@ class SetOperation < Operation
     compute(input, target)
   end
   
-  def validate
-    if @input.nil?
-      raise InvalidInputException.new("Nil input for Unite operation!")
+  def validate()
+    if @inputs.nil?
+      raise InvalidInputException.new("Nil input for operation!")
     end
   
   end
-  
+  #TODO Remove. This method is no longer needed.
   def accept_multiple_sets?
     return true
   end

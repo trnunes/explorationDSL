@@ -15,7 +15,12 @@ class RelationHandler
     end
     relation_id += relation_name
     
-    relation = Xplain::SchemaRelation.new(server: Xplain.default_server, id: relation_id)
-    Set.new(relation.restricted_image([@item]).map{|node| node.item})
+    inverse = false
+    if !args.empty?
+      inverse = (args.first == :inverse)
+    end
+    
+    relation = Xplain::SchemaRelation.new(server: Xplain.default_server, id: relation_id, inverse: inverse)
+    relation.restricted_image([@item])
   end
 end

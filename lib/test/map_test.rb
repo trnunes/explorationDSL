@@ -13,14 +13,14 @@ class MapTest < XplainUnitTest
     
     
     assert_raise MissingAuxiliaryFunctionException do
-      rs = Map.new(input: input).execute
+      rs = Map.new(input).execute
     end
   end
     
   def test_map_by_empty_input_set
     root = Xplain::ResultSet.new(nil, [])
 
-    rs = Map.new(input: root, mapping_relation: Mapping::Sum.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute
+    rs = Map.new(root, mapping_relation: Mapping::Sum.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute
 
     assert_true rs.to_tree.children.empty?, rs.inspect
   end
@@ -30,7 +30,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    rs = Map.new(input: input, mapping_relation: Mapping::Sum.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
+    rs = Map.new(input, mapping_relation: Mapping::Sum.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
     
     assert_equal rs.to_tree.children, input_nodes
     assert_true rs.to_tree.children.map{|n| n.children}.flatten.empty?
@@ -41,7 +41,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
     assert_raise NumericItemRequiredException do
-      rs = Map.new(input: input, mapping_relation: Mapping::Sum.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute()
+      rs = Map.new(input, mapping_relation: Mapping::Sum.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute()
     end
   end
   
@@ -50,7 +50,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    rs = Map.new(input: input, mapping_relation: Mapping::Sum.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
+    rs = Map.new(input, mapping_relation: Mapping::Sum.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
     
     assert_equal 3, rs.to_tree.children.size
     assert_equal Set.new(input_nodes), Set.new(rs.to_tree.children)
@@ -70,7 +70,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    rs = Map.new(input: input, mapping_relation: Mapping::Count.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute()
+    rs = Map.new(input, mapping_relation: Mapping::Count.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute()
     
     assert_equal 3, rs.to_tree.children.size
     assert_equal Set.new(input_nodes), Set.new(rs.to_tree.children)
@@ -90,7 +90,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    rs = Map.new(input: input, mapping_relation: Mapping::Count.new(Xplain::SchemaRelation.new(id: "_:cite", inverse: true))).execute()
+    rs = Map.new(input, mapping_relation: Mapping::Count.new(Xplain::SchemaRelation.new(id: "_:cite", inverse: true))).execute()
     
     assert_equal 3, rs.to_tree.children.size
     assert_equal Set.new(input_nodes), Set.new(rs.to_tree.children)
@@ -111,7 +111,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    rs = Map.new(input: input, mapping_relation: Mapping::Avg.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
+    rs = Map.new(input, mapping_relation: Mapping::Avg.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
     
     assert_equal 3, rs.to_tree.children.size
     assert_equal Set.new(input_nodes), Set.new(rs.to_tree.children)
@@ -130,7 +130,7 @@ class MapTest < XplainUnitTest
     input_nodes = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
     input = Xplain::ResultSet.new(nil, input_nodes)
     computed_relation = input.to_tree.get_level_relation(1)
-    rs = Map.new(input: input, level: 1, mapping_relation: Mapping::Count.new()).execute()
+    rs = Map.new(input, level: 1, mapping_relation: Mapping::Count.new()).execute()
     assert_equal 1, rs.to_tree.children.size
     assert_equal create_nodes([Xplain::Literal.new(3)]), rs.to_tree.children
     

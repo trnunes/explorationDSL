@@ -7,6 +7,10 @@ module Xplain
     @@current_workflow
   end
 
+  def self.exploration_repository
+    @@exploration_repository
+  end 
+  
   def self.new_workflow
     @@current_workflow = Workflow.new
     @@current_workflow
@@ -23,8 +27,8 @@ module Xplain
   end
   
   def self.set_exploration_repository(repository_params)
-    klass = server_params[:class]
-    @@exploration_repository = klass.new(server_params)
+    klass = repository_params[:class]
+    @@exploration_repository = klass.new(repository_params)
   end
   
   def self.default_server

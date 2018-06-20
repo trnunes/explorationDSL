@@ -15,8 +15,7 @@ class RDFDataServer < DataServer
 
 
   def initialize(options = {})
-    setup options
-    @cache = RDFCache.new(@cache_max_size)
+    setup options    
   end
   
   def setup(options)
@@ -26,6 +25,15 @@ class RDFDataServer < DataServer
     @cache_max_size = options[:cache_limit] || 20000
     @items_limit = options[:items_limit] || 300
     @results_limit = options[:limit] || 5000
+    
+    #Default Namespaces
+    Xplain::Namespace.new("owl", "http://www.w3.org/2002/07/owl#")
+    Xplain::Namespace.new("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
+    Xplain::Namespace.new("xsd", "http://www.w3.org/2001/XMLSchema#")
+    Xplain::Namespace.new("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+    Xplain::Namespace.new("dcterms", "http://purl.org/dc/terms/")
+    Xplain::Namespace.new("foaf", "http://xmlns.com/foaf/0.1/")
+    Xplain::Namespace.new("rss", "http://purl.org/rss/1.0/")
   end
   
   def size
@@ -57,7 +65,7 @@ class RDFDataServer < DataServer
     end
     
     types_with_vis_properties = (retrieved_types & types)
-    types_with_vis_properties.empty? ? Xplain::Type.new("rdfs:Resource") : types_with_vis_properties.first
+    types_with_vis_properties.empty? ? Xplain::Type.new("rdfs:Resource") : Xplain::Type.new(types_with_vis_properties.first)
   end
 
   def match_all(keyword_pattern, restriction_nodes=[], offset = 0, limit = 0)
@@ -176,18 +184,18 @@ class RDFDataServer < DataServer
     !@filter_intepreter.nil?
   end
   
-  def filter(input_nodes, filter_expr)
-    if input_nodes.empty?
+  def filter(input_items, filter_expr)
+    if input_items.empty?
       return []
     end
-    dataset_filter(input_nodes, filter_expr)
+    dataset_filter(input_items, filter_expr)
   end
   
-  def dataset_filter(input_nodes = [], filter_expr)
+  def dataset_filter(input_items = [], filter_expr)
     interpreter = SPARQLFilterInterpreter.new()
     parsed_query = interpreter.parse(filter_expr)
     query = "SELECT ?s where{"
-    query << values_clause("?s", input_nodes.map{|n|n.item})
+    query << values_clause("?s", input_items)
     query << parsed_query + "}"
     get_filter_results(query)
   end

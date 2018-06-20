@@ -7,7 +7,7 @@ class UniteTest < XplainUnitTest
     input_nodes = []
     origin = Xplain::ResultSet.new(nil, input_nodes)
     
-    actual_results = Unite.new(input: [origin, origin]).execute()
+    actual_results = Unite.new([origin, origin]).execute()
     assert_true actual_results.to_tree.children.empty?
   end
 
@@ -15,7 +15,7 @@ class UniteTest < XplainUnitTest
     input_nodes = create_nodes [Xplain::Entity.new("_:p1"), Xplain::Entity.new("_:p2")]
     origin = Xplain::ResultSet.new(nil, input_nodes)
     
-    actual_results = Unite.new(input: [origin]).execute()
+    actual_results = Unite.new([origin]).execute()
     assert_equal origin.to_tree.children, actual_results.to_tree.children
   end
   
@@ -52,7 +52,7 @@ class UniteTest < XplainUnitTest
     
     expected_results = Set.new([Xplain::Entity.new("_:p1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3")])
 
-    actual_results = Unite.new(input: [input_1, input_2]).execute()
+    actual_results = Unite.new([input_1, input_2]).execute()
     assert_false actual_results.to_tree.children.empty?
     assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
     
@@ -83,7 +83,7 @@ class UniteTest < XplainUnitTest
     
     expected_output = [expected_p1, expected_p2, expected_p3]
 
-    actual_results = Unite.new(input: [input1, input2]).execute()
+    actual_results = Unite.new([input1, input2]).execute()
     assert_false actual_results.to_tree.children.empty?
     assert_equal Set.new(expected_output), Set.new(actual_results.to_tree.children)
     
