@@ -1,5 +1,4 @@
-#OS junk files
+OS junk files
 [Tt]humbs.db
 *.DS_Store
-*.gem
-
+xplain-0.0.1.gem

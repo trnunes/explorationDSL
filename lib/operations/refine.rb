@@ -22,6 +22,8 @@ class Refine < Operation
     nodes_to_filter = input_set.leaves
     
     non_interpretable_filters = @server.validate_filters(@auxiliar_function)
+
+    #TODO the memory intepreter should navigate the tree respecting the order and position
     if !non_interpretable_filters.empty?
       interpreter = InMemoryFilterInterpreter.new(non_interpretable_filters, nodes_to_filter)
       nodes_to_filter = @auxiliar_function.accept(interpreter)
