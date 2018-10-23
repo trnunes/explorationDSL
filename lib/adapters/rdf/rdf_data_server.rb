@@ -23,7 +23,7 @@ class RDFDataServer < DataServer
     @content_type = options[:content_type] || "application/sparql-results+xml"
     @api_key = options[:api_key]
     @cache_max_size = options[:cache_limit] || 20000
-    @items_limit = options[:items_limit] || 300
+    @items_limit = options[:items_limit] || 0
     @results_limit = options[:limit] || 5000
     
     #Default Namespaces
@@ -196,12 +196,16 @@ class RDFDataServer < DataServer
   
   def dataset_filter(input_items = [], filter_expr)
     interpreter = SPARQLFilterInterpreter.new()
+    results = Set.new
     parsed_query = interpreter.parse(filter_expr)
-    query = "SELECT ?s ?ls where{"
-    query << values_clause("?s", input_items)
-    query << mount_label_clause("?s", input_items)
-    query << parsed_query + "}"
-    get_filter_results(query)
+    paginate(input_items, @items_limit).each do |page_items|
+      query = "SELECT ?s ?ls where{"
+      query << values_clause("?s", page_items)
+      query << mount_label_clause("?s", page_items)
+      query << parsed_query + "}"
+      results += get_filter_results(query)
+    end
+    results
   end
   
   def validate_filters(filter_expr)

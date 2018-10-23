@@ -27,7 +27,7 @@ module RDFNavigational
         
     query_stmt = "SELECT distinct ?o where{#{values_stmt} ?s <#{Xplain::Namespace.expand_uri(relation.id)}> ?o}"
     query_stmt = insert_order_by_subject(query_stmt)
-    binding.pry
+    
     if limit > 0
       query_stmt << " OFFSET #{offset} LIMIT #{limit}"
     end
@@ -58,6 +58,7 @@ module RDFNavigational
     relation_uri = parse_item(relation)
     
     paginate(restriction_items, @items_limit).each do |page_items|
+      
       if(relation.is_a?(Xplain::PathRelation) && relation.size > 1)
   
         where_clause = "{#{path_clause(relation)}}. #{values_clause("?s", page_items)} #{values_clause("?o", image_filter_items)} #{mount_label_clause("?o", page_items, relation)}"
@@ -101,22 +102,23 @@ module RDFNavigational
 
     
   def find_relations(items)
-
-    are_literals = !items.empty? && items[0].is_a?(Xplain::Literal)
-    if(are_literals)
-      query = "SELECT distinct ?pf WHERE{ {VALUES ?o {#{items.map{|i| convert_literal(i.item)}.join(" ")}}. ?s ?pf ?o.}}"
-    else
-      query = "SELECT distinct ?pf ?pb WHERE{ {VALUES ?o {#{items.map{|i| "<" + i.item.id + ">"}.join(" ")}}. ?s ?pf ?o.} UNION {VALUES ?s {#{items.map{|i| "<" + i.item.id + ">"}.join(" ")}}. ?s ?pb ?o.}}"
-    end
-    
     results = Set.new
-    execute(query).each do |s|
-      if(!s[:pf].nil?)
-        results << Xplain::SchemaRelation.new(Xplain::Namespace.colapse_uri(s[:pf].to_s), true, self)
+    paginate(items, @items_limit).each do |page_items|
+      are_literals = !page_items.empty? && page_items[0].is_a?(Xplain::Literal)    
+      if(are_literals)
+        query = "SELECT distinct ?pf WHERE{ {VALUES ?o {#{page_items.map{|i| convert_literal(i.item)}.join(" ")}}. ?s ?pf ?o.}}"
+      else
+        query = "SELECT distinct ?pf ?pb WHERE{ {VALUES ?o {#{page_items.map{|i| "<" + i.item.id + ">"}.join(" ")}}. ?s ?pf ?o.} UNION {VALUES ?s {#{page_items.map{|i| "<" + i.item.id + ">"}.join(" ")}}. ?s ?pb ?o.}}"
       end
       
-      if(!s[:pb].nil?)
-        results << Xplain::SchemaRelation.new(Xplain::Namespace.colapse_uri(s[:pb].to_s), false, self)
+      execute(query).each do |s|
+        if(!s[:pf].nil?)
+          results << Xplain::SchemaRelation.new(Xplain::Namespace.colapse_uri(s[:pf].to_s), true, self)
+        end
+        
+        if(!s[:pb].nil?)
+          results << Xplain::SchemaRelation.new(Xplain::Namespace.colapse_uri(s[:pb].to_s), false, self)
+        end
       end
     end
     results.sort{|r1, r2| r1.to_s <=> r2.to_s}
@@ -160,24 +162,26 @@ module RDFNavigational
   def relations_restricted_image(args)
     
     restriction_items = args[:restriction].map{|node|node.item} || []
-
+    results = Set.new
     are_literals = !restriction_items.empty? && restriction_items[0].is_a?(Xplain::Literal)
-    if(are_literals)
-      query = "SELECT distinct ?pf WHERE{ {#{values_clause("?o", restriction_items)}}. ?s ?pf ?o.}"
-    else
-      query = "SELECT distinct ?pf ?pb WHERE{ {{#{values_clause("?o", restriction_items)}}. ?s ?pf ?o.} UNION {{#{values_clause("?s", restriction_items)}}. ?s ?pb ?o.}}"
+    paginate(restriction_items, @items_limit).each do |page_items|
+      if(are_literals)
+        query = "SELECT distinct ?pf WHERE{ {#{values_clause("?o", page_items)}}. ?s ?pf ?o.}"
+      else
+        query = "SELECT distinct ?pf ?pb WHERE{ {{#{values_clause("?o", page_items)}}. ?s ?pf ?o.} UNION {{#{values_clause("?s", page_items)}}. ?s ?pb ?o.}}"
+      end
+    
+      execute(query).each do |s|
+        if(!s[:pf].nil?)
+          results << Xplain::SchemaRelation.new(id: Xplain::Namespace.colapse_uri(s[:pf].to_s), inverse: true)
+        end
+        
+        if(!s[:pb].nil?)
+          results << Xplain::SchemaRelation.new(id: Xplain::Namespace.colapse_uri(s[:pb].to_s), inverse: false)
+        end
+      end
     end
     
-    results = Set.new
-    execute(query).each do |s|
-      if(!s[:pf].nil?)
-        results << Xplain::SchemaRelation.new(id: Xplain::Namespace.colapse_uri(s[:pf].to_s), inverse: true)
-      end
-      
-      if(!s[:pb].nil?)
-        results << Xplain::SchemaRelation.new(id: Xplain::Namespace.colapse_uri(s[:pb].to_s), inverse: false)
-      end
-    end
     results.sort{|r1, r2| r1.to_s <=> r2.to_s}
   end
   
@@ -185,45 +189,50 @@ module RDFNavigational
   def relations_restricted_domain(args)
     
     restriction_items = args[:restriction].map{|node|node.item} || []
-    
-    query = "SELECT DISTINCT ?s WHERE { #{values_clause("?relation", restriction_items)} ?s ?relation ?o. }"
-    
-    
     entities = []
-    execute(query).each do |s|
-      entity = Xplain::Entity.new(Xplain::Namespace.colapse_uri(s[:s].to_s))
-      # relation.text = s[:label].to_s if !s[:label].to_s.empty?
-      entity.server = self
-      entities << entity
+    paginate(restriction_items, @items_limit).each do |page_items|
+      query = "SELECT DISTINCT ?s WHERE { #{values_clause("?relation", page_items)} ?s ?relation ?o. }"
+      
+      execute(query).each do |s|
+        entity = Xplain::Entity.new(Xplain::Namespace.colapse_uri(s[:s].to_s))
+        # relation.text = s[:label].to_s if !s[:label].to_s.empty?
+        entity.server = self
+        entities << entity
+      end
     end
-    entities  
-
+    entities
   end
   
   def has_type_restricted_image(args)
-    
     restriction_items = args[:restriction].map{|node|node.item} || []
-    query = "SELECT DISTINCT ?class WHERE {#{values_clause("?s", restriction_items)} ?s a ?class.}"
     classes = []
-    execute(query).each do |s|
-      type = Xplain::Type.new(Xplain::Namespace.colapse_uri(s[:class].to_s))
-      type.add_server(self)
-      classes << type
+    paginate(restriction_items, @items_limit).each do |page_items|
+      query = "SELECT DISTINCT ?class WHERE {#{values_clause("?s", page_items)} ?s a ?class.}"
+    
+      execute(query).each do |s|
+        type = Xplain::Type.new(Xplain::Namespace.colapse_uri(s[:class].to_s))
+        type.add_server(self)
+        classes << type
+      end
     end
-    classes
+    
+    classes.sort{|r1, r2| r1.to_s <=> r2.to_s}
 
   end  
   
   def has_type_restricted_domain(args)
     restriction_items = args[:restriction].map{|node|node.item} || []
-    query = "SELECT DISTINCT ?s WHERE {#{values_clause("?class", restriction_items)} ?s a ?class.}"
+    
     entities = []
-    execute(query).each do |s|
-      entity = Xplain::Entity.new(Xplain::Namespace.colapse_uri(s[:s].to_s))
-      entity.add_server(self)
-      entities << entity
+    paginate(restriction_items, @items_limit).each do |page_items|
+      query = "SELECT DISTINCT ?s WHERE {#{values_clause("?class", page_items)} ?s a ?class.}"
+      execute(query).each do |s|
+        entity = Xplain::Entity.new(Xplain::Namespace.colapse_uri(s[:s].to_s))
+        entity.add_server(self)
+        entities << entity
+      end
     end
-    entities
+    entities.sort{|r1, r2| r1.to_s <=> r2.to_s}
   end
   
 end

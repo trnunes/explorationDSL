@@ -26,7 +26,11 @@ class DataServer
   def correlate(origin_item, target_item)
   end
   
+  #TODO ANALYZE whether theres a better place for this (maybe an enumerable mixin)
   def paginate(items_list, page_size)
+    
+    return [items_list] if !(page_size.to_i > 0)
+    
     offset = 0
     pages = []
     while offset < items_list.size
