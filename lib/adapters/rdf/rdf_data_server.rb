@@ -45,7 +45,7 @@ class RDFDataServer < DataServer
     
   end
   
-  def sample_type(relation_uri, items, inverse = false)
+  def sample_type(items, relation_uri = "", inverse = false)
     types = Xplain::Visualization.types
     types.delete("http://www.w3.org/2000/01/rdf-schema#Resource")
     
@@ -53,12 +53,15 @@ class RDFDataServer < DataServer
     if(types.size > 0 && !items[0].is_a?(Xplain::Literal))
       types_values_clause = "VALUES ?t {#{types.map{|t| "<" + Xplain::Namespace.expand_uri(t) + ">"}.join(" ")}}"
       items_values_clause = "VALUES ?s {#{items[0..5].map{|i| "<" + Xplain::Namespace.expand_uri(i.id) + ">"}.join(" ")}}"
-      if inverse
-        query = "SELECT distinct ?t WHERE{#{items_values_clause}. #{types_values_clause}. ?o #{relation_uri} ?s. ?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?t}"
-      else
-        query = "SELECT distinct ?t WHERE{#{items_values_clause}. #{types_values_clause}. ?s #{relation_uri} ?o. ?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?t}"
+      spo_clause =  ""
+      if !relation_uri.to_s.empty?
+        if inverse
+          spo_clause = "?o #{relation_uri} ?s."
+        else
+          spo_clause = "?s #{relation_uri} ?o."
+        end
       end
-      
+      query = "SELECT distinct ?t WHERE{#{items_values_clause}. #{types_values_clause}. #{spo_clause} ?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?t}"
       execute(query, content_type: content_type).each do |s|
         retrieved_types << Xplain::Namespace.expand_uri(s[:t].to_s)
       end
@@ -194,8 +197,9 @@ class RDFDataServer < DataServer
   def dataset_filter(input_items = [], filter_expr)
     interpreter = SPARQLFilterInterpreter.new()
     parsed_query = interpreter.parse(filter_expr)
-    query = "SELECT ?s where{"
+    query = "SELECT ?s ?ls where{"
     query << values_clause("?s", input_items)
+    query << mount_label_clause("?s", input_items)
     query << parsed_query + "}"
     get_filter_results(query)
   end

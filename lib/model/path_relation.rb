@@ -5,7 +5,7 @@ module Xplain
     
     extend Forwardable
     attr_accessor :id, :server, :inverse, :text, :relations, :limit, :root
-    def_delegators :@relations, :map, :each, :size
+    def_delegators :@relations, :map, :each, :size, :unshift, :last
   
   
     def initialize(args = {})

@@ -23,6 +23,17 @@ module Xplain
       true
     end
     
+    def text
+      text_to_return = @text.to_s
+      text_to_return = @id.dup.to_s if text_to_return.empty?
+      text_to_return << " of" if inverse?
+      text_to_return      
+    end
+    
+    def inverse?
+      @inverse
+    end
+    
     def reverse
       Xplain::SchemaRelation.new(id: id, inverse: !inverse?)
     end
@@ -96,10 +107,11 @@ module Xplain
       options[:restriction] = nodes
       options[:relation] = self
 
-      #TODO implement the group_by for meta-relations          
+      #TODO implement the group_by for meta-relations
       images_hash = @server.restricted_image(options)
-      images_hash.each do |key_item, related_items| 
-        results_hash[Node.new(key_item)] = related_items.map{|related_item| Node.new(related_item)}
+      images_hash.each do |key_item, related_items|
+        #TODO define the roles of each component e.g. relations should return nodes or items?
+        results_hash[key_item] = related_items.map{|related_item| Node.new(related_item)}
       end
       results_hash
     end

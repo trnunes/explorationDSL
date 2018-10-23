@@ -9,7 +9,7 @@ class Intersect < SetOperation
   def node_intersect(n1, n2, parent)
     n1.children.each do |child_n1|
       n2.children.each do |child_n2|
-        if child_n1 == child_n2
+        if child_n1.item == child_n2.item
           new_child = Node.new(child_n1.item)
           parent << new_child
           node_intersect(child_n1, child_n2, new_child)

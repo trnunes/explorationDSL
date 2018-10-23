@@ -204,4 +204,111 @@ class XplainUnitTest < Test::Unit::TestCase
     items.map{|item| Node.new(item)}
   end
   
+  def assert_same_items(node_list1, node_list2)
+    
+    assert_equal node_list1.class, node_list2.class
+    
+    items_list1 = node_list1.to_a.compact.map{|node| node.item if node.is_a? Node}
+    items_list2 = node_list2.to_a.compact.map{|node| node.item if node.is_a? Node}
+    
+    nodes_list_class = node_list1.class
+    assert_equal nodes_list_class.new(items_list1), nodes_list_class.new(items_list2)    
+  end
+  
+  def assert_same_items_set(node_list1, node_list2)
+    assert_same_items(Set.new(node_list1.to_a), Set.new(node_list2.to_a))
+  end
+  
+  def assert_same_items_tree_set(root1, root2)
+    
+    item1 = root1.item if root1.is_a? Node
+    item2 = root2.item if root2.is_a? Node
+    assert_equal item1, item2
+    assert_same_items_set root1.children, root2.children
+    for child_root1 in root1.children
+       child_root2 = root2.children.select{|node| node.item == child_root1.item}.first
+       assert_same_items_tree_set(child_root1, child_root2)
+    end
+  end
+  
+  def assert_same_items_tree_set_no_root(root1, root2)
+    for child_root1 in root1.children
+       child_root2 = root2.children.select{|node| node.item == child_root1.item}.first
+       assert_same_items_tree_set(child_root1, child_root2)
+    end
+  end
+  
+  alias assert_same_result_set assert_same_items_tree_set_no_root  
+
+  def test_assert_same_items_1_level
+    i1p1 = Node.new(Xplain::Entity.new("_:p1"))
+    i1p2 = Node.new(Xplain::Entity.new("_:p2"))
+    input1 = Xplain::ResultSet.new("_:rs", [i1p1, i1p2])
+
+    i2p1 = Node.new(Xplain::Entity.new("_:p1"))
+    i2p2 = Node.new(Xplain::Entity.new("_:p2"))
+    i2p3 = Node.new(Xplain::Entity.new("_:p3"))    
+    input2 = Xplain::ResultSet.new("_:rs", [i2p1, i2p2, i2p3])
+
+    i3p1 = Node.new(Xplain::Entity.new("_:p1"))
+    i3p2 = Node.new(Xplain::Entity.new("_:p2"))
+    input3 = Xplain::ResultSet.new("_:rs2", [i3p1, i3p2])
+    
+    
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1.to_tree, input3.to_tree)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input2.to_tree, input2.to_tree)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2.to_tree, input1.to_tree)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2.to_tree, input3.to_tree)}
+  end
+
+  def test_assert_same_items_2_levels
+    i1p1 = Node.new(Xplain::Entity.new("_:p1"))
+    i1p2 = Node.new(Xplain::Entity.new("_:p2"))
+    i1p1.children = [Node.new(Xplain::Entity.new("_:p1.1")), Node.new(Xplain::Entity.new("_:p1.2"))]
+    i1p2.children = [Node.new(Xplain::Entity.new("_:p2.1")), Node.new(Xplain::Entity.new("_:p2.2"))]
+    input1 = Xplain::ResultSet.new(nil, [i1p1, i1p2])
+
+    i2p1 = Node.new(Xplain::Entity.new("_:p1"))
+    i2p2 = Node.new(Xplain::Entity.new("_:p2"))
+    i2p3 = Node.new(Xplain::Entity.new("_:p3"))
+    i2p1.children = [Node.new(Xplain::Entity.new("_:p1.1")), Node.new(Xplain::Entity.new("_:p1.3"))]
+    i2p2.children = [Node.new(Xplain::Entity.new("_:p2.1")), Node.new(Xplain::Entity.new("_:p2.3"))]
+    i2p3.children = [Node.new(Xplain::Entity.new("_:p3.1"))]
+    input2 = Xplain::ResultSet.new(nil, [i2p1, i2p2, i2p3])
+
+    i3p1 = Node.new(Xplain::Entity.new("_:p1"))
+    i3p2 = Node.new(Xplain::Entity.new("_:p2"))
+    i3p1.children = [Node.new(Xplain::Entity.new("_:p1.1")), Node.new(Xplain::Entity.new("_:p1.2"))]
+    i3p2.children = [Node.new(Xplain::Entity.new("_:p2.1")), Node.new(Xplain::Entity.new("_:p2.2"))]
+    input3 = Xplain::ResultSet.new(nil, [i3p1, i3p2])
+    
+    
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1.to_tree, input3.to_tree)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input2.to_tree, input2.to_tree)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2.to_tree, input1.to_tree)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2.to_tree, input3.to_tree)}
+  end
+  
+  def test_assert_same_items_different_levels
+    i1p1 = Node.new(Xplain::Entity.new("_:p1"))
+    i1p2 = Node.new(Xplain::Entity.new("_:p2"))
+    i1p1.children = [Node.new(Xplain::Entity.new("_:p1.1"))]    
+    input1 = Xplain::ResultSet.new(nil, [i1p1, i1p2])
+
+    i2p1 = Node.new(Xplain::Entity.new("_:p1"))
+    i2p2 = Node.new(Xplain::Entity.new("_:p2"))
+    input2 = Xplain::ResultSet.new(nil, [i2p1, i2p2])
+
+    i3p1 = Node.new(Xplain::Entity.new("_:p1"))
+    i3p2 = Node.new(Xplain::Entity.new("_:p2"))
+    i3p1.children = [Node.new(Xplain::Entity.new("_:p1.1"))]
+    input3 = Xplain::ResultSet.new(nil, [i3p1, i3p2])
+    
+    
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1.to_tree, input3.to_tree)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input2.to_tree, input2.to_tree)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2.to_tree, input1.to_tree)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2.to_tree, input3.to_tree)}
+  end
+
 end

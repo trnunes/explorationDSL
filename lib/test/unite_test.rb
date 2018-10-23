@@ -16,7 +16,7 @@ class UniteTest < XplainUnitTest
     origin = Xplain::ResultSet.new(nil, input_nodes)
     
     actual_results = Unite.new([origin]).execute()
-    assert_equal origin.to_tree.children, actual_results.to_tree.children
+    assert_same_result_set origin.to_tree, actual_results.to_tree
   end
   
   def test_nil_input
@@ -81,22 +81,12 @@ class UniteTest < XplainUnitTest
     expected_p3.children = [Node.new(Xplain::Entity.new("_:p3.1"))]
     
     
-    expected_output = [expected_p1, expected_p2, expected_p3]
+    expected_output = Xplain::ResultSet.new(nil, [expected_p1, expected_p2, expected_p3])
 
     actual_results = Unite.new([input1, input2]).execute()
     assert_false actual_results.to_tree.children.empty?
-    assert_equal Set.new(expected_output), Set.new(actual_results.to_tree.children)
     
-    actual_p1 = actual_results.to_tree.children.select{|child| child == i1p1}[0]
-    actual_p2 = actual_results.to_tree.children.select{|child| child == i1p2}[0]
-    actual_p3 = actual_results.to_tree.children.select{|child| child == i2p3}[0]
-
-    assert_equal Set.new(actual_p1.children), Set.new(expected_p1.children)
-    assert_equal Set.new(actual_p2.children), Set.new(expected_p2.children)
-    assert_equal Set.new(actual_p3. children), Set.new(expected_p3.children)
-    
+    assert_same_result_set actual_results.to_tree, expected_output.to_tree    
   end
-  
-
     
 end

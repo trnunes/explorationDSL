@@ -56,7 +56,7 @@ class SPARQLFilterInterpreter
       
   def generate_where_hash(relation, operator, value)
     hash = {}
-    where = path_clause(relation)
+    where = path_clause(relation, true)
     if relation
       hash[where] ||= []
       hash[where] << filter("?o", operator, value)

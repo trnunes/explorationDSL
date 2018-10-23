@@ -27,6 +27,6 @@ module Xplain
     
     def to_nodes(items_list)
       items_list.map{|item| Node.new(item)}
-    end  
+    end
   end
 end

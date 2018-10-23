@@ -22,7 +22,7 @@ module SPARQLHelper
   end
   
   def convert_path_relation(relation)
-    relation.map{|r| "<" + Xplain::Namespace.expand_uri(r.to_s) + ">"}.join("/")
+    relation.map{|r| "<" + Xplain::Namespace.expand_uri(r.id) + ">"}.join("/")
   end
   
   def parse_item(item)
@@ -35,52 +35,74 @@ module SPARQLHelper
       convert_item(item)
     else
       item.to_s
-    end
+    end    
   end
   
   #TODO improve to generate paths with mmultiple-direction relations
-  def path_clause(relations, obj_var = "?o")
-    query = 
-    if self.class::ACCEPT_PATH_CLAUSE
-      relations.map{|r| "<" + Xplain::Namespace.expand_uri(r.to_s) + ">"}.join("/")
-    elsif relations.is_a?(Xplain::SchemaRelation)
-      if(relations.inverse?)
-        clause = "#{obj_var} <" + Xplain::Namespace.expand_uri(relations.id) + "> ?s"
-      else
-        clause = "?s <" + Xplain::Namespace.expand_uri(relations.id) + "> #{obj_var}"
-      end
-      
-    else
-      count = 0
-      svar = "?s"
-      
-      if relations.size == 1
-        if relations.first.inverse?
-          return "#{obj_var} <" + Xplain::Namespace.expand_uri(relations.id) + "> ?s"
-        else
-          return "?s <" + Xplain::Namespace.expand_uri(relations.id) + "> #{obj_var}"
-        end
-      else
-        ovar = "?s1"
-      end
-      
-      relations.map do |r|           
-        count += 1
-        ovar = obj_var if (count == relations.size)
-        if(r.inverse?)
-          clause = "#{ovar} <" + Xplain::Namespace.expand_uri(r.id) + "> #{svar}"
-        else
-          clause = "#{svar} <" + Xplain::Namespace.expand_uri(r.id) + "> #{ovar}"
-        end
-        svar = ovar
-        ovar = "?s#{count}"
-        clause
-      end.join(".")      
-    end
-
-    query
-  end
+  # def path_clause(relations, obj_var = "?o")
+    # query = 
+    # if self.class::ACCEPT_PATH_CLAUSE
+      # relations.map{|r| "<" + Xplain::Namespace.expand_uri(r.id) + ">"}.join("/")
+    # elsif relations.is_a?(Xplain::SchemaRelation)
+      # if(relations.inverse?)
+        # clause = "#{obj_var} <" + Xplain::Namespace.expand_uri(relations.id) + "> ?s"
+      # else
+        # clause = "?s <" + Xplain::Namespace.expand_uri(relations.id) + "> #{obj_var}"
+      # end
+    # else
+      # count = 1
+      # svar = "?s"
+      # if relations.size == 1
+        # if relations.first.inverse?
+          # return "#{obj_var} <" + Xplain::Namespace.expand_uri(relations.id) + "> ?s"
+        # else
+          # return "?s <" + Xplain::Namespace.expand_uri(relations.id) + "> #{obj_var}"
+        # end
+      # else
+        # ovar = "?s1"
+      # end
+#       
+      # relations.map do |r|           
+        # count += 1
+        # ovar = obj_var if (count > relations.size)
+        # if(r.inverse?)
+          # clause = "#{ovar} <" + Xplain::Namespace.expand_uri(r.id) + "> #{svar}"          
+          # ovar = "?s#{count}"
+        # else
+          # clause = "#{svar} <" + Xplain::Namespace.expand_uri(r.id) + "> #{ovar}"
+          # svar = ovar
+          # ovar = "?s#{count}"
+        # end
+        # clause
+      # end.join(".")      
+    # end
+# 
+    # query
+  # end
   
+    def path_clause(relations, continue_numbering=false)
+    relations = [relations] if !(relations.is_a?(Array) || relations.is_a?(Xplain::PathRelation))
+    @count = 0 if !continue_numbering || !@count
+    svar = "?s"    
+    previous_relation = nil
+    relations.map do |current_relation|
+      if current_relation == relations.last
+        ovar = "?o"
+      else
+        ovar = "?s#{@count += 1}"
+      end
+      
+      if current_relation.inverse?
+        ovar, svar = svar, ovar        
+        clause = "#{svar} <" + Xplain::Namespace.expand_uri(current_relation.id) + "> #{ovar}"
+      else
+        clause = "#{svar} <" + Xplain::Namespace.expand_uri(current_relation.id) + "> #{ovar}"
+        svar = ovar
+      end
+      clause
+    end.join(".")
+  end
+
   def path_clause_as_subselect(relations, values_clause_stmt="", select_var = "?o", limit=0, offset = 0)
     query = "SELECT distinct #{select_var}{#{values_clause_stmt} #{path_clause(relations)}}"
     "{" + insert_limit_clause(query, limit, offset) + "}"
@@ -123,11 +145,34 @@ module SPARQLHelper
   
 
   
-  def mount_label_clause(var, items, relation)
+  def mount_label_clause(var, items, relation = nil)
     
-    relation_uri = parse_item(relation)
+    
      
     label_clause = ""
+    label_relations = []
+    
+    if relation
+      relation_uri = parse_item(relation) 
+      label_relations = try_label_relations_by_relation(relation)
+    end
+    
+    label_relations_not_found = label_relations.empty?
+    
+    if label_relations_not_found
+      if relation
+        type = sample_type(items, relation_uri, relation.inverse?)
+      else
+        type = sample_type(items)
+      end      
+      label_relations = Xplain::Visualization.label_relations_for(type.id)  
+    end
+    label_clause = label_where_clause(var, label_relations)    
+    label_clause = "OPTIONAL " + label_clause if !label_clause.empty?
+    label_clause
+  end
+  
+  def try_label_relations_by_relation(relation)
     label_relations = []
     if relation.inverse?
       label_relations = Xplain::Visualization.domain_label_relations(relation)
@@ -135,16 +180,7 @@ module SPARQLHelper
 
       label_relations = Xplain::Visualization.image_label_relations(relation)
     end
-    
-    if !label_relations.empty?
-      label_clause = label_where_clause(var, label_relations)
-    else
-      type = sample_type(relation_uri, items, relation.inverse?)
-      label_clause = label_where_clause(var, Xplain::Visualization.label_relations_for(type.id))
-    end
-    
-    label_clause = "OPTIONAL " + label_clause if !label_clause.empty?
-    label_clause
+    label_relations
   end
   
   def build_literal(literal)
@@ -187,6 +223,8 @@ module SPARQLHelper
         "xsd:float" 
       when "http://www.w3.org/2001/XMLSchema#date"
         "xsd:date"
+      when "http://www.w3.org/2001/XMLSchema#gYear"
+        "xsd:gYear"
       when "http://www.w3.org/2001/XMLSchema#datetime"
         "xsd:datetime"
       else
@@ -196,15 +234,17 @@ module SPARQLHelper
   
   
   def get_filter_results(query)
-    items = []
+    items = {}
     execute(query).each do |solution|
       next if(solution.to_a.empty?)
       subject_id = Xplain::Namespace.colapse_uri(solution[:s].to_s)
-      item = Xplain::Entity.new(subject_id)
-      item.text = solution[:ls].to_s
-      items << item
+      if !items.has_key? subject_id
+        item = Xplain::Entity.new(subject_id)
+        item.text = solution[:ls].to_s
+        items[subject_id] = item
+      end      
     end
-    items
+    items.values
   end
   
   def get_results(query, relation)

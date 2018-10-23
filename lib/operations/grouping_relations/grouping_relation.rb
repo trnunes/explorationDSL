@@ -1,7 +1,8 @@
 module Grouping
   class GroupingRelation < AuxiliaryFunction
   
-    def initialize(*args)
+    def initialize(*args, &block)
+      super(&block)
     end
   
     def prepare(items, groups)

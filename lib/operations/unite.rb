@@ -1,49 +1,32 @@
 class Unite < SetOperation
   
-  def compute(input, target)
-    parent = Node.new('unite')
-    first_level = input.children + target.children
-    
-    if !first_level.is_a?(Xplain::Literal)
-      first_level = Set.new(first_level)
-    end
-    
-    parent.children = first_level
-    first_level.each{|node| node.parent = parent}
-    
-    input.children.each do |child1|
-      target.children.each do |child2|
-        if(child1 == child2)
-          node_unite(child1, child2, parent)
-        end
-      end
-    end
-
-    return parent.children
+  
+  def compute(input, target)    
+    node_unite(input, target)
+    input.children
   end
   
-  def node_unite(n1, n2, parent)
-    parent << n1
-    n1.parent = parent
-    # binding.pry
-    if(n1 == n2)
-      n1.children.each do |child_n1|      
-        n2.children.each do |child_n2|
-          if child_n1 == child_n2
-            node_unite(child_n1, child_n2, n1)
-          end
+  def node_unite(n1, n2)
+    
+    n1_children_node_by_item_hash = n1.to_hash_children_node_by_item
+    n2_children_node_by_item_hash = n2.to_hash_children_node_by_item
+    
+    children_items_in_common = n1_children_node_by_item_hash.keys & n2_children_node_by_item_hash.keys
+    n2_only_children_items = n2_children_node_by_item_hash.keys - children_items_in_common
+    
+    n2_only_children_items.each do |n2_child_item|
+      n2_only_nodes = n2_children_node_by_item_hash[n2_child_item]
+      n1.append_children n2_only_nodes
+    end
+    
+    children_items_in_common.each do |common_child_item|
+      n1_nodes = n1_children_node_by_item_hash[common_child_item]
+      n2_nodes = n2_children_node_by_item_hash[common_child_item]
+      n1_nodes.each do |n1_child_node|
+        n2_nodes.each do |n2_child_node|
+          node_unite(n1_child_node, n2_child_node)
         end
       end
-      union_children = n1.children + n2.children
-      if !n1.children[0].is_a?(Xplain::Literal)
-        n1.children = Set.new(union_children)
-      else
-        n1.children = union_children
-      end
-      
-    else
-      parent << n2
-      n2.parent = parent 
-    end
+    end    
   end
 end

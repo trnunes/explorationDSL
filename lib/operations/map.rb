@@ -1,11 +1,10 @@
-class Map < Operation
+class Xmap < Operation
   
   def initialize(inputs, args={}, &block)
     super(inputs, args, &block)
-    if !args[:mapping_relation]
-      raise MissingAuxiliaryFunctionException
+    if args[:mapping_relation]
+      @auxiliar_function = args[:mapping_relation]
     end
-    @mapping_visitor = args[:mapping_relation]
     @level = args[:level]
   end
   
@@ -26,13 +25,14 @@ class Map < Operation
   def map
     input_copy = @input_set.to_tree.copy
     nodes_to_map = input_copy.get_level(@level)
-    if @mapping_visitor.respond_to? :prepare
-      @mapping_visitor.prepare(nodes_to_map)
+    if @auxiliar_function.respond_to? :prepare
+      @auxiliar_function.prepare(nodes_to_map)
     end
     nodes_to_map.each do |node|
-      results = node.accept(@mapping_visitor)
+      results = node.accept(@auxiliar_function)
       node.children = results
     end
+    
     input_copy.children
   end
 end

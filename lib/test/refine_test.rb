@@ -289,7 +289,7 @@ class RefineTest < XplainUnitTest
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
-    expected_results = Set.new([Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p8")])
+    expected_results = Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p8")])
     actual_results = Refine.new(root) do
       And do [
         equals do
@@ -306,6 +306,30 @@ class RefineTest < XplainUnitTest
     assert_false actual_results.to_tree.children.empty?
     assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end
+  
+  def test_refine_property_path_size3
+    input_nodes = [
+      Node.new(Xplain::Entity.new("_:paper1")),
+      Node.new(Xplain::Entity.new("_:p2")),
+      Node.new(Xplain::Entity.new("_:p3")),
+      Node.new(Xplain::Entity.new("_:p4")),
+      Node.new(Xplain::Entity.new("_:p5")),
+      Node.new(Xplain::Entity.new("_:p6")),
+      Node.new(Xplain::Entity.new("_:p8"))
+    ]
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
+    expected_results = Set.new([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")])
+    actual_results = Refine.new(root) do
+      equals do
+        relation inverse("_:cite"), "_:submittedTo", "_:releaseYear"
+        literal "2005"
+      end
+    end.execute()
+    assert_false actual_results.to_tree.children.empty?
+    assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
+  end
+
   
   def test_refine_inverse_property_path
     input_nodes = [

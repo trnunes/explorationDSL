@@ -9,8 +9,8 @@ module Xplain
       Entity.new(entity_id)
     end
   
-    def new_literal(l_value)    
-      l_value.is_a?(Hash)? Literal.new(l_value.values.first, l_value.keys.first) : Literal.new(l_value)
+    def new_literal(l_value)
+      l_value.is_a?(Hash)? Literal.new(l_value.keys.first, l_value.values.first) : Literal.new(l_value)
     end  
   end
   
@@ -26,8 +26,26 @@ module Xplain
       if relations.empty?
         return nil
       end
-      
-      relations.map!{|r| (r.is_a?(Hash))? SchemaRelation.new(id: r.values.first, inverse: true) : SchemaRelation.new(id: r)}
+      relations.map! do |r_spec|
+        relation_instance = r_spec
+        if r_spec.is_a? String
+          relation_instance = SchemaRelation.new(id: r_spec)
+        elsif r_spec.is_a? Hash
+          if r_spec.has_key? :inverse
+            r_info = r_spec[:inverse]
+            if r_info.respond_to?(:reverse) && !r_info.is_a?(String)
+              relation_instance = r_info.reverse
+            elsif r_info.is_a? String
+              relation_instance = SchemaRelation.new(id: r_info, inverse: true)
+            elsif r_info.is_a? Hash
+              relation_instance = SchemaRelation.new(r_info)
+            end               
+          else
+            relation_instance = SchemaRelation.new(r_spec)
+          end  
+        end
+        relation_instance
+      end
       if relations.size > 1
         PathRelation.new(relations: relations)
       else

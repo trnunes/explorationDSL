@@ -118,5 +118,49 @@ class PivotTest < XplainUnitTest
     assert_false actual_results.to_tree.children.empty?
     assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end
+  
+  def test_pivot_direct_computed_relation
+    i1p1 = Node.new(Xplain::Entity.new("_:p1"))
+    i1p2 = Node.new(Xplain::Entity.new("_:p2"))
+    i1p3 = Node.new(Xplain::Entity.new("_:p3"))
+    i1p1.children = [Node.new(Xplain::Entity.new("_:p1.1")), Node.new(Xplain::Entity.new("_:p1.2"))]
+    i1p2.children = [Node.new(Xplain::Entity.new("_:p2.1")), Node.new(Xplain::Entity.new("_:p2.2"))]
+    i1p3.children = [Node.new(Xplain::Entity.new("_:p3.1"))]
+    computed_relation = Xplain::ResultSet.new(nil, [i1p1, i1p2, i1p3])
     
+    input = Xplain::ResultSet.new(nil, [Node.new(Xplain::Entity.new("_:p1"))])
+    
+    expected_rs = Xplain::ResultSet.new(nil, i1p1.children)
+    
+    assert_same_result_set expected_rs.to_tree, input.pivot{relation computed_relation}.execute.to_tree
+    
+    input = Xplain::ResultSet.new(nil, [Node.new(Xplain::Entity.new("_:p1")), Node.new(Xplain::Entity.new("_:p2"))])
+    
+    expected_rs = Xplain::ResultSet.new(nil, i1p1.children + i1p2.children)
+    
+    assert_same_result_set expected_rs.to_tree, input.pivot{relation computed_relation}.execute.to_tree
+  end
+  
+  def test_pivot_inverse_computed_relation
+    i1p1 = Node.new(Xplain::Entity.new("_:p1"))
+    i1p2 = Node.new(Xplain::Entity.new("_:p2"))
+    i1p3 = Node.new(Xplain::Entity.new("_:p3"))
+    i1p1.children = [Node.new(Xplain::Entity.new("_:p1.1")), Node.new(Xplain::Entity.new("_:p1.2"))]
+    i1p2.children = [Node.new(Xplain::Entity.new("_:p2.1")), Node.new(Xplain::Entity.new("_:p2.2"))]
+    i1p3.children = [Node.new(Xplain::Entity.new("_:p3.1"))]
+    computed_relation = Xplain::ResultSet.new(nil, [i1p1, i1p2, i1p3])
+    
+    input = Xplain::ResultSet.new(nil, [Node.new(Xplain::Entity.new("_:p1.2"))])
+    
+    expected_rs = Xplain::ResultSet.new(nil, [i1p1])
+    
+    assert_same_result_set expected_rs.to_tree, input.pivot{relation inverse: computed_relation}.execute.to_tree
+    
+    input = Xplain::ResultSet.new(nil, [Node.new(Xplain::Entity.new("_:p1.1")), Node.new(Xplain::Entity.new("_:p3.1"))])
+    
+    expected_rs = Xplain::ResultSet.new(nil, [i1p1, i1p3])
+    
+    assert_same_result_set expected_rs.to_tree, input.pivot{relation inverse: computed_relation}.execute.to_tree
+  end
+ 
 end

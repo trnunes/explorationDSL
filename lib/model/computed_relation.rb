@@ -30,11 +30,13 @@ module Xplain
     end
   
     def restricted_image(restriction, options= {})
-      ResultSet.new(SecureRandom.uuid, Set.new((@domain_nodes & restriction).map{|dnode| dnode.children}.flatten))
+      items_set = Set.new(restriction.map{|node| node.item})
+      ResultSet.new(SecureRandom.uuid, Set.new((@domain_nodes.select{|dnode| items_set.include? dnode.item}).map{|dnode| dnode.children}.flatten))
     end
   
     def restricted_domain(restriction, options = {})
-      intersected_image = @domain_nodes.map{|dnode| dnode.children}.flatten & restriction
+      items_set = Set.new(restriction.map{|node| node.item})
+      intersected_image = @domain_nodes.map{|dnode| dnode.children}.flatten.select{|img_node| items_set.include? img_node.item}
       ResultSet.new(SecureRandom.uuid, Set.new(intersected_image.map{|img_node| img_node.parent}))
     end
     

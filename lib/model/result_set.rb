@@ -4,10 +4,10 @@ module Xplain
     include Xplain::ResultSetWritable
     extend Xplain::ResultSetReadable
     
-    attr_accessor :intention, :nodes, :id
+    attr_accessor :intention, :nodes, :id, :inverse
     def_delegators :@nodes, :each, :map, :select, :to_a, :empty?
     
-    def initialize(id, nodes_list, intention = nil, annotations = [])
+    def initialize(id, nodes_list, intention = nil, annotations = [], inverse=false)
       @id = id || SecureRandom.uuid            
       input_is_list_of_items = !nodes_list.first.is_a?(Node)
       @nodes = 
@@ -17,9 +17,14 @@ module Xplain
           nodes_list
         end
       @intention = intention
+      @inverse = inverse
       to_tree
     end
     
+    def inverse?
+      @inverse
+    end
+        
     def resulted_from
       inputs = []
       if @intention
@@ -30,6 +35,46 @@ module Xplain
     
     def get_page()
       
+    end
+    
+    #TODO generalize all computed relation methods using a mixin!
+    def restricted_image(restriction)
+      if inverse?
+        return compute_restricted_domain(restriction)
+      end
+      return compute_restricted_image(restriction)
+    end
+
+    def restricted_domain(restriction)
+      if inverse?
+        return compute_restricted_image(restriction)
+      end
+      return compute_restricted_domain(restriction)
+    end
+    
+    def compute_restricted_image(restriction)
+      restriction_items = Set.new(
+        restriction.map do |res_item|
+          if res_item.respond_to? :item
+            res_item.item  
+          else
+            res_item
+          end
+        end
+      )
+      
+      image = @nodes.select{|node| restriction_items.include? node.item}.map{|node| node.children}.flatten.compact
+      Xplain::ResultSet.new(SecureRandom.uuid, image)
+    end
+    
+    def compute_restricted_domain(restriction)
+      items_set = Set.new(restriction.map{|node| node.item})
+      intersected_image = @nodes.map{|dnode| dnode.children}.flatten.select{|img_node| items_set.include? img_node.item}
+      ResultSet.new(SecureRandom.uuid, Set.new(intersected_image.map{|img_node| img_node.parent}))
+    end
+    
+    def reverse()
+      Xplain::ResultSet.new(SecureRandom.uuid, @nodes, @intention, @annotations, !inverse?)
     end
     
     def to_tree
@@ -48,6 +93,10 @@ module Xplain
     
     def to_h
       build_h{|node, results_hash| add_value(results_hash, node.parent, node)}
+    end
+    
+    def to_item_h
+      build_h{|node, results_hash| add_value(results_hash, node.parent.item, node.item)}
     end
     
     ###
@@ -117,6 +166,7 @@ module Xplain
     def method_missing(m, *args, &block)
 
       instance = nil
+      
       klass = Object.const_get m.to_s.to_camel_case
   
       if !Operation.operation_class? klass

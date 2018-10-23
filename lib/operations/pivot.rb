@@ -22,11 +22,14 @@ class Pivot < Operation
     end
     
     @input_set = inputs.first.to_tree
-    if server
+    if server && @relation.respond_to?(:server)
       @relation.server = server
     end
-    # binding.pry
-    result_set = @relation.restricted_image(@input_set.leaves)
+    
+    #TODO repeated code, generalize it!
+    @level ||= @input_set.count_levels
+     
+    result_set = @relation.restricted_image(@input_set.get_level(@level))
     result_set.uniq! if result_set.contain_literals?
     result_set.nodes
   end

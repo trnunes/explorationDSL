@@ -9,11 +9,12 @@ class Operation
   attr_accessor :params, :server, :inputs, :id   
   
   def initialize(inputs=nil, args={}, &block)
-    # binding.pry
+    
     @id = args[:id] || SecureRandom.uuid
     setup_input inputs
     @server = args[:server] || Xplain.default_server
     @definition_block = block if block_given?
+    @level = args[:level]
   end
 
   def self.operation_class?(klass)

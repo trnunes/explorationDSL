@@ -3,7 +3,8 @@ class Group < Operation
   def initialize(inputs, args={}, &block)
     super(inputs, args, &block)
     if args[:grouping_relation]
-      @grouping_relation = args[:grouping_relation]
+      @auxiliar_function = args[:grouping_relation]
+      @level = args[:level]
     end
   end
   
@@ -19,15 +20,17 @@ class Group < Operation
     end
     
     input_copy = input_set.to_tree.copy
+    
+    @level ||= input_copy.count_levels - 1
 
-    next_to_last_level = input_copy.get_level(input_copy.count_levels - 1)
+    next_to_last_level = input_copy.get_level(@level)
     nodes_to_group = []
     next_to_last_level.each do |node|
       nodes_to_group += node.children
     end
     new_groups = []
-    @grouping_relation.prepare(nodes_to_group, new_groups)
-    new_groups = @grouping_relation.group(nodes_to_group)
+    @auxiliar_function.prepare(nodes_to_group, new_groups)
+    new_groups = @auxiliar_function.group(nodes_to_group)
     
     next_to_last_level.each do |node|
       children = node.children

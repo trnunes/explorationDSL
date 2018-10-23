@@ -19,19 +19,18 @@ class Refine < Operation
       return []
     end
 
-    nodes_to_filter = input_set.leaves
+    input_nodes = input_set.leaves
     
     non_interpretable_filters = @server.validate_filters(@auxiliar_function)
-
-    #TODO the memory intepreter should navigate the tree respecting the order and position
     if !non_interpretable_filters.empty?
-      interpreter = InMemoryFilterInterpreter.new(non_interpretable_filters, nodes_to_filter)
-      nodes_to_filter = @auxiliar_function.accept(interpreter)
+      interpreter = InMemoryFilterInterpreter.new(non_interpretable_filters, input_nodes)
+      input_nodes = @auxiliar_function.accept(interpreter)
     end
 
     if @server.can_filter? @auxiliar_function
-      nodes_to_filter = to_nodes(@server.filter(nodes_to_filter.map{|node| node.item}, @auxiliar_function))
+      input_nodes = to_nodes(@server.filter(input_nodes.map{|node| node.item}, @auxiliar_function))
     end
-    nodes_to_filter
+    
+    input_nodes
   end
 end

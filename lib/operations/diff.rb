@@ -9,7 +9,7 @@ class Diff < SetOperation
   def node_diff(n1, n2)
     n1.children.each do |child_n1|
       n2.children.each do |child_n2|
-        if child_n1 == child_n2
+        if child_n1.item == child_n2.item
           node_diff(child_n1, child_n2)
           if child_n1.leaf? && child_n2.leaf?
             remove_path(child_n1)

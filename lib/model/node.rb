@@ -71,6 +71,13 @@ class Node
     end
   end
   
+  def append_children(children_set)
+    @children_edges += children_set.map do |child| 
+      child.add_parent self
+      Edge.new(self, child)
+    end
+  end
+  
   def parent_edge=(parent_edge)
     @parent_edges << parent_edge
   end
@@ -150,7 +157,7 @@ class Node
   end
   
   def eql?(node)
-    node.item == @item
+    node.id == @id
   end
   
   def <<(child)
@@ -158,12 +165,29 @@ class Node
   end
   
   def hash
-    @item.hash
+    @id.hash
   end
   
   def to_s
     
     "N " + @item.to_s
+  end
+  
+  def to_hash_children_node_by_item
+    hash_children_node_by_item = {} 
+    children.each do |child|
+      
+      if !hash_children_node_by_item.has_key? child.item
+        hash_children_node_by_item[child.item] = []
+      end
+      hash_children_node_by_item[child.item] << child
+    end
+    hash_children_node_by_item
+    
+  end
+  
+  def children_items
+    children.map{|node| node.item}    
   end
   
   def inspect
