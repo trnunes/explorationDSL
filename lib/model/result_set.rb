@@ -5,11 +5,11 @@ module Xplain
     extend Xplain::ResultSetReadable
     
     attr_accessor :intention, :nodes, :id, :inverse
-    def_delegators :@nodes, :each, :map, :select, :to_a, :empty?
+    def_delegators :@nodes, :each, :map, :select, :to_a, :empty?, :size, :uniq, :sort
     
     def initialize(id, nodes_list, intention = nil, annotations = [], inverse=false)
       @id = id || SecureRandom.uuid            
-      input_is_list_of_items = !nodes_list.first.is_a?(Node)
+      input_is_list_of_items = nodes_list && !nodes_list.first.is_a?(Node)
       @nodes = 
         if input_is_list_of_items
           nodes_list.map{|item| Node.new(item)}          
@@ -83,6 +83,10 @@ module Xplain
       root
     end
     
+    def get_level(level)
+      to_tree.get_level(level)      
+    end
+    
     def build_h(&block)
       results_hash = {}
       each do |node|
@@ -114,10 +118,6 @@ module Xplain
       @nodes.to_a[0].is_a? Xplain::Literal
     end
     
-    def uniq!
-      @nodes = Set.new(@nodes)
-    end
-    
     def add_value(hash, key, value)
       if(!hash.has_key?(key))
         if value.is_a? Xplain::Literal
@@ -128,6 +128,7 @@ module Xplain
       end
       hash[key] << value
     end
+    
   #TODO It search for all occurrences and not only the first. change the name!    
     def search_first(item_id)
       nodes_found = []
@@ -162,7 +163,51 @@ module Xplain
       end
       return false
     end
+   
+   #TODO find a better place for uniq and sort operations
+    def uniq
+      items_hash = {}
+      @nodes.each do |node|        
+        items_hash[node.item] = node
+      end      
+      Xplain::ResultSet.new(@id.to_s + "_uniq", items_hash.values)
+    end
     
+    def uniq!
+      @nodes = uniq.nodes
+      self
+    end
+    
+    def sort(desc=true)
+      Xplain::ResultSet.new(@id.to_s + "_sorted", @nodes.sort do|n1, n2|
+        comparator = 
+          if (n1.item.is_a?(Xplain::Literal) && n2.item.is_a?(Xplain::Literal) && n1.item.numeric? && n2.item.numeric?)
+             
+            n1.item.value.to_f <=> n2.item.value.to_f
+          else
+            n1.item.text <=> n2.item.text
+          end
+        if desc
+          -comparator
+        else
+          comparator 
+        end
+      end)
+    end
+    
+    def sort_asc
+      sort(false)
+    end
+    
+    def sort!
+      @nodes = self.sort.nodes
+      self
+    end
+    
+    def sort_asc!
+      @nodes = self.sort_asc.nodes
+      self
+    end
     def method_missing(m, *args, &block)
 
       instance = nil

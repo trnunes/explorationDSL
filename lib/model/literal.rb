@@ -40,9 +40,17 @@ module Xplain
     def hash
       @value.hash
     end
-  
+    
+    def numeric?
+      return true if self.text =~ /\A\d+\Z/
+      true if Float(self.value) rescue false
+    end
+
     alias == eql?
-    alias_method :text, :value    
+    
+    def text
+      @value.to_s
+    end    
   
     def to_s
       "Literal: " + @value.to_s

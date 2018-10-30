@@ -220,7 +220,6 @@ class XplainUnitTest < Test::Unit::TestCase
   end
   
   def assert_same_items_tree_set(root1, root2)
-    
     item1 = root1.item if root1.is_a? Node
     item2 = root2.item if root2.is_a? Node
     assert_equal item1, item2
@@ -232,6 +231,7 @@ class XplainUnitTest < Test::Unit::TestCase
   end
   
   def assert_same_items_tree_set_no_root(root1, root2)
+    assert_equal root1.children.size, root2.children.size, "Children sets do no have the same size: #{root1.children.size} <> #{root2.children.size}"
     for child_root1 in root1.children
        child_root2 = root2.children.select{|node| node.item == child_root1.item}.first
        assert_same_items_tree_set(child_root1, child_root2)

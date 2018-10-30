@@ -65,9 +65,11 @@ class Node
   end
   
   def children=(children_set)
-    @children_edges = children_set.map do |child| 
-      child.add_parent self
-      Edge.new(self, child)
+    if children_set
+      @children_edges = children_set.map do |child| 
+        child.add_parent self
+        Edge.new(self, child)
+      end 
     end
   end
   

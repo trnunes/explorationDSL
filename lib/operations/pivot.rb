@@ -28,7 +28,7 @@ class Pivot < Operation
     
     #TODO repeated code, generalize it!
     @level ||= @input_set.count_levels
-     
+    
     result_set = @relation.restricted_image(@input_set.get_level(@level))
     result_set.uniq! if result_set.contain_literals?
     result_set.nodes

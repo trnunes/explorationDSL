@@ -368,4 +368,84 @@ class RefineTest < XplainUnitTest
     assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end
   
+  def test_refine_level_2_set
+
+    paper1 = Node.new(Xplain::Entity.new("_:paper1"))
+    p2 = Node.new(Xplain::Entity.new("_:p2"))
+    p3 = Node.new(Xplain::Entity.new("_:p3"))
+    p4 = Node.new(Xplain::Entity.new("_:p4"))
+    
+    journal1 = Node.new(Xplain::Entity.new("_:journal1"))
+    journal2 = Node.new(Xplain::Entity.new("_:journal2"))
+    
+    journal1.children = [paper1, p2]
+    journal2.children = [p3, p4]
+
+    input = Xplain::ResultSet.new(nil, [journal1, journal2])
+    
+    expected_results1 = Xplain::ResultSet.new(nil, [journal1])
+    expected_results2 = Xplain::ResultSet.new(nil, [journal2])
+    
+    actual_results = Refine.new(input, level: 2) do
+      equals do
+        relation "_:releaseYear"
+        literal "2005"
+      end
+    end.execute()
+    
+    assert_same_result_set actual_results.to_tree, expected_results1.to_tree
+
+    actual_results = Refine.new(input, level: 2) do
+      equals do
+        relation "_:releaseYear"
+        literal "2010"
+      end
+    end.execute()
+    
+    assert_same_result_set actual_results.to_tree, expected_results2.to_tree
+  end
+
+  def test_refine_level_3_set
+
+    paper1 = Node.new(Xplain::Entity.new("_:paper1"))
+    p2 = Node.new(Xplain::Entity.new("_:p2"))
+    p3 = Node.new(Xplain::Entity.new("_:p3"))
+    p4 = Node.new(Xplain::Entity.new("_:p4"))
+    
+    journal1 = Node.new(Xplain::Entity.new("_:journal1"))
+    journal2 = Node.new(Xplain::Entity.new("_:journal2"))
+    
+    journal1.children = [paper1, p2]
+    journal2.children = [p3, p4]
+
+    input = Xplain::ResultSet.new(nil, [journal1, journal2])
+    
+    expected_journal1 = Node.new(Xplain::Entity.new("_:journal1"))
+    expected_journal1.children = [paper1, p2]
+    
+    expected_journal2 = Node.new(Xplain::Entity.new("_:journal2"))
+    expected_journal2.children = [p3]
+    
+    expected_results1 = Xplain::ResultSet.new(nil, [expected_journal1])
+    expected_results2 = Xplain::ResultSet.new(nil, [expected_journal2])
+    
+    actual_results = Refine.new(input, level: 3) do
+      equals do
+        relation "_:author"
+        entity "_:a1"
+      end
+    end.execute()
+    
+    assert_same_result_set actual_results.to_tree, expected_results1.to_tree
+
+    actual_results = Refine.new(input, level: 3) do
+      equals do
+        relation "_:publishedOn"
+        entity "_:journal2"
+      end
+    end.execute()
+    
+    assert_same_result_set actual_results.to_tree, expected_results2.to_tree
+  end
+
 end

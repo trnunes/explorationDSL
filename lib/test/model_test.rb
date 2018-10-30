@@ -254,4 +254,41 @@ class ModelTest < XplainUnitTest
     actual_results = has_type.restricted_domain(create_nodes [Xplain::Entity.new("_:type1")])
     assert_same_items_set expected_results, actual_results
   end
+  
+  def test_result_set_uniq_items
+    input = Xplain::ResultSet.new(nil, [Node.new(Xplain::Entity.new("_:p1")), Node.new(Xplain::Entity.new("_:p2")), Node.new(Xplain::Entity.new("_:p2"))])
+    assert_equal input.size, 3
+    expected_result_set = Xplain::ResultSet.new(nil, [Node.new(Xplain::Entity.new("_:p1")), Node.new(Xplain::Entity.new("_:p2"))])
+    assert_same_result_set expected_result_set.to_tree, input.uniq.to_tree
+  end
+  
+  def test_result_set_sort
+    input = Xplain::ResultSet.new(nil, [Node.new(Xplain::Entity.new("_:a")), Node.new(Xplain::Entity.new("_:c")), Node.new(Xplain::Entity.new("_:b"))])
+    expected_nodes_array = [Node.new(Xplain::Entity.new("_:a")), Node.new(Xplain::Entity.new("_:b")), Node.new(Xplain::Entity.new("_:c"))]
+    assert_same_items input.sort_asc.nodes, expected_nodes_array
+  end
+  
+  def test_result_set_sort_by_text
+    input = Xplain::ResultSet.new(nil, [Node.new(Xplain::Entity.new("_:a", "b")), Node.new(Xplain::Entity.new("_:c", "a")), Node.new(Xplain::Entity.new("_:b", "c"))])
+    expected_nodes_array = [Node.new(Xplain::Entity.new("_:c")), Node.new(Xplain::Entity.new("_:a")), Node.new(Xplain::Entity.new("_:b"))]
+    assert_same_items input.sort_asc.nodes, expected_nodes_array
+  end
+  
+  def test_result_set_sort_literals_string
+    input = Xplain::ResultSet.new(nil, [Node.new(Xplain::Literal.new("b")), Node.new(Xplain::Literal.new("a")), Node.new(Xplain::Literal.new("c"))])
+    expected_nodes_array = [Node.new(Xplain::Literal.new("a")), Node.new(Xplain::Literal.new("b")), Node.new(Xplain::Literal.new("c"))]
+    assert_same_items input.sort_asc.nodes, expected_nodes_array
+  end
+  
+  def test_result_set_sort_literals_string_numeric
+    input = Xplain::ResultSet.new(nil, [Node.new(Xplain::Literal.new("12")), Node.new(Xplain::Literal.new("112")), Node.new(Xplain::Literal.new("3"))])
+    expected_nodes_array = [Node.new(Xplain::Literal.new("3")), Node.new(Xplain::Literal.new("12")), Node.new(Xplain::Literal.new("112"))]
+    assert_same_items input.sort_asc.nodes, expected_nodes_array
+  end
+  
+  def test_result_set_sort_literals_numeric
+    input = Xplain::ResultSet.new(nil, [Node.new(Xplain::Literal.new(12)), Node.new(Xplain::Literal.new(112)), Node.new(Xplain::Literal.new(3))])
+    expected_nodes_array = [Node.new(Xplain::Literal.new(112)), Node.new(Xplain::Literal.new(12)), Node.new(Xplain::Literal.new(3))]
+    assert_same_items expected_nodes_array, input.sort.nodes
+  end
 end
