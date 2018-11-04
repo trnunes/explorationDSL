@@ -259,7 +259,7 @@ class ModelTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, [Node.new(Xplain::Entity.new("_:p1")), Node.new(Xplain::Entity.new("_:p2")), Node.new(Xplain::Entity.new("_:p2"))])
     assert_equal input.size, 3
     expected_result_set = Xplain::ResultSet.new(nil, [Node.new(Xplain::Entity.new("_:p1")), Node.new(Xplain::Entity.new("_:p2"))])
-    assert_same_result_set expected_result_set.to_tree, input.uniq.to_tree
+    assert_same_result_set expected_result_set, input.uniq
   end
   
   def test_result_set_sort

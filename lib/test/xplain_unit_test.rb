@@ -224,6 +224,11 @@ class XplainUnitTest < Test::Unit::TestCase
     item2 = root2.item if root2.is_a? Node
     assert_equal item1, item2
     assert_same_items_set root1.children, root2.children
+    
+    root1_parent_edges = root1.parent_edges.map{|edge| [edge.origin.item, edge.target.item]}
+    root2_parent_edges = root2.parent_edges.map{|edge| [edge.origin.item, edge.target.item]}
+    
+    assert_equal root1_parent_edges, root2_parent_edges, "node #{root1.item.to_s} and node #{root2.item.to_s} parent edges are not the same."
     for child_root1 in root1.children
        child_root2 = root2.children.select{|node| node.item == child_root1.item}.first
        assert_same_items_tree_set(child_root1, child_root2)
@@ -231,14 +236,21 @@ class XplainUnitTest < Test::Unit::TestCase
   end
   
   def assert_same_items_tree_set_no_root(root1, root2)
+    root2.children.each{|child| child.parent_edges.each{|parent_edge| parent_edge.origin = root1 if parent_edge.origin == root2} }
+    
     assert_equal root1.children.size, root2.children.size, "Children sets do no have the same size: #{root1.children.size} <> #{root2.children.size}"
     for child_root1 in root1.children
        child_root2 = root2.children.select{|node| node.item == child_root1.item}.first
+       
        assert_same_items_tree_set(child_root1, child_root2)
+       
     end
   end
   
-  alias assert_same_result_set assert_same_items_tree_set_no_root  
+  def assert_same_result_set(rs1, rs2)
+    assert_same_items_tree_set_no_root rs1.to_tree, rs2.to_tree
+  end
+    
 
   def test_assert_same_items_1_level
     i1p1 = Node.new(Xplain::Entity.new("_:p1"))
@@ -255,10 +267,10 @@ class XplainUnitTest < Test::Unit::TestCase
     input3 = Xplain::ResultSet.new("_:rs2", [i3p1, i3p2])
     
     
-    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1.to_tree, input3.to_tree)}
-    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input2.to_tree, input2.to_tree)}
-    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2.to_tree, input1.to_tree)}
-    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2.to_tree, input3.to_tree)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1, input3)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input2, input2)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2, input1)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2, input3)}
   end
 
   def test_assert_same_items_2_levels
@@ -283,10 +295,10 @@ class XplainUnitTest < Test::Unit::TestCase
     input3 = Xplain::ResultSet.new(nil, [i3p1, i3p2])
     
     
-    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1.to_tree, input3.to_tree)}
-    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input2.to_tree, input2.to_tree)}
-    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2.to_tree, input1.to_tree)}
-    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2.to_tree, input3.to_tree)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1, input3)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input2, input2)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2, input1)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2, input3)}
   end
   
   def test_assert_same_items_different_levels
@@ -305,10 +317,10 @@ class XplainUnitTest < Test::Unit::TestCase
     input3 = Xplain::ResultSet.new(nil, [i3p1, i3p2])
     
     
-    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1.to_tree, input3.to_tree)}
-    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input2.to_tree, input2.to_tree)}
-    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2.to_tree, input1.to_tree)}
-    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2.to_tree, input3.to_tree)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1, input3)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input2, input2)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2, input1)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2, input3)}
   end
 
 end

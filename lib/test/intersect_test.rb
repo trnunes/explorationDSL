@@ -18,7 +18,7 @@ class IntersectTest < XplainUnitTest
     
     
     actual_results = Intersect.new([origin]).execute()
-    assert_same_result_set origin.to_tree, actual_results.to_tree
+    assert_same_result_set origin, actual_results
   end
   
   def test_nil_input
@@ -59,7 +59,7 @@ class IntersectTest < XplainUnitTest
 
     actual_results = Intersect.new([input_1, input_2]).execute()
     assert_false actual_results.to_tree.children.empty?
-    assert_same_result_set actual_results.to_tree, expected_results.to_tree
+    assert_same_result_set actual_results, expected_results
     
   end
 
@@ -87,7 +87,7 @@ class IntersectTest < XplainUnitTest
 
     actual_results = Intersect.new([input1, input2]).execute()
     assert_false actual_results.to_tree.children.empty?
-    assert_same_result_set actual_results.to_tree, expected_output.to_tree 
+    assert_same_result_set actual_results, expected_output 
     
   end
   

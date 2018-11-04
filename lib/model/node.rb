@@ -13,12 +13,11 @@ class Node
   end
   
   def result_set
-    
-    parent = self
-    while (!parent.parent.nil?)
-      parent = parent.parent
+    parent_node = self
+    while (!parent_node.parent.nil?)
+      parent_node = parent_node.parent
     end
-    return parent    
+    return parent_node
   end
   
   
@@ -31,11 +30,11 @@ class Node
   end
   
   def parent
-    parent = nil
+    parent_node = nil
     if(@parent_edges[0])
-      parent = @parent_edges[0].origin
+      parent_node = @parent_edges[0].origin
     end
-    parent
+    parent_node
   end
   
   def same_branch(node)
@@ -60,8 +59,8 @@ class Node
     visitor.visit(self)
   end
   
-  def add_parent(parent)
-    @parent_edges << Edge.new(parent, self)
+  def add_parent(parent_node)
+    @parent_edges << Edge.new(parent_node, self)
   end
   
   def children=(children_set)
@@ -75,7 +74,7 @@ class Node
   
   def append_children(children_set)
     @children_edges += children_set.map do |child| 
-      child.add_parent self
+      child.parent = self
       Edge.new(self, child)
     end
   end
@@ -120,7 +119,7 @@ class Node
         yield(current_level)
       end
       current_level = current_level.map{|li| li.children}.flatten
-
+      # binding.pry
     end
     levels
   end
@@ -138,6 +137,7 @@ class Node
     if(limit > 0 && offset >= 0 )
       level_items = level_items[offset..(offset+limit)-1]
     end
+    # binding.pry
     level_items
   end
   
@@ -164,6 +164,7 @@ class Node
   
   def <<(child)
     @children_edges << Edge.new(self, child)
+    child.add_parent self
   end
   
   def hash

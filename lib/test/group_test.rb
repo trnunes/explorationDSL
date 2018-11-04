@@ -31,29 +31,24 @@ class GroupTest < XplainUnitTest
   end
   
   def test_group_by_single_relation
+    a1 = Node.new(Xplain::Entity.new("_:a1"))
+    g_relation_a1 = Node.new(Xplain::SchemaRelation.new(id: "_:author", inverse: true))
+    g_relation_a1.children = create_nodes [Xplain::Entity.new("_:p2"),Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:paper1")]
+    a1.children = [g_relation_a1]
+    
+    a2 = Node.new(Xplain::Entity.new("_:a2"))
+    g_relation_a2 = Node.new(Xplain::SchemaRelation.new(id: "_:author", inverse: true))
+    g_relation_a2.children = create_nodes [Xplain::Entity.new("_:p3"),Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:paper1")]
+    a2.children = [g_relation_a2] 
+    
+    expected_rs = Xplain::ResultSet.new("rs", [a1, a2])
+    
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"),Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6") ]
-    input = Xplain::ResultSet.new(nil, input_nodes)
-    
-    
-    author_relation = Xplain::SchemaRelation.new(id: "_:author", inverse: true)
-    rs = Group.new(input, grouping_relation: ByImage.new(Xplain::SchemaRelation.new(id: "_:author"))).execute
-    # binding.pry
-    assert_equal Set.new([Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")]), Set.new(rs.to_tree.children.map{|node| node.item})
+    input_rs = Xplain::ResultSet.new("rs", input_nodes)
  
-    a1 = rs.to_tree.children.select{|g| g.item.id == "_:a1"}.first
-    a2 = rs.to_tree.children.select{|g| g.item.id == "_:a2"}.first
+    actual_rs = Group.new(input_rs, grouping_relation: ByImage.new(Xplain::SchemaRelation.new(id: "_:author"))).execute
     
-    assert_equal [author_relation], a1.children.map{|c| c.item}
-    assert_equal [author_relation], a2.children.map{|c| c.item}
-    
-    author_relation_a1 = a1.children.first
-    author_relation_a2 = a2.children.first
-
-    a1_children = author_relation_a1.children.map{|c| c.item}.sort{|i1,i2| i1.to_s <=> i2.to_s}
-    a2_children = author_relation_a2.children.map{|c| c.item}.sort{|i1,i2| i1.to_s <=> i2.to_s}
-    
-    assert_equal [Xplain::Entity.new("_:p2"),Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:paper1")], a1_children
-    assert_equal [Xplain::Entity.new("_:p3"),Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:paper1")], a2_children
+    assert_same_result_set expected_rs, actual_rs
   end
   
   def test_group_by_inverse_relation

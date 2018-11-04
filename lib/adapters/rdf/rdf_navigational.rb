@@ -55,7 +55,7 @@ module RDFNavigational
     
     results_hash = {}      
     where_clause = ""
-    relation_uri = parse_item(relation)
+    relation_uri = parse_relation(relation)
     
     paginate(restriction_items, @items_limit).each do |page_items|
       

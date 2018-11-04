@@ -35,22 +35,30 @@ class Group < Operation
     next_to_last_level.each do |node|
       children = node.children
       node.children_edges = []
+      node.parent_edges = []
+      # binding.pry
       new_groups.each do |grouping_node|
         new_grouping_node = Node.new(grouping_node.item)
         
-        node.children_edges << Edge.new(node, new_grouping_node)
+        node << new_grouping_node
         
         relation_node = grouping_node.children.first
         new_relation_node = Node.new(relation_node.item)
-        new_grouping_node.children_edges = [Edge.new(new_grouping_node, new_relation_node)]
+        new_grouping_node << new_relation_node
         relation_children_items = Set.new(relation_node.children.map{|node| node.item})
-        new_relation_node.children_edges = children.select{|node| relation_children_items.include?(node.item)}.map do |child| 
-          Edge.new(new_relation_node, child)
+        children.select{|node| relation_children_items.include?(node.item)}.each do |child|
+          child.parent_edges = [] 
+          new_relation_node << Node.new(child.item)
+          # binding.pry
         end
+        # binding.pry
       end
     end
-    # binding.pry
-    input_copy.get_level(2)
+    
+    groups = input_copy.get_level(2)
+    groups.each{|group| group.parent_edges = []}
+    
+    groups
   end
   
 end

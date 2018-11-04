@@ -25,12 +25,26 @@ module SPARQLHelper
     relation.map{|r| "<" + Xplain::Namespace.expand_uri(r.id) + ">"}.join("/")
   end
   
+  def path_relation_to_item(path_relation)
+    "<" + path_relation.map{|r| Xplain::Namespace.expand_uri(r.id)}.join("/") + ">"
+  end
+  
+  def parse_relation(relation)
+    if(relation.is_a? Xplain::PathRelation)
+      convert_path_relation relation
+    elsif(relation.is_a?(Xplain::Entity) || relation.is_a?(Xplain::Relation))
+      convert_item relation
+    else
+      "<" + relation.to_s + ">"
+    end
+  end
+  
   def parse_item(item)
 
     if(item.is_a? Xplain::Literal)
       convert_literal(item)
     elsif(item.is_a? Xplain::PathRelation)
-      convert_path_relation(item)      
+      path_relation_to_item(item)
     elsif(item.is_a?(Xplain::Entity) || item.is_a?(Xplain::Relation))
       convert_item(item)
     else
@@ -153,7 +167,7 @@ module SPARQLHelper
     label_relations = []
     
     if relation
-      relation_uri = parse_item(relation) 
+      relation_uri = parse_relation(relation) 
       label_relations = try_label_relations_by_relation(relation)
     end
     

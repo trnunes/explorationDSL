@@ -16,7 +16,7 @@ class UniteTest < XplainUnitTest
     origin = Xplain::ResultSet.new(nil, input_nodes)
     
     actual_results = Unite.new([origin]).execute()
-    assert_same_result_set origin.to_tree, actual_results.to_tree
+    assert_same_result_set origin, actual_results
   end
   
   def test_nil_input
@@ -86,7 +86,7 @@ class UniteTest < XplainUnitTest
     actual_results = Unite.new([input1, input2]).execute()
     assert_false actual_results.to_tree.children.empty?
     
-    assert_same_result_set actual_results.to_tree, expected_output.to_tree    
+    assert_same_result_set expected_output, actual_results    
   end
     
 end

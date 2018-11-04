@@ -18,7 +18,7 @@ class DiffTest < XplainUnitTest
     
     
     actual_results = Diff.new([origin]).execute()
-    assert_same_result_set origin.to_tree, actual_results.to_tree
+    assert_same_result_set origin, actual_results
   end
   
   def test_nil_input
@@ -56,7 +56,7 @@ class DiffTest < XplainUnitTest
 
     actual_results = Diff.new([input_1, input_2]).execute()
     assert_false actual_results.to_tree.children.empty?
-    assert_same_result_set expected_results.to_tree, actual_results.to_tree
+    assert_same_result_set expected_results, actual_results
     
   end
 
@@ -86,7 +86,7 @@ class DiffTest < XplainUnitTest
 
     actual_results = Diff.new([input1, input2]).execute()
     assert_false actual_results.to_tree.children.empty?
-    assert_same_result_set expected_output.to_tree, actual_results.to_tree
+    assert_same_result_set expected_output, actual_results
   end
     
 end

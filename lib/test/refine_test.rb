@@ -20,6 +20,7 @@ require './operations/filters/not'
 require './operations/filters/c_filter'
 require './operations/filters/in_memory_filter_interpreter'
 require './adapters/rdf/filter_interpreter'
+require './operations/intersect'
 
 
 class RefineTest < XplainUnitTest
@@ -393,7 +394,7 @@ class RefineTest < XplainUnitTest
       end
     end.execute()
     
-    assert_same_result_set actual_results.to_tree, expected_results1.to_tree
+    assert_same_result_set actual_results, expected_results1
 
     actual_results = Refine.new(input, level: 2) do
       equals do
@@ -402,7 +403,7 @@ class RefineTest < XplainUnitTest
       end
     end.execute()
     
-    assert_same_result_set actual_results.to_tree, expected_results2.to_tree
+    assert_same_result_set actual_results, expected_results2
   end
 
   def test_refine_level_3_set
@@ -418,7 +419,7 @@ class RefineTest < XplainUnitTest
     journal1.children = [paper1, p2]
     journal2.children = [p3, p4]
 
-    input = Xplain::ResultSet.new(nil, [journal1, journal2])
+    input = Xplain::ResultSet.new("test_set", [journal1, journal2])
     
     expected_journal1 = Node.new(Xplain::Entity.new("_:journal1"))
     expected_journal1.children = [paper1, p2]
@@ -426,8 +427,8 @@ class RefineTest < XplainUnitTest
     expected_journal2 = Node.new(Xplain::Entity.new("_:journal2"))
     expected_journal2.children = [p3]
     
-    expected_results1 = Xplain::ResultSet.new(nil, [expected_journal1])
-    expected_results2 = Xplain::ResultSet.new(nil, [expected_journal2])
+    expected_results1 = Xplain::ResultSet.new("test_set", [expected_journal1])
+    expected_results2 = Xplain::ResultSet.new("test_set", [expected_journal2])
     
     actual_results = Refine.new(input, level: 3) do
       equals do
@@ -436,7 +437,7 @@ class RefineTest < XplainUnitTest
       end
     end.execute()
     
-    assert_same_result_set actual_results.to_tree, expected_results1.to_tree
+    assert_same_result_set actual_results, expected_results1
 
     actual_results = Refine.new(input, level: 3) do
       equals do
@@ -445,7 +446,40 @@ class RefineTest < XplainUnitTest
       end
     end.execute()
     
-    assert_same_result_set actual_results.to_tree, expected_results2.to_tree
+    assert_same_result_set actual_results, expected_results2
   end
+  
+  def test_refine_level_3_set_repeated_children
 
+    paper1 = Node.new(Xplain::Entity.new("_:paper1"))
+    p2 = Node.new(Xplain::Entity.new("_:p2"))
+    p3 = Node.new(Xplain::Entity.new("_:p3"))
+    p4 = Node.new(Xplain::Entity.new("_:p4"))
+    
+    journal1 = Node.new(Xplain::Entity.new("_:journal1"))
+    journal2 = Node.new(Xplain::Entity.new("_:journal2"))
+    
+    p3_j1 = Node.new(Xplain::Entity.new("_:p3"))
+    journal1.children = [paper1, p2, p3_j1]
+    journal2.children = [p3, p4]
+
+    input = Xplain::ResultSet.new("test_set", [journal1, journal2])
+    
+    expected_journal1 = Node.new(Xplain::Entity.new("_:journal1"))
+    expected_journal1.children = [p3_j1]
+    
+    expected_journal2 = Node.new(Xplain::Entity.new("_:journal2"))
+    expected_journal2.children = [p3]
+    
+    
+    expected_results = Xplain::ResultSet.new("test_set", [expected_journal2, expected_journal1])
+
+    actual_results = Refine.new(input, level: 3) do
+      equals do
+        relation "_:publishedOn"
+        entity "_:journal2"
+      end
+    end.execute()
+    assert_same_result_set actual_results, expected_results
+  end
 end

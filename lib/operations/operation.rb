@@ -49,8 +49,10 @@ class Operation
       self.instance_eval &@definition_block
     end
     validate()
-    # binding.pry
-    Xplain::ResultSet.new(SecureRandom.uuid, get_results(get_inputs()), self)        
+    
+    result_nodes = get_results(get_inputs())
+    result_nodes.each{|node| node.parent_edges = []}
+    Xplain::ResultSet.new(SecureRandom.uuid, result_nodes, self)        
   end
   
   def get_inputs

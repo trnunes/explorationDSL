@@ -8,7 +8,8 @@ module Xplain
     def_delegators :@nodes, :each, :map, :select, :to_a, :empty?, :size, :uniq, :sort
     
     def initialize(id, nodes_list, intention = nil, annotations = [], inverse=false)
-      @id = id || SecureRandom.uuid            
+      @id = id || SecureRandom.uuid
+                  
       input_is_list_of_items = nodes_list && !nodes_list.first.is_a?(Node)
       @nodes = 
         if input_is_list_of_items
@@ -18,7 +19,8 @@ module Xplain
         end
       @intention = intention
       @inverse = inverse
-      to_tree
+      @root_node = Node.new(Entity.new(self.id))
+      @root_node.children = @nodes
     end
     
     def inverse?
@@ -78,9 +80,7 @@ module Xplain
     end
     
     def to_tree
-      root = Node.new(@id)
-      root.children = @nodes
-      root
+      @root_node
     end
     
     def get_level(level)
@@ -167,14 +167,20 @@ module Xplain
    #TODO find a better place for uniq and sort operations
     def uniq
       items_hash = {}
-      @nodes.each do |node|        
-        items_hash[node.item] = node
-      end      
+      @nodes.each do |node|
+        #TODO IMPLEMENT A SHALLOW CLONE METHOD
+        items_hash[node.item] = Node.new node.item
+      end
       Xplain::ResultSet.new(@id.to_s + "_uniq", items_hash.values)
     end
     
     def uniq!
-      @nodes = uniq.nodes
+      items_hash = {}
+      @nodes.each do |node|        
+        items_hash[node.item] = node
+      end
+
+      @nodes = items_hash.values
       self
     end
     
@@ -208,6 +214,11 @@ module Xplain
       @nodes = self.sort_asc.nodes
       self
     end
+    
+    def inspect()
+      @nodes.inject{|concat_string, node| concat_string.to_s + ", #{node.item.text}"}
+    end
+    
     def method_missing(m, *args, &block)
 
       instance = nil
@@ -229,6 +240,4 @@ module Xplain
       return target_promisse
     end  
   end
-  
-  
 end

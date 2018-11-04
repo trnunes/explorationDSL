@@ -54,19 +54,36 @@ class Refine < Operation
     end
     
     final_result_nodes = in_memory_result_nodes
-
+    # binding.pry
     if @server.can_filter? @auxiliar_function
       final_result_nodes = []
       @server.filter(in_memory_result_nodes.map{|node| node.item}, @auxiliar_function).each do |item_to_keep|
         final_result_nodes += result_nodes_hash[item_to_keep].to_a
-      end
+      end      
     end    
     
     if @level > 2
-      final_result_nodes = filter_children(pivot_to_level_2(final_result_nodes), final_result_nodes)
+      # binding.pry
+      remove_filtered_siblings(final_result_nodes)
+      # binding.pry
+      final_result_nodes = pivot_to_level_2(final_result_nodes)
     end
-     
+    final_result_nodes.each{|node| node.parent_edges = []}
     final_result_nodes
   end
 
+  def remove_filtered_siblings(nodes)
+    # binding.pry
+    if !nodes.empty?
+      parents = nodes.map{|node| node.parent}
+      parents.each do |current_parent|
+        current_parent.children = current_parent.children & nodes
+        current_parent.children.each{|child| remove_filtered_siblings(child.children)}
+        if current_parent.children.empty? && current_parent.parent
+          # binding.pry
+          current_parent.parent.remove_child(current_parent)
+        end
+      end
+    end
+  end
 end
