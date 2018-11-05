@@ -35,12 +35,12 @@ class Group < Operation
     next_to_last_level.each do |node|
       children = node.children
       node.children_edges = []
-      node.parent_edges = []
+      
       # binding.pry
       new_groups.each do |grouping_node|
         new_grouping_node = Node.new(grouping_node.item)
         
-        node << new_grouping_node
+        
         
         relation_node = grouping_node.children.first
         new_relation_node = Node.new(relation_node.item)
@@ -51,12 +51,16 @@ class Group < Operation
           new_relation_node << Node.new(child.item)
           # binding.pry
         end
+        if !new_relation_node.children.empty?
+          node << new_grouping_node
+        end
         # binding.pry
       end
     end
     
     groups = input_copy.get_level(2)
-    groups.each{|group| group.parent_edges = []}
+    # binding.pry
+    # groups.each{|group| group.parent_edges = []}
     
     groups
   end

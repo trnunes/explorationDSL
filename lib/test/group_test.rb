@@ -175,8 +175,8 @@ class GroupTest < XplainUnitTest
     assert_equal [inverse_author], a1.children.map{|c| c.item}
     assert_equal [inverse_author], a2.children.map{|c| c.item}
     # binding.pry
-    assert_equal Set.new(a1.children.first.children.map{|c| c.item}), Set.new([Xplain::Literal.new(1998),Xplain::Literal.new(2000)])
-    assert_equal Set.new(a2.children.first.children.map{|c| c.item}), Set.new([Xplain::Literal.new(1998),Xplain::Literal.new(2000)])
+    assert_equal Set.new(a1.children.first.children.map{|c| c.item}), Set.new([Xplain::Literal.new(2000)])
+    assert_equal Set.new(a2.children.first.children.map{|c| c.item}), Set.new([Xplain::Literal.new(1998)])
     subg1 = a1.children.first.children.select{|g| g.item.value.to_s == '2000'}.first
     subg2 = a2.children.first.children.select{|g| g.item.value.to_s == '1998'}.first
 

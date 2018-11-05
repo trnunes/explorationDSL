@@ -68,6 +68,7 @@ class Refine < Operation
       # binding.pry
       final_result_nodes = pivot_to_level_2(final_result_nodes)
     end
+    # binding.pry
     final_result_nodes.each{|node| node.parent_edges = []}
     final_result_nodes
   end
