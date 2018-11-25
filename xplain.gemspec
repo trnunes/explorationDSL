@@ -1,9 +1,9 @@
 Gem::Specification.new do |s|
-  s.name        = 'xplain'
+  s.name        = 'Exploration DSL'
   s.version     = '0.0.1'
   s.date        = '2018-05-14'
   s.summary     = "Xplain"
-  s.description = "XPlain exploration DSL"
+  s.description = "Xplain exploration DSL"
   s.authors     = ["Thiago Nunes"]
   s.email       = 'thiagorinu@gmail.com'
   s.files       = Dir.glob('lib/**/*.rb') + Dir.glob('lib/**/**/*.rb')
