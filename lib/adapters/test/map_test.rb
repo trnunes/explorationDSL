@@ -145,7 +145,7 @@ class RDFDataServerTest < Test::Unit::TestCase
     
     rs = @papers_server.count(input_items, Xplain::SchemaRelation.new(id: "_:cite", inverse: true, server: @papers_server))
     assert_equal Set.new([Xplain::Literal.new(2), Xplain::Literal.new(4)]), Set.new(rs.children.map{|n| n.children}.flatten.map{|i|i.item})
-    # binding.pry
+
     rs.children.map!{|node| node.children}.flatten!
     assert_equal Set.new([rs[0].parent.item, rs[1].parent.item]), Set.new([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3")])
   end

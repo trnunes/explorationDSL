@@ -6,18 +6,18 @@ class ModelTest < XplainUnitTest
   def test_empty
     cite = Xplain::SchemaRelation.new(server: @papers_server, id: "_:cite")
     actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:paper2")])
-    assert_equal Set.new(), Set.new(actual_image.to_a)
+    assert_equal Set.new(), Set.new(actual_image)
     
     actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p4")])
-    assert_equal Set.new(), Set.new(actual_image.to_a)
+    assert_equal Set.new(), Set.new(actual_image)
     
 
     res_dom = cite.restricted_domain(create_nodes [Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7")])
-    assert_equal Set.new(), Set.new(res_dom.to_a)
+    assert_equal Set.new(), Set.new(res_dom)
     
     cite = Xplain::SchemaRelation.new(server: @papers_server, id: "_:cite", inverse: true)
     actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7")])
-    assert_equal Set.new(), Set.new(actual_image.to_a)
+    assert_equal Set.new(), Set.new(actual_image)
     
   end
   
@@ -89,18 +89,18 @@ class ModelTest < XplainUnitTest
 
     cite = Xplain::ComputedRelation.new()
     actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:paper2")])
-    assert_equal Set.new(), Set.new(actual_image.to_a)
+    assert_equal Set.new(), Set.new(actual_image)
     
     actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p4")])
-    assert_equal Set.new(), Set.new(actual_image.to_a)
+    assert_equal Set.new(), Set.new(actual_image)
     
 
     res_dom = cite.restricted_domain(create_nodes [Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7")])
-    assert_equal Set.new(), Set.new(res_dom.to_a)
+    assert_equal Set.new(), Set.new(res_dom)
     
     cite = Xplain::ComputedRelation.new(inverse: true)
     actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7")])
-    assert_equal Set.new(), Set.new(actual_image.to_a)
+    assert_equal Set.new(), Set.new(actual_image)
     
   end
   
@@ -111,13 +111,10 @@ class ModelTest < XplainUnitTest
     p2.children = create_nodes [Xplain::Entity.new("_:p5")]
 
     cite = Xplain::ComputedRelation.new(domain: [paper1, p2])
-    actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:paper1")]).to_a
+    actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:paper1")])
     expected_image = Set.new(create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")])
     assert_same_items_set expected_image, actual_image
 
-    assert_equal actual_image[0].parent.item, Xplain::Entity.new("_:paper1")
-    assert_equal actual_image[1].parent.item, Xplain::Entity.new("_:paper1")
-    assert_equal actual_image[2].parent.item, Xplain::Entity.new("_:paper1")
   end
   
   def test_restricted_domain_computed_relation
@@ -241,7 +238,6 @@ class ModelTest < XplainUnitTest
     actual_results = relations.restricted_domain(create_nodes [
       Xplain::SchemaRelation.new(id: "_:author")        
     ])
-    
     assert_same_items_set expected_results, actual_results
   end
   

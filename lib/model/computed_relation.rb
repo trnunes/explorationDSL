@@ -46,7 +46,7 @@ module Xplain
       hash_keys.each do |key_node|
         image_by_domain_hash[key_node] = key_node.children
       end
-      binding.pry
+
       image_by_domain_hash
     end
     

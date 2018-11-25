@@ -119,7 +119,7 @@ class RDFDataServerTest < Test::Unit::TestCase
     input_items = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"),Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6") ]
     author_relation = Xplain::SchemaRelation.new(id: "_:author", inverse: true)
     rs = @papers_server.group_by(input_items, Xplain::SchemaRelation.new(id: "_:author"))
-    # binding.pry
+
     assert_equal Set.new([Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")]), Set.new(rs.map{|node| node.item})
  
     a1 = rs.select{|g| g.item.id == "_:a1"}.first
@@ -143,14 +143,14 @@ class RDFDataServerTest < Test::Unit::TestCase
     
     keywords_relation = Xplain::SchemaRelation.new(id: "_:keywords")
     rs = @papers_server.group_by(input_items, Xplain::SchemaRelation.new(id: "_:keywords", inverse: true))
-    # binding.pry
+
     assert_equal Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5")]), Set.new(rs.map{|node| node.item})
 
     p1 = rs.select{|g| g.item.id == "_:paper1"}.first
     p2 = rs.select{|g| g.item.id == "_:p2"}.first
     p3 = rs.select{|g| g.item.id == "_:p3"}.first
     p5 = rs.select{|g| g.item.id == "_:p5"}.first
-    # binding.pry
+
     assert_equal [keywords_relation], p1.children.map{|c| c.item}
     assert_equal [keywords_relation], p2.children.map{|c| c.item}
     assert_equal [keywords_relation], p3.children.map{|c| c.item}

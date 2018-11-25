@@ -1,14 +1,13 @@
 require './test/xplain_unit_test'
-require './operations/intersect'
 
-class IntersectTest < XplainUnitTest
+class Xplain::IntersectTest < XplainUnitTest
 
   def test_empty_input_set
     input_nodes = []
     origin = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    actual_results = Intersect.new([origin, origin]).execute()
+    actual_results = Xplain::Intersect.new([origin, origin]).execute()
     assert_true actual_results.to_tree.children.empty?
   end
 
@@ -17,7 +16,7 @@ class IntersectTest < XplainUnitTest
     origin = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    actual_results = Intersect.new([origin]).execute()
+    actual_results = Xplain::Intersect.new([origin]).execute()
     assert_same_result_set origin, actual_results
   end
   
@@ -29,14 +28,7 @@ class IntersectTest < XplainUnitTest
     root = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    begin
-      actual_results = Intersect.new().execute()
-      assert false
-    rescue InvalidInputException => e
-      assert true
-      return
-    end
-    assert false
+    actual_results = Xplain::Intersect.new().execute()
     
   end
     
@@ -57,7 +49,7 @@ class IntersectTest < XplainUnitTest
     
     expected_results = Xplain::ResultSet.new(nil, [Xplain::Entity.new("_:p2")])
 
-    actual_results = Intersect.new([input_1, input_2]).execute()
+    actual_results = Xplain::Intersect.new([input_1, input_2]).execute()
     assert_false actual_results.to_tree.children.empty?
     assert_same_result_set actual_results, expected_results
     
@@ -85,7 +77,7 @@ class IntersectTest < XplainUnitTest
     
     expected_output = Xplain::ResultSet.new(nil, [expected_p1, expected_p2])
 
-    actual_results = Intersect.new([input1, input2]).execute()
+    actual_results = Xplain::Intersect.new([input1, input2]).execute()
     assert_false actual_results.to_tree.children.empty?
     assert_same_result_set actual_results, expected_output 
     

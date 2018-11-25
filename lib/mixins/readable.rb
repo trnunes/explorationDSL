@@ -20,6 +20,10 @@ module Xplain
     def find_by_node_id(node_id)
       Xplain::exploration_repository.resultset_by_node_id(node_id)
     end
+    
+    def count
+      Xplain::exploration_repository.count_resultsets
+    end
   end
 
 

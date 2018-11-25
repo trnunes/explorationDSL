@@ -10,7 +10,15 @@ module Xplain
       @datatype = type
       @children = []
     end
-  
+    
+    def <=>(other_literal)
+      if other_literal.value.class == self.value.class
+        other_literal.value <=> self.value
+      else
+        other_literal.text <=> self.text
+      end
+    end
+
     def set_parent(parent)
       @parent = parent
     end

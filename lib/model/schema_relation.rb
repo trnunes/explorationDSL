@@ -77,7 +77,8 @@ module Xplain
           end
           return Xplain::ResultSet.new(SecureRandom.uuid, result_graph)
       end
-      result_graph = hash_to_graph(@server.restricted_image(options), true)
+      
+      result_graph = hash_to_graph(@server.restricted_image(options), !options[:group_by_domain])
       
       Xplain::ResultSet.new(SecureRandom.uuid, result_graph)
     end

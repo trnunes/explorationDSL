@@ -1,41 +1,46 @@
 #TODO IMPLEMENT SERVER DELEGATORS FOR OPERATIONS COVERED BY THE REPOSITORY. IF THE OPERATION IS AVAILABLE, IT MUST BE DELEGATED TO  THE REPOSITORY.
 
-class Operation
+class Xplain::Operation
   
   include Xplain::GraphConverter
-  ### Flag to inform whether the operation receives multiple sets as input or not.
-  MULTI_SET = false
   
   attr_accessor :params, :server, :inputs, :id   
+  @base_dir = ""
+  class << self
+    attr_accessor :base_dir, :function_module
+  end
   
-  def initialize(inputs=nil, args={}, &block)
-    
+  def initialize(args={}, &block)
+    if !args.is_a? Hash
+      args = {inputs: args}
+    end
     @id = args[:id] || SecureRandom.uuid
-    setup_input inputs
+    setup_input args
     @server = args[:server] || Xplain.default_server
     @definition_block = block if block_given?
     @level = args[:level]
+    @limit = args[:limit] || 0
+    
   end
 
   def self.operation_class?(klass)
-    operation_subclasses = ObjectSpace.each_object(Class).select {|space_klass| space_klass < Operation }
+    operation_subclasses = ObjectSpace.each_object(Class).select {|space_klass| space_klass < Xplain::Operation }
     operation_subclasses.include? klass
   end
   
-  def setup_input(inputs)
-    #test if the input is a simple array of items and transform into a tree
-    if inputs.is_a?(Xplain::ResultSet) || inputs.is_a?(Operation)
+  def setup_input(args)
+    inputs = args[:inputs]
+    is_result_set_or_operation = inputs.is_a?(Xplain::ResultSet) || inputs.is_a?(Xplain::Operation)
+    is_array_of_nodes =  inputs.is_a?(Array) && (inputs.map{|input| input.class}.uniq == [Node])
+    if is_result_set_or_operation || is_array_of_nodes 
       @inputs = [inputs]
-    else
+    else 
       @inputs = inputs
     end
-    
+    @inputs ||= []
   end
   
-  def self.accept_multiple_sets?
-    return self::MULTI_SET
-  end
-  
+  #TODO implement this operation to express the operation and its parameters  
   def to_expression
     self.class.to_s.downcase
   end
@@ -49,23 +54,20 @@ class Operation
       self.instance_eval &@definition_block
     end
     validate()
-    
-    result_nodes = get_results(get_inputs())
+    resolve_dependencies()
+    result_nodes = get_results()
     result_nodes.each{|node| node.parent_edges = []}
     Xplain::ResultSet.new(SecureRandom.uuid, result_nodes, self)        
   end
   
-  def get_inputs
-    if @inputs
-      @inputs = @inputs.map do |input|
-        if input.is_a? Operation
-          input.execute()
-        else
-          input
-        end
-      end  
-    end
-    @inputs
+  def resolve_dependencies
+    @inputs = @inputs.map do |input|
+      if input.is_a? Xplain::Operation
+        input.execute().copy
+      else
+        input.copy
+      end
+    end  
   end
   
   def validate
@@ -79,11 +81,26 @@ class Operation
   def method_missing(m, *args, &block)
 
     instance = nil
-    # binding.pry
-    klass = Object.const_get m.to_s.to_camel_case
-    
 
-    if !Operation.operation_class? klass
+    begin
+      require Xplain.base_dir + "operations/" + m.to_s.to_underscore + ".rb"
+
+      klass = Object.const_get "Xplain::" + m.to_s.to_camel_case
+    rescue LoadError
+
+      if self.class.function_module
+
+        Dir[Xplain.base_dir + "operations/" + self.class.function_module.to_s.to_underscore + "/*.rb"].each {|file| require file }
+
+        begin
+        klass = Object.const_get self.class.function_module.to_camel_case + "::" + m.to_s.to_camel_case
+        rescue LoadError
+          raise "operation/auxiliary function not available!"
+        end
+      end
+    end
+
+    if !Xplain::Operation.operation_class? klass
       if !auxiliary_function? klass
         raise NameError.new("Auxiliary function #{klass.to_s} does not exist!")
       end      
@@ -91,22 +108,23 @@ class Operation
     end
     
     
-# binding.pry
-    if args.nil?
-      args = [[]]
+
+    if args.nil? || args.empty?
+      args = {}
+    elsif args[0].is_a? Hash 
+       args = args[0]
+    else
+      args = {:inputs => args}
+    end
+     
+    if !args[:inputs]
+      args[:inputs] = []
+    elsif !args[:inputs].is_a? Array
+      args[:inputs] = [args[:inputs]]
     end
     
-    if (!args.first.is_a? Array)
-      if args.first.nil?
-        args << []
-      else
-        args[0] = [args[0]]
-      end
-          
-    end
-    args[0] << self
-    
-    target_promisse = klass.new(*args, &block)
+    args[:inputs] << self    
+    target_promisse = klass.new(args, &block)
         
     return target_promisse
   end  
@@ -118,6 +136,7 @@ class Operation
   end
    
   def handle_auxiliary_function(klass, *args, &block)
+
     @auxiliar_function = klass.new(*args, &block)
   end
   

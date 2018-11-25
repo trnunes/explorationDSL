@@ -2,6 +2,7 @@ require 'forwardable'
 require "test/unit"
 require 'linkeddata'
 require 'pry'
+require './adapters/memory/memory_repository'
 require './mixins/config'
 require './mixins/operation_factory'
 require './mixins/writable.rb'
@@ -46,6 +47,41 @@ require './operations/auxiliary_function'
 require './operations/operation'
 require './operations/set_operation'
 
+#TODO Duplicated code with xplain.rb!
+module Xplain
+  @@base_dir = ""
+  class << self
+    def base_dir=(base_dir_path)
+      @@base_dir = base_dir_path
+    end
+    
+    def base_dir
+      @@base_dir
+    end
+    
+    def const_missing(name)
+      
+  
+      instance = nil
+      
+      begin
+        require Xplain.base_dir + "operations/" + name.to_s.to_underscore + ".rb"
+        
+      rescue Exception => e
+        
+        puts e.to_s
+      end
+      
+      klass = Object.const_get "Xplain::" + name.to_s.to_camel_case
+  
+      if !Xplain::Operation.operation_class? klass
+        raise NameError.new("Operation #{klass.to_s} not supported!")           
+      end
+          
+      return klass
+    end
+  end
+end
 
 class InputProxy
   attr_accessor :input_nodes
@@ -90,6 +126,7 @@ end
 
 class XplainUnitTest < Test::Unit::TestCase
   def setup
+    Xplain.base_dir = "./"
     load_papers_server
     load_simple_server
   end
@@ -216,7 +253,7 @@ class XplainUnitTest < Test::Unit::TestCase
   end
   
   def assert_same_items_set(node_list1, node_list2)
-    assert_same_items(Set.new(node_list1.to_a), Set.new(node_list2.to_a))
+    assert_same_items(Set.new(node_list1), Set.new(node_list2))
   end
   
   def assert_same_items_tree_set(root1, root2)

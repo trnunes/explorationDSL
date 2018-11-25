@@ -1,29 +1,28 @@
-class Group < Operation
+class Xplain::Group < Xplain::Operation
+  @function_module = "GroupBy"
   
-  def initialize(inputs, args={}, &block)
-    super(inputs, args, &block)
+  def initialize(args={}, &block)
+    super(args, &block)
     if args[:grouping_relation]
       @auxiliar_function = args[:grouping_relation]
       @level = args[:level]
     end
   end
   
-  def get_results(inputs)
-    if inputs.nil? || inputs.empty? || inputs.first.empty?
+  def get_results()
+    if @inputs.nil? || @inputs.empty? || @inputs.first.empty?
       return []
     end
 
-    input_set = inputs.first
+    input_set = @inputs.first
     
     if input_set.nil? || input_set.to_tree.children.empty?
       return []
     end
     
-    input_copy = input_set.to_tree.copy
-    
-    @level ||= input_copy.count_levels - 1
+    @level ||= input_set.count_levels - 1
 
-    next_to_last_level = input_copy.get_level(@level)
+    next_to_last_level = input_set.get_level(@level)
     nodes_to_group = []
     next_to_last_level.each do |node|
       nodes_to_group += node.children
@@ -36,12 +35,9 @@ class Group < Operation
       children = node.children
       node.children_edges = []
       
-      # binding.pry
+
       new_groups.each do |grouping_node|
         new_grouping_node = Node.new(grouping_node.item)
-        
-        
-        
         relation_node = grouping_node.children.first
         new_relation_node = Node.new(relation_node.item)
         new_grouping_node << new_relation_node
@@ -49,17 +45,17 @@ class Group < Operation
         children.select{|node| relation_children_items.include?(node.item)}.each do |child|
           child.parent_edges = [] 
           new_relation_node << Node.new(child.item)
-          # binding.pry
+
         end
         if !new_relation_node.children.empty?
           node << new_grouping_node
         end
-        # binding.pry
+
       end
     end
     
-    groups = input_copy.get_level(2)
-    # binding.pry
+    groups = input_set.get_level(2)
+
     # groups.each{|group| group.parent_edges = []}
     
     groups

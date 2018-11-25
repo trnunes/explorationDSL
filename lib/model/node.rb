@@ -2,14 +2,14 @@ class Node
   attr_accessor :id, :item, :parent_edges, :children_edges, :annotations
   
   def initialize(item = nil, id = nil, annotations = [])
-    @children_edges = []
+    @children_edges = Set.new
     @annotations = annotations
     if item.is_a? Node
       raise InvalidArgumentError("The item cannot be a Node!");
     end
     @item = item
     @id = id || "node:" + SecureRandom.uuid
-    @parent_edges = []
+    @parent_edges = Set.new
   end
   
   def result_set
@@ -20,6 +20,10 @@ class Node
     return parent_node
   end
   
+  def <=>(other_node)
+    other_node.item <=> self.item
+  end
+
   
   def annotate(annotation)
     @annotations << annotation
@@ -31,8 +35,8 @@ class Node
   
   def parent
     parent_node = nil
-    if(@parent_edges[0])
-      parent_node = @parent_edges[0].origin
+    if(@parent_edges.first)
+      parent_node = @parent_edges.first.origin
     end
     parent_node
   end
@@ -119,25 +123,25 @@ class Node
         yield(current_level)
       end
       current_level = current_level.map{|li| li.children}.flatten
-      # binding.pry
+
     end
     levels
   end
 
   def count_levels
-    number_of_levels = 0
+    number_of_levels = ancestors.size
     each_level{number_of_levels+=1}
     number_of_levels
   end
 
   def get_level(level, parents_restriction=[], children_restriction= [], offset=0, limit=-1)
     level_items = []
-    current_level = 0
+    current_level = ancestors.size
     each_level{|current_level_items| level_items = current_level_items if ((current_level += 1) == level)}
     if(limit > 0 && offset >= 0 )
       level_items = level_items[offset..(offset+limit)-1]
     end
-    # binding.pry
+
     level_items
   end
   

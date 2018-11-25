@@ -1,18 +1,14 @@
-class KeywordSearch < Operation
-  def initialize(inputs=nil, args = {}, &block)
-    if inputs.is_a? Hash
-      args = inputs
-      inputs = nil
-    end
-    super(inputs, args, &block)
+class Xplain::KeywordSearch < Xplain::Operation
+  def initialize(args = {}, &block)
+    super(args, &block)
     @keyword_phrase = args[:keyword_phrase]
   end
   
   ##return a set of nodes
-  def get_results(inputs)
+  def get_results()
     restriction_nodes = []
     
-    if !(inputs.nil? || inputs.empty? || inputs.first.empty?)
+    if !(@inputs.nil? || @inputs.empty? || @inputs.first.empty?)
       restriction_nodes= inputs.first.to_tree.leaves
     end
     results = @server.match_all(parse_keyword_phrase(), restriction_nodes)    

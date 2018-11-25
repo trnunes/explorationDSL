@@ -1,34 +1,16 @@
 require './test/xplain_unit_test'
-require './operations/filters/filter_factory'
-require './operations/refine'
-require './operations/filters/filter'
-require './operations/filters/simple_filter'
-require './operations/filters/composite_filter'
-require './operations/filters/and'
-require './operations/filters/or'
-require './operations/filters/equals'
-require './operations/filters/equals_one'
-require './operations/filters/contains'
-require './operations/filters/match'
-require './operations/filters/greater_than'
-require './operations/filters/greater_than_equal'
-require './operations/filters/less_than_equal'
-require './operations/filters/less_than'
-require './operations/filters/not'
+require './operations/filter/filter_factory'
+
+require './operations/filter/generic_filter'
+require './operations/filter/simple_filter'
+require './operations/filter/composite_filter'
 require './adapters/rdf/filter_interpreter'
-require './operations/pivot'
-require './operations/group'
-require './operations/pivot'
-require './operations/map'
-require './operations/intersect'
-require './operations/unite'
-require './operations/diff'
-require './operations/keyword_search'
+
 
 class CompositionsTest < XplainUnitTest
   
   def test_inexistent_auxiliary_function    
-    base_op = KeywordSearch.new
+    base_op = Xplain::KeywordSearch.new
     
     assert_raise NameError do
       op = base_op.refine() do
@@ -42,7 +24,7 @@ class CompositionsTest < XplainUnitTest
   
   def test_chain_two_operations
     
-    op = Refine.new do
+    op = Xplain::Refine.new do
       equals do
         relation "_:author"
         entity "_:p2"
@@ -50,11 +32,11 @@ class CompositionsTest < XplainUnitTest
     end.pivot(){relation "_:author"}
     
     assert_false op.nil?
-    assert_equal Pivot, op.class
+    assert_equal Xplain::Pivot, op.class
     
     refine_op = op.inputs.first
     assert_false refine_op.nil?
-    assert_equal Refine, refine_op.class
+    assert_equal Xplain::Refine, refine_op.class
   end
 
   def test_chain_two_operations_executing_last_one
@@ -72,7 +54,7 @@ class CompositionsTest < XplainUnitTest
      
      expected_results = Set.new([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p5")])
      
-     op = Pivot.new(root){relation "_:cite"}.refine do
+     op = Xplain::Pivot.new(inputs: root){relation "_:cite"}.refine do
          equals do
            relation "_:author"
            entity "_:a1"
@@ -86,14 +68,14 @@ class CompositionsTest < XplainUnitTest
   end
   
   def test_chain_intersect
-    
-    ref = Refine.new(Node.new('root')) do
+
+    ref = Xplain::Refine.new(inputs: Node.new('root')) do
       equals do
         relation "_:author"
         entity "_:p2"
       end
     end
-    pivot = Pivot.new(Node.new('root')){relation "_:author"}
+    pivot = Xplain::Pivot.new(inputs: Node.new('root')){relation "_:author"}
     intersect = pivot.intersect ref
     
     
@@ -102,27 +84,26 @@ class CompositionsTest < XplainUnitTest
   end
   
   def test_chain_unite
-    
-    ref = Refine.new(Node.new('root')) do
+
+    ref = Xplain::Refine.new(inputs: Node.new('root')) do
       equals do
         relation "_:author"
         entity "_:p2"
       end
     end
-    pivot = Pivot.new(Node.new('root')){relation "_:author"}
+    pivot = Xplain::Pivot.new(inputs: Node.new('root')){relation "_:author"}
     unite = pivot.unite ref
     assert_equal Set.new([pivot, ref]), Set.new(unite.inputs)    
   end
   
   def test_chain_diff
-    
-    ref = Refine.new(Node.new('root')) do
+    ref = Xplain::Refine.new(inputs: Node.new('root')) do
       equals do
         relation "_:author"
         entity "_:p2"
       end
     end
-    pivot = Pivot.new(Node.new('root')){relation "_:author"}
+    pivot = Xplain::Pivot.new(inputs: Node.new('root')){relation "_:author"}
     diff = pivot.diff ref
     assert_equal Set.new([pivot, ref]), Set.new(diff.inputs)
   end
@@ -142,7 +123,7 @@ class CompositionsTest < XplainUnitTest
     
     expected_results = Set.new([Xplain::Entity.new("_:p5")])
     
-    op = Pivot.new(root){relation "_:cite"}.refine do
+    op = Xplain::Pivot.new(inputs: root){relation "_:cite"}.refine do
       And do [
         equals do
           relation "_:author"
@@ -172,13 +153,13 @@ class CompositionsTest < XplainUnitTest
      root = Xplain::ResultSet.new(nil, input_nodes)
      
      expected_results = Set.new([Xplain::Entity.new("_:p5")])
-     op = Pivot.new(root){relation "_:cite"}.refine do
+     op = Xplain::Pivot.new(inputs: root){relation "_:cite"}.refine do
          equals do
            relation "_:author"
            entity "_:a1"
          end
      end.intersect( 
-       Pivot.new(root){relation "_:cite"}.refine do
+       Xplain::Pivot.new(inputs: root){relation "_:cite"}.refine do
          equals do
            relation "_:author"
            entity "_:a2"
@@ -206,13 +187,13 @@ class CompositionsTest < XplainUnitTest
      root = Xplain::ResultSet.new(nil, input_nodes)
      
      expected_results = Set.new([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5")])
-     op = Pivot.new(root){relation "_:cite"}.refine do
+     op = Xplain::Pivot.new(inputs: root){relation "_:cite"}.refine do
          equals do
            relation "_:author"
            entity "_:a1"
          end
      end.unite( 
-       Pivot.new(root){relation "_:cite"}.refine do
+       Xplain::Pivot.new(inputs: root){relation "_:cite"}.refine do
          equals do
            relation "_:author"
            entity "_:a2"

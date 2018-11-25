@@ -21,6 +21,6 @@ class RelationHandler
     end
     
     relation = Xplain::SchemaRelation.new(server: Xplain.default_server, id: relation_id, inverse: inverse)
-    relation.restricted_image([@item])
+    relation.restricted_image([@item]).sort_asc
   end
 end

@@ -5,7 +5,12 @@ module Xplain
     attr_accessor :prefix, :uri
     class << self
       def each(&block)
-        @@namespace_map.values.each &block
+        @@namespace_map.values.sort{|ns1, ns2| -(ns1.prefix <=> ns2.prefix)}.each &block
+      end
+
+      def update(ns_map)
+        @@namespace_map = {}
+        ns_map.each{|prefix, uri| Xplain::Namespace.new(prefix, uri)}
       end
     
       def expand_uri(uri)

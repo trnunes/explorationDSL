@@ -1,14 +1,13 @@
 require './test/xplain_unit_test'
-require './operations/diff'
 
-class DiffTest < XplainUnitTest
+class Xplain::DiffTest < XplainUnitTest
 
   def test_empty_input_set
     input_nodes = []
     origin = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    actual_results = Diff.new([origin, origin]).execute()
+    actual_results = Xplain::Diff.new([origin, origin]).execute()
     assert_true actual_results.to_tree.children.empty?
   end
 
@@ -17,7 +16,7 @@ class DiffTest < XplainUnitTest
     origin = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    actual_results = Diff.new([origin]).execute()
+    actual_results = Xplain::Diff.new([origin]).execute()
     assert_same_result_set origin, actual_results
   end
   
@@ -28,15 +27,7 @@ class DiffTest < XplainUnitTest
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
-    begin
-      actual_results = Diff.new().execute()
-      assert false
-    rescue InvalidInputException => e
-      assert true
-      return
-    end
-    assert false
-    
+    actual_results = Xplain::Diff.new().execute()
   end
     
   def test_diff_1_height
@@ -54,7 +45,7 @@ class DiffTest < XplainUnitTest
     
     expected_results = Xplain::ResultSet.new(nil,[Xplain::Entity.new("_:p1")])
 
-    actual_results = Diff.new([input_1, input_2]).execute()
+    actual_results = Xplain::Diff.new([input_1, input_2]).execute()
     assert_false actual_results.to_tree.children.empty?
     assert_same_result_set expected_results, actual_results
     
@@ -84,7 +75,7 @@ class DiffTest < XplainUnitTest
     
     expected_output = Xplain::ResultSet.new(nil,[expected_p1, expected_p2])
 
-    actual_results = Diff.new([input1, input2]).execute()
+    actual_results = Xplain::Diff.new([input1, input2]).execute()
     assert_false actual_results.to_tree.children.empty?
     assert_same_result_set expected_output, actual_results
   end

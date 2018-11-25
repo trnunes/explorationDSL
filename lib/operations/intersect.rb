@@ -1,4 +1,4 @@
-class Intersect < SetOperation
+class Xplain::Intersect < Xplain::SetOperation
 
   def compute(input, target)
     parent = Node.new('intersect')

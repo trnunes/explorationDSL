@@ -1,16 +1,16 @@
 require './test/xplain_unit_test'
 
-require './operations/keyword_search'
 
 
 
-class KeywordSearchTest < XplainUnitTest
+
+class Xplain::KeywordSearchTest < XplainUnitTest
   module Xplain::Visualization
     label_for_type "http://www.w3.org/2000/01/rdf-schema#Resource", "http://www.w3.org/1999/02/22-rdf-syntax-ns#label"
   end
   
   def test_empty_keyword_phrase_nil
-    @keyword_search_operation = KeywordSearch.new()
+    @keyword_search_operation = Xplain::KeywordSearch.new()
     
     assert_raise MissingArgumentException do
       @keyword_search_operation.execute
@@ -19,7 +19,7 @@ class KeywordSearchTest < XplainUnitTest
   end
 
   def test_empty_keyword_phrase
-    @keyword_search_operation = KeywordSearch.new(keyword_phrase:  '')
+    @keyword_search_operation = Xplain::KeywordSearch.new(keyword_phrase:  '')
     assert_raise MissingArgumentException do
       @keyword_search_operation.execute
     end    
@@ -28,7 +28,7 @@ class KeywordSearchTest < XplainUnitTest
   def test_keyword_search_no_whole_dataset
     expected_results = Set.new(create_nodes [ Xplain::Entity.new('_:paper1')])
     
-    @keyword_search_operation = KeywordSearch.new(keyword_phrase:  'paper1_keyword')
+    @keyword_search_operation = Xplain::KeywordSearch.new(keyword_phrase:  'paper1_keyword')
     result_set =  @keyword_search_operation.execute
     
     assert_same_items_set expected_results, result_set.to_tree.leaves    
@@ -41,7 +41,7 @@ class KeywordSearchTest < XplainUnitTest
     ]
     input = Xplain::ResultSet.new(nil, restriction_input)
     
-    @keyword_search_operation = KeywordSearch.new(input, keyword_phrase:  'common_keyword')
+    @keyword_search_operation = Xplain::KeywordSearch.new(inputs: input, keyword_phrase:  'common_keyword')
     result_set =  @keyword_search_operation.execute
     
     assert_same_items_set input.to_tree.leaves, result_set.to_tree.leaves
@@ -49,14 +49,14 @@ class KeywordSearchTest < XplainUnitTest
   
   def test_disjunctive_keyword_search
     expected_results = Set.new(create_nodes [ Xplain::Entity.new('_:p3'), Xplain::Entity.new('_:paper1')])
-    @keyword_search_operation = KeywordSearch.new(keyword_phrase:  'paper3_keyword|paper1_keyword')
+    @keyword_search_operation = Xplain::KeywordSearch.new(keyword_phrase:  'paper3_keyword|paper1_keyword')
     result_set =  @keyword_search_operation.execute
     assert_same_items_set expected_results, result_set.to_tree.leaves  
   end
   
   def test_conjunctive_keyword_search
     expected_results = Set.new(create_nodes [Xplain::Entity.new('_:p2')])
-    @keyword_search_operation = KeywordSearch.new(keyword_phrase:  'paper2_keyword1 paper2_keyword2')
+    @keyword_search_operation = Xplain::KeywordSearch.new(keyword_phrase:  'paper2_keyword1.*paper2_keyword2')
     result_set =  @keyword_search_operation.execute
     assert_same_items_set expected_results, result_set.to_tree.leaves
 
@@ -71,7 +71,7 @@ class KeywordSearchTest < XplainUnitTest
       
    
     expected_results = Set.new(create_nodes [Xplain::Entity.new('_:p3')])
-    @keyword_search_operation = KeywordSearch.new(keyword_phrase:  'common_keyword paper3_keyword2')
+    @keyword_search_operation = Xplain::KeywordSearch.new(keyword_phrase:  'common_keyword.*paper3_keyword2')
     result_set =  @keyword_search_operation.execute
     assert_same_items_set expected_results, result_set.to_tree.leaves
 

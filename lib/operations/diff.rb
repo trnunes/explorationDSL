@@ -1,4 +1,4 @@
-class Diff < SetOperation
+class Xplain::Diff < Xplain::SetOperation
   
   def compute(input, target)
     parent = Node.new('diff')

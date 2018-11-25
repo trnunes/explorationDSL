@@ -1,6 +1,7 @@
 module Xplain
   @@current_workflow = nil
   @@cache_enabled = false  
+  @@exploration_repository = MemoryRepository.new
   
   def self.get_current_workflow
     @@current_workflow ||= Workflow.new
@@ -23,6 +24,9 @@ module Xplain
   
   def self.set_default_server(server_params)
     klass = server_params[:class]
+    if klass.is_a? String
+      klass = eval(klass)
+    end
     @@default_server = klass.new(server_params)
   end
   

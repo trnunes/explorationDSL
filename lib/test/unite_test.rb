@@ -1,13 +1,13 @@
 require './test/xplain_unit_test'
-require './operations/unite'
 
-class UniteTest < XplainUnitTest
+
+class Xplain::UniteTest < XplainUnitTest
 
   def test_empty_input_set
     input_nodes = []
     origin = Xplain::ResultSet.new(nil, input_nodes)
     
-    actual_results = Unite.new([origin, origin]).execute()
+    actual_results = Xplain::Unite.new([origin, origin]).execute()
     assert_true actual_results.to_tree.children.empty?
   end
 
@@ -15,7 +15,7 @@ class UniteTest < XplainUnitTest
     input_nodes = create_nodes [Xplain::Entity.new("_:p1"), Xplain::Entity.new("_:p2")]
     origin = Xplain::ResultSet.new(nil, input_nodes)
     
-    actual_results = Unite.new([origin]).execute()
+    actual_results = Xplain::Unite.new([origin]).execute()
     assert_same_result_set origin, actual_results
   end
   
@@ -26,14 +26,8 @@ class UniteTest < XplainUnitTest
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
-    begin
-      actual_results = Unite.new().execute()
-      assert false
-    rescue InvalidInputException => e
-      assert true
-      return
-    end
-    assert false
+    
+    actual_results = Xplain::Unite.new().execute()
     
   end
     
@@ -52,7 +46,7 @@ class UniteTest < XplainUnitTest
     
     expected_results = Set.new([Xplain::Entity.new("_:p1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3")])
 
-    actual_results = Unite.new([input_1, input_2]).execute()
+    actual_results = Xplain::Unite.new([input_1, input_2]).execute()
     assert_false actual_results.to_tree.children.empty?
     assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
     
@@ -83,7 +77,7 @@ class UniteTest < XplainUnitTest
     
     expected_output = Xplain::ResultSet.new(nil, [expected_p1, expected_p2, expected_p3])
 
-    actual_results = Unite.new([input1, input2]).execute()
+    actual_results = Xplain::Unite.new([input1, input2]).execute()
     assert_false actual_results.to_tree.children.empty?
     
     assert_same_result_set expected_output, actual_results    

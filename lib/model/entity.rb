@@ -10,6 +10,10 @@ module Xplain
 
     end
     
+    def <=>(other_entity)
+      other_entity.text <=> self.text
+    end
+    
     #TODO generalize it!
     def text
       if @text.to_s.empty?

@@ -72,7 +72,7 @@ module Xplain
       if !level_items.to_a.first.is_a?(Literal) && level_items.respond_to?(:uniq)
         level_items.uniq!
       end
-      # binding.pry
+
       @page += 1
       @offset += @limit
       @pages_cache[@page] = level_items

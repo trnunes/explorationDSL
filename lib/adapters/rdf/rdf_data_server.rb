@@ -22,9 +22,9 @@ class RDFDataServer < DataServer
     @graph = SPARQL::Client.new options[:graph], options
     @content_type = options[:content_type] || "application/sparql-results+xml"
     @api_key = options[:api_key]
-    @cache_max_size = options[:cache_limit] || 20000
-    @items_limit = options[:items_limit] || 0
-    @results_limit = options[:limit] || 5000
+    @cache_max_size = (options[:cache_limit] || 20000).to_i
+    @items_limit = (options[:items_limit] || 0).to_i
+    @results_limit = (options[:limit] || 5000).to_i
     
     #Default Namespaces
     Xplain::Namespace.new("owl", "http://www.w3.org/2002/07/owl#")
@@ -72,23 +72,28 @@ class RDFDataServer < DataServer
   end
 
   def match_all(keyword_pattern, restriction_nodes=[], offset = 0, limit = 0)
-    retrieved_items = []
+    retrieved_items = Set.new
     label_relations = Xplain::Visualization.label_relations_for("rdfs:Resource")    
     values_p = values_clause("?p", label_relations.map{|id| "<#{id}>"})
     
-    filter_clause = "regex(str(?ls), \".*#{keyword_pattern.join('.*')}.*\")" 
+    filter_clause = "regex(str(?ls), \".*#{keyword_pattern.join(' ')}.*\")" 
     query = "SELECT distinct ?s ?ls WHERE{
       #{values_clause("?s", restriction_nodes.map{|n|n.item})} 
       #{values_p} {?s ?p ?ls}. FILTER(#{filter_clause}).}"
     
+
+    if Xplain::Namespace.expand_uri(keyword_pattern.join('').strip) =~ URI::regexp
+      url = Xplain::Namespace.expand_uri(keyword_pattern.join('').strip)
+      query = "SELECT distinct ?s ?ls WHERE{ VALUES ?s{<#{url}>} #{values_p} {?s ?p ?ls}.}"
+    end
+    
     execute(query, {content_type: content_type, offset: offset, limit: limit}).each do |s|
-      puts s.inspect
-      item = Xplain::Entity.new(Xplain::Namespace.colapse_uri(s[:s].to_s))
+      item = Xplain::Entity.new(Xplain::Namespace.colapse_uri(s[:s].to_s), s[:ls].to_s)
       item.add_server(self)
       retrieved_items << item
     end
     
-    retrieved_items
+    retrieved_items.to_a
   end
   
     

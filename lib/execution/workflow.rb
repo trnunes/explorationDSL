@@ -26,7 +26,7 @@ class Workflow
         target_node = node if node.item == target_operation
       end
     end
-    # binding.pry
+
     if(input_node.nil?)
       input_node = Node.new(input_operation)
       @nodes << input_node

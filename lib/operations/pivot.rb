@@ -1,11 +1,13 @@
-class Pivot < Operation
+class Xplain::Pivot < Xplain::Operation
   include Xplain::RelationFactory  
   
-  def initialize(inputs, args={}, &block)
-    super(inputs, args, &block)
+  def initialize(args={}, &block)
+    super(args, &block)
     if !block_given? && args[:relation]
       @relation = args[:relation]
     end
+
+    @group_by_domain = args[:group_by_domain] || false
   end
   
   def get_relation
@@ -16,20 +18,21 @@ class Pivot < Operation
     @relation = new_relation
   end
   
-  def get_results(inputs)
-    if inputs.nil? || inputs.empty? || inputs.first.empty?
+  def get_results()
+    if @inputs.nil? || @inputs.empty? || @inputs.first.empty?
       return []
     end
     
-    @input_set = inputs.first.to_tree
+    @input_set = @inputs.first.to_tree
     if server && @relation.respond_to?(:server)
       @relation.server = server
     end
     
     #TODO repeated code, generalize it!
     @level ||= @input_set.count_levels
-    
-    result_set = @relation.restricted_image(@input_set.get_level(@level))
+    level_items = @input_set.get_level(@level)
+    level_items = level_items[0..@limit] if @limit > 0
+    result_set = @relation.restricted_image(level_items, group_by_domain: @group_by_domain)
     result_set.uniq! if result_set.contain_literals?
     result_set.nodes
   end

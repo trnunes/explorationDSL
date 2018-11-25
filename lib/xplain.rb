@@ -1,10 +1,8 @@
-# Dir["/Users/tnunes/development/xpair/mixins/*.rb"].each {|file| require file }
-# Dir["/Users/tnunes/development/xpair/model/*.rb"].each {|file| require file }
-# Dir["/Users/tnunes/development/xpair/adapters/rdf/*.rb"].each {|file| require file }
 require 'set'
 require 'forwardable'
 require 'mixins/graph_converter'
 require 'mixins/operation_factory'
+require 'adapters/memory/memory_repository'
 require 'mixins/config.rb'
 require 'mixins/writable.rb'
 require 'mixins/readable.rb'
@@ -40,46 +38,55 @@ require 'adapters/rdf/rdf_navigational'
 require 'adapters/rdf/sparql_helper'
 require 'adapters/rdf/rdf_data_server'
 require 'adapters/rdf/blazegraph_data_server'
-require 'adapters/memory/memory_repository'
 require 'visualization/visualization'
 require 'securerandom'
 require 'operations/auxiliary_function'
 require 'operations/operation'
 require 'operations/set_operation'
+require 'operations/group_by/grouping_relation'
 
-require 'operations/pivot'
-
-require 'operations/group'
-require 'operations/grouping_relations/grouping_relation'
-require 'operations/grouping_relations/by_image'
-
-require 'operations/map'
-require 'operations/mapping_functions/avg'
-require 'operations/mapping_functions/count'
-require 'operations/mapping_functions/sum'
-
-require 'operations/filters/filter_factory'
-require 'operations/refine'
-require 'operations/pivot'
-require 'operations/filters/filter'
-require 'operations/filters/simple_filter'
-require 'operations/filters/composite_filter'
-require 'operations/filters/and'
-require 'operations/filters/or'
-require 'operations/filters/equals'
-require 'operations/filters/equals_one'
-require 'operations/filters/contains'
-require 'operations/filters/match'
-require 'operations/filters/greater_than'
-require 'operations/filters/greater_than_equal'
-require 'operations/filters/less_than_equal'
-require 'operations/filters/less_than'
-require 'operations/filters/not'
-require 'operations/filters/c_filter'
-require 'operations/filters/in_memory_filter_interpreter'
+require 'operations/filter/filter_factory'
+require 'operations/filter/generic_filter'
+require 'operations/filter/simple_filter'
+require 'operations/filter/composite_filter'
+require 'operations/filter/in_memory_filter_interpreter'
 require 'adapters/rdf/filter_interpreter'
-require 'operations/keyword_search'
-require 'operations/nodes_select'
-require 'operations/unite'
-require 'operations/intersect'
-require 'operations/diff'
+
+module Xplain
+  @@base_dir = $LOAD_PATH.grep(/xplain-/).first.to_s + "/"
+  class << self
+    def base_dir=(base_dir_path)
+      @@base_dir = base_dir_path
+    end
+    
+    def base_dir
+      @@base_dir
+    end
+    
+    def const_missing(name)
+      
+  
+      instance = nil
+      
+      begin
+        require Xplain.base_dir + "operations/" + name.to_s.to_underscore + ".rb"
+        
+      rescue Exception => e
+
+        puts e.to_s
+      end
+      
+      begin
+        klass = Object.const_get "Xplain::" + name.to_s.to_camel_case
+      rescue Exception => e
+
+      end
+  
+      if !Xplain::Operation.operation_class? klass
+        raise NameError.new("Operation #{klass.to_s} not supported!")           
+      end
+          
+      return klass
+    end
+  end
+end

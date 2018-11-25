@@ -1,11 +1,10 @@
 require './exceptions/invalid_input_exception'
 require './test/xplain_unit_test'
-require './operations/group'
-require './operations/grouping_relations/grouping_relation'
-require './operations/grouping_relations/by_image'
+require './operations/group_by/grouping_relation'
 
 
-class GroupTest < XplainUnitTest
+
+class Xplain::GroupTest < XplainUnitTest
 
   def test_group_by_empty_relation
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2")]
@@ -13,7 +12,7 @@ class GroupTest < XplainUnitTest
     
     
     begin
-      rs = Group.new(input, grouping_relation: ByImage.new(nil)).execute
+      rs = Xplain::Group.new(inputs: input){by_image nil}.execute
       assert false, rs.inspect
     rescue MissingRelationException => e
       assert true, e.to_s
@@ -25,7 +24,7 @@ class GroupTest < XplainUnitTest
   def test_group_by_empty_input_set
     root = Xplain::ResultSet.new(nil, [])
 
-    rs = Group.new(root).execute
+    rs = Xplain::Group.new(inputs: root).execute
     
     assert_true rs.to_tree.children.empty?, rs.inspect
   end
@@ -46,7 +45,7 @@ class GroupTest < XplainUnitTest
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"),Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6") ]
     input_rs = Xplain::ResultSet.new("rs", input_nodes)
  
-    actual_rs = Group.new(input_rs, grouping_relation: ByImage.new(Xplain::SchemaRelation.new(id: "_:author"))).execute
+    actual_rs = Xplain::Group.new(inputs: input_rs, grouping_relation: GroupBy::ByImage.new(Xplain::SchemaRelation.new(id: "_:author"))).execute
     
     assert_same_result_set expected_rs, actual_rs
   end
@@ -57,15 +56,15 @@ class GroupTest < XplainUnitTest
     
     
     keywords_relation = Xplain::SchemaRelation.new(id: "_:keywords")
-    rs = Group.new(input, grouping_relation: ByImage.new(Xplain::SchemaRelation.new(id: "_:keywords", inverse: true))).execute
-    # binding.pry
+    rs = Xplain::Group.new(inputs: input, grouping_relation: GroupBy::ByImage.new(Xplain::SchemaRelation.new(id: "_:keywords", inverse: true))).execute
+
     assert_equal Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5")]), Set.new(rs.to_tree.children.map{|node| node.item})
 
     p1 = rs.to_tree.children.select{|g| g.item.id == "_:paper1"}.first
     p2 = rs.to_tree.children.select{|g| g.item.id == "_:p2"}.first
     p3 = rs.to_tree.children.select{|g| g.item.id == "_:p3"}.first
     p5 = rs.to_tree.children.select{|g| g.item.id == "_:p5"}.first
-    # binding.pry
+
     assert_equal [keywords_relation], p1.children.map{|c| c.item}
     assert_equal [keywords_relation], p2.children.map{|c| c.item}
     assert_equal [keywords_relation], p3.children.map{|c| c.item}
@@ -84,7 +83,7 @@ class GroupTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
 
-    rs = Group.new(input, grouping_relation: ByImage.new(path)).execute
+    rs = Xplain::Group.new(inputs: input, grouping_relation: GroupBy::ByImage.new(path)).execute
 
     assert_equal Set.new([Xplain::Literal.new(2005), Xplain::Literal.new(2010)]), Set.new(rs.to_tree.children.map{|node| node.item})
 
@@ -105,7 +104,7 @@ class GroupTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
 
-    rs = Group.new(input, grouping_relation: ByImage.new(path)).execute
+    rs = Xplain::Group.new(inputs: input, grouping_relation: GroupBy::ByImage.new(path)).execute
 
     expected_groups = Set.new([Xplain::Entity.new("_:p7"),Xplain::Entity.new("_:p8"), Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:paper1")])
     assert_equal expected_groups, Set.new(rs.to_tree.children.map{|node| node.item})
@@ -138,7 +137,7 @@ class GroupTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
 
-    rs = Group.new(input, grouping_relation: ByImage.new(path)).execute
+    rs = Xplain::Group.new(inputs: input, grouping_relation: GroupBy::ByImage.new(path)).execute
     
     assert_equal Set.new([Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")]), Set.new(rs.to_tree.children.map{|node| node.item})
     a1 = rs.to_tree.children.select{|g| g.item.id == "_:a1"}.first
@@ -161,9 +160,9 @@ class GroupTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
 
-    rs = Group.new(
-      Group.new(input, grouping_relation: ByImage.new(Xplain::SchemaRelation.new(id: "_:author"))).execute, 
-      grouping_relation: ByImage.new(Xplain::SchemaRelation.new(id: "_:publicationYear"))
+    rs = Xplain::Group.new(inputs: 
+      Xplain::Group.new(inputs: input, grouping_relation: GroupBy::ByImage.new(Xplain::SchemaRelation.new(id: "_:author"))).execute, 
+      grouping_relation: GroupBy::ByImage.new(Xplain::SchemaRelation.new(id: "_:publicationYear"))
     ).execute
     
     inverse_author = Xplain::SchemaRelation.new(id: "_:author", inverse: true)
@@ -174,7 +173,7 @@ class GroupTest < XplainUnitTest
     
     assert_equal [inverse_author], a1.children.map{|c| c.item}
     assert_equal [inverse_author], a2.children.map{|c| c.item}
-    # binding.pry
+
     assert_equal Set.new(a1.children.first.children.map{|c| c.item}), Set.new([Xplain::Literal.new(2000)])
     assert_equal Set.new(a2.children.first.children.map{|c| c.item}), Set.new([Xplain::Literal.new(1998)])
     subg1 = a1.children.first.children.select{|g| g.item.value.to_s == '2000'}.first
@@ -182,7 +181,7 @@ class GroupTest < XplainUnitTest
 
     assert_equal [inverse_publicationYear], subg1.children.map{|c| c.item}
     assert_equal [inverse_publicationYear], subg2.children.map{|c| c.item}
-    # binding.pry
+
     assert_equal Set.new(subg1.children.first.children.map{|n| n.item}), Set.new([Xplain::Entity.new("_:p2")])
     assert_equal Set.new(subg2.children.first.children.map{|n| n.item}), Set.new([Xplain::Entity.new("_:p3")])
     
@@ -197,7 +196,7 @@ class GroupTest < XplainUnitTest
     
     rs = input.group{by_image{relation "_:author"}}.execute
     
-    # binding.pry
+
     assert_equal Set.new([Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")]), Set.new(rs.to_tree.children.map{|node| node.item})
  
     a1 = rs.to_tree.children.select{|g| g.item.id == "_:a1"}.first
@@ -223,14 +222,14 @@ class GroupTest < XplainUnitTest
     keywords_relation = Xplain::SchemaRelation.new(id: "_:keywords")
 
     rs = input.group{ by_image{ relation inverse("_:keywords") }}.execute
-    # binding.pry
+
     assert_equal Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5")]), Set.new(rs.to_tree.children.map{|node| node.item})
 
     p1 = rs.to_tree.children.select{|g| g.item.id == "_:paper1"}.first
     p2 = rs.to_tree.children.select{|g| g.item.id == "_:p2"}.first
     p3 = rs.to_tree.children.select{|g| g.item.id == "_:p3"}.first
     p5 = rs.to_tree.children.select{|g| g.item.id == "_:p5"}.first
-    # binding.pry
+
     assert_equal [keywords_relation], p1.children.map{|c| c.item}
     assert_equal [keywords_relation], p2.children.map{|c| c.item}
     assert_equal [keywords_relation], p3.children.map{|c| c.item}

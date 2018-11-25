@@ -1,8 +1,9 @@
-class Refine < Operation
+class Xplain::Refine < Xplain::Operation
   include Xplain::FilterFactory
   attr_accessor :auxiliary_function
-  def initalize(inputs, args = {}, &block)
-    super(inputs, args, &block)
+  @function_module = "Filter"  
+  def initalize(args = {}, &block)
+    super(args, &block)
     if !@auxiliary_function && args[:filter]
       @auxiliary_function = args[:filter]
     end
@@ -25,13 +26,14 @@ class Refine < Operation
     result_nodes
   end
   
-  def get_results(inputs)
+  def get_results()
     
-    if inputs.nil? || inputs.empty? || inputs.first.empty?
+    #TODO duplicated code. Generalize this validation!
+    if @inputs.nil? || @inputs.empty? || @inputs.first.empty?
       return []
     end
 
-    input_set = inputs.first.to_tree
+    input_set = @inputs.first.to_tree
     if(input_set.children.empty?)
       return []
     end
@@ -44,47 +46,56 @@ class Refine < Operation
     non_interpretable_filters = @server.validate_filters(@auxiliar_function)
     if !non_interpretable_filters.empty?
       interpreter = InMemoryFilterInterpreter.new(non_interpretable_filters, input_nodes)
+
       in_memory_result_nodes = @auxiliar_function.accept(interpreter)
     end
-    
+
     result_nodes_hash = {}
     in_memory_result_nodes.each do |node|
       result_nodes_hash[node.item] = [] if !result_nodes_hash.has_key?(node.item)
       result_nodes_hash[node.item] << node
     end
+
     
     final_result_nodes = in_memory_result_nodes
-    # binding.pry
+
     if @server.can_filter? @auxiliar_function
       final_result_nodes = []
+
       @server.filter(in_memory_result_nodes.map{|node| node.item}, @auxiliar_function).each do |item_to_keep|
+
         final_result_nodes += result_nodes_hash[item_to_keep].to_a
+
       end      
     end    
     
     if @level > 2
-      # binding.pry
+
       remove_filtered_siblings(final_result_nodes)
-      # binding.pry
+
       final_result_nodes = pivot_to_level_2(final_result_nodes)
     end
-    # binding.pry
+
     final_result_nodes.each{|node| node.parent_edges = []}
     final_result_nodes
   end
 
   def remove_filtered_siblings(nodes)
-    # binding.pry
+
     if !nodes.empty?
-      parents = nodes.map{|node| node.parent}
+      level_up_nodes = []
+      parents = nodes.map{|node| node.parent}.compact
       parents.each do |current_parent|
         current_parent.children = current_parent.children & nodes
-        current_parent.children.each{|child| remove_filtered_siblings(child.children)}
-        if current_parent.children.empty? && current_parent.parent
-          # binding.pry
-          current_parent.parent.remove_child(current_parent)
+
+        if !current_parent.children.empty?
+          level_up_nodes << current_parent
+        else
+          current_parent.parent.remove_child(current_parent) if current_parent.parent
         end
+        
       end
+      remove_filtered_siblings(level_up_nodes)
     end
   end
 end

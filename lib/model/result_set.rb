@@ -4,8 +4,10 @@ module Xplain
     include Xplain::ResultSetWritable
     extend Xplain::ResultSetReadable
     
-    attr_accessor :intention, :nodes, :id, :inverse
-    def_delegators :@nodes, :each, :map, :select, :to_a, :empty?, :size, :uniq, :sort
+    attr_accessor :intention, :nodes, :id, :inverse, :annotations, :title
+    def_delegators :@nodes, :each, :map, :select, :empty?, :size, :uniq, :sort
+    def_delegators :@root_node, :children, :to_hash_children_node_by_item, :append_children, :<<, :count_levels
+    
     
     def initialize(id, nodes_list, intention = nil, annotations = [], inverse=false)
       @id = id || SecureRandom.uuid
@@ -17,10 +19,13 @@ module Xplain
         else
           nodes_list
         end
+      
       @intention = intention
       @inverse = inverse
+      @annotations = annotations
       @root_node = Node.new(Entity.new(self.id))
       @root_node.children = @nodes
+      @title = "Set #{Xplain::ResultSet.count + 1}"
     end
     
     def inverse?
@@ -30,24 +35,75 @@ module Xplain
     def resulted_from
       inputs = []
       if @intention
-        inputs = @intention.get_inputs
+        inputs = @intention.inputs
       end
-      inputs
+      inputs || []
     end
     
-    def get_page()
+    def breadth_first_search(all_occurrences=true, &block)
+      nodes_found = []
+      nodes_to_search = @nodes
+      while !nodes_to_search.empty?
+        nodes_found += nodes_to_search.select do |node|
+          yield(node)
+        end
+        
+        if !nodes_found.empty? && !all_occurrences
+          return [nodes_found.first]
+        end
+        
+        nodes_to_search = nodes_to_search.map{|node| node.children}.flatten
+      end
+      nodes_found
+  
+    end
+    
+    def history
+      history_sets = []
+      if !resulted_from.empty?
+        history_sets += resulted_from.map{|rs| rs.history}.flatten(1)
+        history_sets += resulted_from
+      end
       
+      history_sets
+    end
+    
+    def copy
+      copied_root = @root_node.copy
+      copied_root.children.each{|c| c.parent_edges = []}
+      Xplain::ResultSet.new(@root_node.item.id, copied_root.children, @intention, @annotations, @inverse)
+    end
+    
+    def get_page(total_items_by_page, page_number)
+      if @nodes.is_a? Set
+        @nodes = @nodes.to_a
+      end
+      pg_offset = 0
+      
+      total_of_pages = count_pages(total_items_by_page)
+      page_nodes = []
+      limit = total_items_by_page
+      if total_items_by_page > self.size
+        limit = self.size
+      end
+      if (page_number > 0)
+        pg_offset = (page_number - 1) * total_items_by_page
+        page_nodes = @nodes[pg_offset..(pg_offset + limit - 1)]
+      end
+      page_nodes
     end
     
     #TODO generalize all computed relation methods using a mixin!
-    def restricted_image(restriction)
+    def restricted_image(restriction, options={})
+      #TODO implement the group_by_domain option!
       if inverse?
         return compute_restricted_domain(restriction)
       end
       return compute_restricted_image(restriction)
     end
 
-    def restricted_domain(restriction)
+    def restricted_domain(restriction, options={})
+      #TODO implement the group_by_domain option!
       if inverse?
         return compute_restricted_image(restriction)
       end
@@ -64,7 +120,7 @@ module Xplain
           end
         end
       )
-      
+      #TODO implement the group_by_domain option!
       image = @nodes.select{|node| restriction_items.include? node.item}.map{|node| node.children}.flatten.compact
       Xplain::ResultSet.new(SecureRandom.uuid, image)
     end
@@ -127,28 +183,6 @@ module Xplain
         end
       end
       hash[key] << value
-    end
-    
-  #TODO It search for all occurrences and not only the first. change the name!    
-    def search_first(item_id)
-      nodes_found = []
-      nodes_to_search = @nodes
-      while !nodes_to_search.empty?
-        nodes_found += nodes_to_search.select do |node|
-          comparison_value =
-            if node.item.is_a? Xplain::Literal
-              node.item.value
-            else
-              node.item.id
-            end
-          comparison_value == item_id
-        end
-        continue_search = !nodes_found.empty?
-        if continue_search
-          nodes_to_search = nodes_to_search.map{|node| node.children}.flatten
-        end        
-      end
-      nodes_found
     end
     
     def include_node?(node_id)
@@ -215,27 +249,52 @@ module Xplain
       self
     end
     
+    def count_pages(total_by_page)
+      if total_by_page == 0
+        return 0
+      end
+    
+      (size.to_f/total_by_page.to_f).ceil
+    end
+    
     def inspect()
       @nodes.inject{|concat_string, node| concat_string.to_s + ", #{node.item.text}"}
     end
     
+    #TODO generalize duplicate method_missing
     def method_missing(m, *args, &block)
 
       instance = nil
       
-      klass = Object.const_get m.to_s.to_camel_case
-  
-      if !Operation.operation_class? klass
-        raise NameError.new("Operation #{klass.to_s} not supported!")           
-      end
-      if args.nil?
-        args = []
-      else
-        args.unshift([])
+      begin
+        require Xplain.base_dir + "operations/" + m.to_s + ".rb"
+        Dir[Xplain.base_dir + "operations/" + m.to_s + "/*.rb"].each {|file| require file }
+      rescue Exception => e
+
+        puts "Operation cannot be loaded: " + Xplain.base_dir + "operations/" + m.to_s + ".rb"
       end
       
-      args[0] << self
-      target_promisse = klass.new(*args, &block)
+      klass = Object.const_get "Xplain::" + m.to_s.to_camel_case
+  
+      if !Xplain::Operation.operation_class? klass
+        raise NameError.new("Operation #{klass.to_s} not supported!")           
+      end
+      if args.nil? || args.empty?
+        args = {}
+      elsif args[0].is_a? Hash 
+         args = args[0]
+      else
+        args = {:inputs => args}
+      end
+       
+      if !args[:inputs]
+        args[:inputs] = []
+      elsif !args[:inputs].is_a? Array
+        args[:inputs] = [args[:inputs]]
+      end
+      
+      args[:inputs] << self
+      target_promisse = klass.new(args, &block)
           
       return target_promisse
     end  

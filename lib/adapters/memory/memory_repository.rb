@@ -22,6 +22,10 @@ class MemoryRepository
     @@results_hash.values.select{|result_set| result_set.include_node?(node_id)}
   end
   
+  def count_resultsets
+    @@results_hash.values.size
+  end
+  
   def save_workflow(workflow)
     @@workflow_hash[workflow.id] = workflow
   end
