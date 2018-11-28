@@ -33,8 +33,21 @@ class Xplain::Pivot < Xplain::Operation
     level_items = @input_set.get_level(@level)
     level_items = level_items[0..@limit] if @limit > 0
     result_set = @relation.restricted_image(level_items, group_by_domain: @group_by_domain)
-    result_set.uniq! if result_set.contain_literals?
-    result_set.nodes
+    if @group_by_domain
+      children_by_item = result_set.to_hash_children_node_by_item
+      level_items.each do |node|
+        if children_by_item.has_key? node.item
+          binding.pry if @debug
+          node.children = children_by_item[node.item].first.children.map{|child| child.parent_edges = []; child}.uniq{|c| c.item}
+        end
+      end
+      binding.pry if @debug
+      nodes_to_return = @input_set.get_level(2)
+    else
+      result_set.uniq! if result_set.contain_literals?
+      nodes_to_return = result_set.nodes
+    end
+    nodes_to_return
   end
   
   def validate

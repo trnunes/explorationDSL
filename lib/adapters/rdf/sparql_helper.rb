@@ -52,55 +52,17 @@ module SPARQLHelper
     end    
   end
   
-  #TODO improve to generate paths with mmultiple-direction relations
-  # def path_clause(relations, obj_var = "?o")
-    # query = 
-    # if self.class::ACCEPT_PATH_CLAUSE
-      # relations.map{|r| "<" + Xplain::Namespace.expand_uri(r.id) + ">"}.join("/")
-    # elsif relations.is_a?(Xplain::SchemaRelation)
-      # if(relations.inverse?)
-        # clause = "#{obj_var} <" + Xplain::Namespace.expand_uri(relations.id) + "> ?s"
-      # else
-        # clause = "?s <" + Xplain::Namespace.expand_uri(relations.id) + "> #{obj_var}"
-      # end
-    # else
-      # count = 1
-      # svar = "?s"
-      # if relations.size == 1
-        # if relations.first.inverse?
-          # return "#{obj_var} <" + Xplain::Namespace.expand_uri(relations.id) + "> ?s"
-        # else
-          # return "?s <" + Xplain::Namespace.expand_uri(relations.id) + "> #{obj_var}"
-        # end
-      # else
-        # ovar = "?s1"
-      # end
-#       
-      # relations.map do |r|           
-        # count += 1
-        # ovar = obj_var if (count > relations.size)
-        # if(r.inverse?)
-          # clause = "#{ovar} <" + Xplain::Namespace.expand_uri(r.id) + "> #{svar}"          
-          # ovar = "?s#{count}"
-        # else
-          # clause = "#{svar} <" + Xplain::Namespace.expand_uri(r.id) + "> #{ovar}"
-          # svar = ovar
-          # ovar = "?s#{count}"
-        # end
-        # clause
-      # end.join(".")      
-    # end
-# 
-    # query
-  # end
-  
-    def path_clause(relations, continue_numbering=false)
+  def path_clause(relations, continue_numbering=false)
     relations = [relations] if !(relations.is_a?(Array) || relations.is_a?(Xplain::PathRelation))
     @count = 0 if !continue_numbering || !@count
     svar = "?s"    
     previous_relation = nil
+    path_size = relations.size
+    current_count = 0
     relations.map do |current_relation|
-      if current_relation == relations.last
+      current_count += 1
+      is_last_relation = (current_count == path_size) 
+      if is_last_relation
         ovar = "?o"
       else
         ovar = "?s#{@count += 1}"

@@ -1,4 +1,5 @@
 module Xplain
+  #TODO implement the group_by_domain option for mixed paths
   class PathRelation
     include Xplain::Relation
     include Xplain::GraphConverter
@@ -121,7 +122,7 @@ module Xplain
     def schema_restricted_image(restriction, options = {})
       options[:restriction] = restriction
       options[:relation] = self
-      results = hash_to_graph(@server.restricted_image(options), true)
+      results = hash_to_graph(@server.restricted_image(options), !options[:group_by_domain])
 
       ResultSet.new SecureRandom.uuid, results
     end

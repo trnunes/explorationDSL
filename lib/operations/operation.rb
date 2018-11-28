@@ -20,8 +20,10 @@ class Xplain::Operation
     @definition_block = block if block_given?
     @level = args[:level]
     @limit = args[:limit] || 0
-    
+    @debug = args[:debug] || false
   end
+  
+  
 
   def self.operation_class?(klass)
     operation_subclasses = ObjectSpace.each_object(Class).select {|space_klass| space_klass < Xplain::Operation }
@@ -43,6 +45,10 @@ class Xplain::Operation
   #TODO implement this operation to express the operation and its parameters  
   def to_expression
     self.class.to_s.downcase
+  end
+  
+  def summarize
+    self.class.to_s.downcase.gsub("xplain::", "")
   end
   
   def input=(operation_input)

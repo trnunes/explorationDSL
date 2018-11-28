@@ -65,8 +65,13 @@ module RDFNavigational
       else
         where_clause = "#{values_clause("?s", page_items)} {#{path_clause(relation)}}. #{mount_label_clause("?o", page_items, relation)} #{values_clause("?o", image_filter_items)}"
       end
-  
-      query = "SELECT ?s ?o ?lo where{#{where_clause} }"
+      
+      query = "SELECT ?s ?o ?lo "
+      if args[:group_by_domain]
+        query << " ?ls "
+        where_clause << " #{mount_label_clause("?s", page_items)}"
+      end
+      query << " where{#{where_clause} }"
       query = insert_order_by_subject(query)
     
       results_hash.merge! get_results(query, relation)

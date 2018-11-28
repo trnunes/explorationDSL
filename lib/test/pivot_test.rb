@@ -123,6 +123,19 @@ class Xplain::PivotTest < XplainUnitTest
     assert_false actual_results.to_tree.children.empty?
     assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
   end
+  def test_pivot_backward_relation_path_dsl
+    input_nodes = [
+      Node.new(Xplain::Entity.new("_:a1"))
+    ]
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
+    
+    expected_results = Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7"), Xplain::Entity.new("_:p8"), Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10")])
+
+    actual_results = root.pivot{relation inverse("_:author"), inverse("_:cite")}.execute
+    assert_false actual_results.to_tree.children.empty?
+    assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
+  end
     
   def test_pivot_forward_backward_relation_path
     input_nodes = [
