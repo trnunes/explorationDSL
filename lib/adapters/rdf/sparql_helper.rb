@@ -223,6 +223,21 @@ module SPARQLHelper
     items.values
   end
   
+  def build_item(server_item)
+    #TODO remove duplicated code in get_results function
+    if server_item.nil?
+      raise "Cannot build a nil item!"
+    end
+    if(server_item.literal?)
+      item = build_literal(server_item)
+    else
+      item = Xplain::Entity.new(Xplain::Namespace.colapse_uri(server_item.to_s))
+      item.type = "rdfs:Resource"
+      item.add_server @server
+      item
+    end
+  end
+  
   def get_results(query, relation)
     result_hash = {}
     

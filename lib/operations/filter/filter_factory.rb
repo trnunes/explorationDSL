@@ -1,14 +1,9 @@
 module Xplain
   module FilterFactory
-    attr_accessor :values, :frelation
+    attr_accessor :values
     include EntityFactory
     include RelationFactory
-    
-    def relation(*relations)
-
-      @frelation = new_relation(*relations)
-    end
-  
+      
     def entity(entity_id)
       @values = [new_entity(entity_id)]
     end

@@ -3,7 +3,7 @@ module RankBy
     include Xplain::RelationFactory
     
     def initialize(*args, &block)
-      super(&block)
+      super(*args, &block)
       @ranking_items_level = args.first
     end
     

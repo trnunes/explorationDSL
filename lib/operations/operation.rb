@@ -4,7 +4,7 @@ class Xplain::Operation
   
   include Xplain::GraphConverter
   
-  attr_accessor :params, :server, :inputs, :id   
+  attr_accessor :params, :server, :inputs, :id, :auxiliar_function, :definition_block, :args
   @base_dir = ""
   class << self
     attr_accessor :base_dir, :function_module
@@ -14,13 +14,19 @@ class Xplain::Operation
     if !args.is_a? Hash
       args = {inputs: args}
     end
+    @args = args
     @id = args[:id] || SecureRandom.uuid
     setup_input args
     @server = args[:server] || Xplain.default_server
-    @definition_block = block if block_given?
     @level = args[:level]
     @limit = args[:limit] || 0
     @debug = args[:debug] || false
+    @relation = args[:relation]
+    @visual = args[:visual] || false
+    if block_given?
+      @definition_block = block 
+      self.instance_eval &@definition_block
+    end
   end
   
   
@@ -56,9 +62,6 @@ class Xplain::Operation
   end
   
   def execute()
-    if @definition_block
-      self.instance_eval &@definition_block
-    end
     validate()
     resolve_dependencies()
     result_nodes = get_results()
@@ -156,20 +159,4 @@ class Xplain::Operation
 
   alias == eql?
   
-end
-
-class String
-  
-  def to_underscore
-    self.gsub(/::/, '/').
-    gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
-    gsub(/([a-z\d])([A-Z])/,'\1_\2').
-    tr("-", "_").
-    downcase
-  end
-  
-  def to_camel_case
-    return self if self !~ /_/ && self =~ /[A-Z]+.*/
-    split('_').map{|e| e.capitalize}.join
-  end
 end

@@ -9,9 +9,8 @@ module Xplain
     def_delegators :@root_node, :children, :to_hash_children_node_by_item, :append_children, :<<, :count_levels
     
     
-    def initialize(id, nodes_list, intention = nil, annotations = [], inverse=false)
+    def initialize(id, nodes_list, intention = nil, title = nil, annotations = [], inverse=false)
       @id = id || SecureRandom.uuid
-                  
       input_is_list_of_items = nodes_list && !nodes_list.first.is_a?(Node)
       @nodes = 
         if input_is_list_of_items
@@ -25,7 +24,7 @@ module Xplain
       @annotations = annotations
       @root_node = Node.new(Entity.new(self.id))
       @root_node.children = @nodes
-      @title = "Set #{Xplain::ResultSet.count + 1}"
+      @title = title || "Set #{Xplain::ResultSet.count + 1}"
     end
     
     def inverse?
@@ -34,7 +33,7 @@ module Xplain
         
     def resulted_from
       inputs = []
-      if @intention
+      if @intention && !@intention.is_a?(String)
         inputs = @intention.inputs
       end
       inputs || []
@@ -71,7 +70,7 @@ module Xplain
     def copy
       copied_root = @root_node.copy
       copied_root.children.each{|c| c.parent_edges = []}
-      Xplain::ResultSet.new(@root_node.item.id, copied_root.children, @intention, @annotations, @inverse)
+      Xplain::ResultSet.new(@root_node.item.id, copied_root.children, @title, @intention, @annotations, @inverse)
     end
     
     def get_page(total_items_by_page, page_number)
@@ -132,7 +131,7 @@ module Xplain
     end
     
     def reverse()
-      Xplain::ResultSet.new(SecureRandom.uuid, @nodes, @intention, @annotations, !inverse?)
+      Xplain::ResultSet.new(SecureRandom.uuid, @nodes, @intention, @title, @annotations, !inverse?)
     end
     
     def to_tree

@@ -3,7 +3,7 @@ class SimpleFilter < GenericFilter
 
   def initialize(&block)
     super &block
-    if(@frelation.nil?)
+    if(@relation.nil?)
       raise MissingRelationException
     end
     if(@values.nil? || @values.compact.empty?)

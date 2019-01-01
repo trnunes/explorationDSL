@@ -46,6 +46,7 @@ require 'securerandom'
 require './operations/auxiliary_function'
 require './operations/operation'
 require './operations/set_operation'
+require './execution/dsl_parser.rb'
 
 #TODO Duplicated code with xplain.rb!
 module Xplain
@@ -285,6 +286,10 @@ class XplainUnitTest < Test::Unit::TestCase
   end
   
   def assert_same_result_set(rs1, rs2)
+    assert_equal rs1.class, Xplain::ResultSet
+    assert_equal rs1.class, rs2.class
+    assert_equal rs1.title, rs2.title, "Titles are not the same!"
+    assert_equal rs1.annotations, rs2.annotations, "Annotations are not the same!"
     assert_same_items_tree_set_no_root rs1.to_tree, rs2.to_tree
   end
     

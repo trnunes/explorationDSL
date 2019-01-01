@@ -23,8 +23,8 @@ module RankBy
       end
       
       return comparable1 <=> comparable2 if (comparable1 && comparable2)      
-      return 1 if (!comparable1 && comparable2)
-      return -1 if (!comparable2 && comparable1)
+      return -1 if (!comparable1 && comparable2)
+      return 1 if (!comparable2 && comparable1)
       return 0
     end
     

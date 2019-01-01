@@ -18,7 +18,8 @@ module Xplain
     attr_accessor :relation
     
     def relation(*relations)
-      @relation = new_relation(*relations)
+      @relation ||= new_relation(*relations)
+      @relation
     end
     
     def new_relation(*relations)

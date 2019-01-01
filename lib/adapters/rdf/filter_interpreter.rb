@@ -72,10 +72,10 @@ class SPARQLFilterInterpreter
     filter_clause = 
     if f.class.name == "Filter::Equals"
       
-      generate_where_hash(f.frelation, "=", f.values.first)
+      generate_where_hash(f.relation, "=", f.values.first)
     elsif f.class.name == "Filter::Contains"
-      if(f.respond_to? :frelation)
-        where_clause = "?s <#{f.frelation}> ?o#{@relations_index+=1}"
+      if(f.respond_to? :relation)
+        where_clause = "?s <#{f.relation}> ?o#{@relations_index+=1}"
        
         where_clause << " VALUES ?o#{@relations_index}{" + f.values.map{|item| parse_item(item)}.join(" ") + "}"
       else
@@ -85,8 +85,8 @@ class SPARQLFilterInterpreter
       
     elsif f.class.name == "Filter::EqualsOne"
 
-     if(f.respond_to? :frelation)
-       where_clause = "?s <#{f.frelation}> ?o#{@relations_index+=1}"
+     if(f.respond_to? :relation)
+       where_clause = "?s <#{f.relation}> ?o#{@relations_index+=1}"
        
        where_clause << " VALUES ?o#{@relations_index}{" + f.values.map{|item| parse_item(item)}.join(" ") + "}"
      else
@@ -94,13 +94,13 @@ class SPARQLFilterInterpreter
      end 
      {where_clause => []}
     elsif f.class.name ==  "Filter::LessThan"
-      generate_where_hash(f.frelation, "<", f.values.first)
+      generate_where_hash(f.relation, "<", f.values.first)
     elsif f.class.name == "Filter::LessThanEqual"
-      generate_where_hash(f.frelation, "<=", f.values.first)
+      generate_where_hash(f.relation, "<=", f.values.first)
     elsif f.class.name == "Filter::GreaterThan"
-      generate_where_hash(f.frelation, ">", f.values.first)
+      generate_where_hash(f.relation, ">", f.values.first)
     elsif f.class.name == "Filter::GreaterThanEqual"
-      generate_where_hash(f.frelation, ">=", f.values.first)
+      generate_where_hash(f.relation, ">=", f.values.first)
     elsif f.class.name == "Filter::And"
       hash = {}
       where_clauses = []

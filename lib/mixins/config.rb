@@ -23,16 +23,24 @@ module Xplain
   end
   
   def self.set_default_server(server_params)
-    klass = server_params[:class]
-    if klass.is_a? String
-      klass = eval(klass)
+    if server_params.is_a? Hash
+      klass = server_params[:class]
+      klass = eval(klass) if klass.is_a? String
+      @@default_server = klass.new(server_params)
+    else
+      @@default_server = server_params
     end
-    @@default_server = klass.new(server_params)
+    @@default_server
   end
   
   def self.set_exploration_repository(repository_params)
-    klass = repository_params[:class]
-    @@exploration_repository = klass.new(repository_params)
+    if repository_params.is_a? Hash
+      klass = repository_params[:class]
+      @@exploration_repository = klass.new(repository_params)
+    else
+      @@exploration_repository = repository_params
+    end
+    @@exploration_repository
   end
   
   def self.default_server
@@ -60,4 +68,21 @@ module Xplain
   # 6 config types query
   
     
+end
+
+
+class String
+  
+  def to_underscore
+    self.gsub(/::/, '/').
+    gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
+    gsub(/([a-z\d])([A-Z])/,'\1_\2').
+    tr("-", "_").
+    downcase
+  end
+  
+  def to_camel_case
+    return self if self !~ /_/ && self =~ /[A-Z]+.*/
+    split('_').map{|e| e.capitalize}.join
+  end
 end

@@ -8,7 +8,6 @@ require 'mixins/writable.rb'
 require 'mixins/readable.rb'
 require 'execution/workflow.rb'
 
-
 require 'mixins/enumerable'
 require 'mixins/relation'
 require 'exceptions/missing_relation_exception'
@@ -51,6 +50,7 @@ require 'operations/filter/simple_filter'
 require 'operations/filter/composite_filter'
 require 'operations/filter/in_memory_filter_interpreter'
 require 'adapters/rdf/filter_interpreter'
+require 'execution/dsl_parser.rb'
 
 module Xplain
   @@base_dir = $LOAD_PATH.grep(/xplain-/).first.to_s + "/"
