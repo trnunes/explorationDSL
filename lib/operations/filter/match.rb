@@ -1,4 +1,4 @@
 
-  class Filter::Match < SimpleFilter
+  class Filter::Match < RelationFilter
   end
   

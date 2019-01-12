@@ -66,14 +66,19 @@ class Xplain::Operation
     resolve_dependencies()
     result_nodes = get_results()
     result_nodes.each{|node| node.parent_edges = []}
-    Xplain::ResultSet.new(SecureRandom.uuid, result_nodes, self)        
+    Xplain::ResultSet.new(nil, result_nodes, self)        
   end
   
   def resolve_dependencies
     @inputs = @inputs.map do |input|
       if input.is_a? Xplain::Operation
-        input.execute().copy
+        rs = input.execute()
+        rs.save
+        rs.copy
       else
+        if input.id.nil?
+          input.save
+        end
         input.copy
       end
     end  

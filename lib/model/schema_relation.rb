@@ -46,9 +46,9 @@ module Xplain
           else
             to_nodes(@server.send((@id + "_image").to_sym, offset: offset, limit: limit))
           end
-        return Xplain::ResultSet.new(SecureRandom.uuid, result_graph)
+        return Xplain::ResultSet.new(nil, result_graph)
       end
-      Xplain::ResultSet.new(SecureRandom.uuid, hash_to_graph(@server.image(self, offset.to_i, limit.to_i)))
+      Xplain::ResultSet.new(nil, hash_to_graph(@server.image(self, offset.to_i, limit.to_i)))
     end
   
     def domain(offset=0, limit=-1)
@@ -59,10 +59,10 @@ module Xplain
           else
             to_nodes(@server.send((@id + "_domain").to_sym, offset: offset, limit: limit))
           end
-        return Xplain::ResultSet.new(SecureRandom.uuid, result_graph)
+        return Xplain::ResultSet.new(nil, result_graph)
       end
 
-      Xplain::ResultSet.new(SecureRandom.uuid, hash_to_graph(@server.domain(self, offset, limit)))
+      Xplain::ResultSet.new(nil, hash_to_graph(@server.domain(self, offset, limit)))
     end
   
     def restricted_image(restriction, options= {})
@@ -75,12 +75,12 @@ module Xplain
           else
             to_nodes(@server.send((@id + "_restricted_image").to_sym, options))
           end
-          return Xplain::ResultSet.new(SecureRandom.uuid, result_graph)
+          return Xplain::ResultSet.new(nil, result_graph)
       end
       
       result_graph = hash_to_graph(@server.restricted_image(options), !options[:group_by_domain])
       
-      Xplain::ResultSet.new(SecureRandom.uuid, result_graph)
+      Xplain::ResultSet.new(nil, result_graph)
     end
   
     def restricted_domain(restriction, options = {})
@@ -96,10 +96,11 @@ module Xplain
             
             to_nodes(@server.send((@id + "_restricted_domain").to_sym, options))
           end
-        return Xplain::ResultSet.new(SecureRandom.uuid, result_graph)        
+        #TODO remove the nil parameter in ResultSet.new(nil, ..)
+        return Xplain::ResultSet.new(nil, result_graph)        
       end
       domain_nodes = hash_to_graph(@server.restricted_domain(options))
-      Xplain::ResultSet.new(SecureRandom.uuid, domain_nodes)
+      Xplain::ResultSet.new(nil, domain_nodes)
     end
     
     def group_by_domain_hash(nodes)
@@ -126,7 +127,7 @@ module Xplain
           hash_to_graph(@server.group_by(nodes, self))
         end
       
-      Xplain::ResultSet.new(SecureRandom.uuid, result_nodes)
+      Xplain::ResultSet.new(nil, result_nodes)
     end
   end
 end

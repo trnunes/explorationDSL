@@ -1,3 +1,3 @@
 
-  class Filter::LessThanEqual < SimpleFilter
+  class Filter::LessThanEqual < RelationFilter
   end

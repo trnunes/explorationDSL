@@ -17,6 +17,7 @@ class Xplain::IntersectTest < XplainUnitTest
     
     
     actual_results = Xplain::Intersect.new([origin]).execute()
+    origin.title =  actual_results.title
     assert_same_result_set origin, actual_results
   end
   
@@ -51,6 +52,7 @@ class Xplain::IntersectTest < XplainUnitTest
 
     actual_results = Xplain::Intersect.new([input_1, input_2]).execute()
     assert_false actual_results.to_tree.children.empty?
+    actual_results.title = expected_results.title
     assert_same_result_set actual_results, expected_results
     
   end
@@ -79,6 +81,7 @@ class Xplain::IntersectTest < XplainUnitTest
 
     actual_results = Xplain::Intersect.new([input1, input2]).execute()
     assert_false actual_results.to_tree.children.empty?
+    actual_results.title =  expected_output.title
     assert_same_result_set actual_results, expected_output 
     
   end

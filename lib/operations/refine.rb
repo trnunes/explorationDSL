@@ -42,7 +42,7 @@ class Xplain::Refine < Xplain::Operation
     input_nodes = input_set.get_level(@level)
     in_memory_result_nodes = input_nodes
     final_result_nodes = []
-    
+    #TODO implement composite filter execution correctly. It does not respect the composite tree
     non_interpretable_filters = @server.validate_filters(@auxiliar_function)
     if !non_interpretable_filters.empty?
       interpreter = InMemoryFilterInterpreter.new(non_interpretable_filters, input_nodes)
@@ -58,7 +58,6 @@ class Xplain::Refine < Xplain::Operation
 
     
     final_result_nodes = in_memory_result_nodes
-
     if @server.can_filter? @auxiliar_function
       final_result_nodes = []
 

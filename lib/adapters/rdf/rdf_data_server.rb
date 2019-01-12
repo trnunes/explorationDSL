@@ -206,6 +206,7 @@ class RDFDataServer < DataServer
     rs.size
   end
   
+  #TODO preventing saving sets already save and unmodified
   def save_resultset(result_set)
     #TODO save title
     #TODO save annotations
@@ -218,6 +219,7 @@ class RDFDataServer < DataServer
     if result_set.intention
       insert_rs_query << "#{result_set_uri} <#{namespace}intention> \"#{intention_parser.to_ruby(result_set.intention).gsub("\"", '\"').gsub("\n", "\\n")}\". "
     end
+    
     result_set.annotations.each do |note|
       insert_rs_query << "#{result_set_uri} <#{namespace}note> \"#{note}\". "
     end
@@ -257,6 +259,7 @@ class RDFDataServer < DataServer
     if result_set.intention
       insert_rs_query << "#{result_set_uri} <#{namespace}intention> \"#{intention_parser.to_ruby(result_set.intention).gsub("\"", '\"').gsub("\n", "\\n")}\". "
     end
+    
     result_set.annotations.each do |note|
       insert_rs_query << "#{result_set_uri} <#{namespace}note> \"#{note}\". "
     end
@@ -280,6 +283,10 @@ class RDFDataServer < DataServer
     
     insert_stmt = "<#{@xplain_ns.uri + node.id}> #{included_in_pred} #{result_set_uri}. "
     insert_stmt += "<#{@xplain_ns.uri + node.id}> <#{@xplain_ns.uri}has_item> #{item_uri}."
+    if [Xplain::SchemaRelation, Xplain::PathRelation, Xplain::Type, Xplain::Entity].include? node.item.class
+      insert_stmt += "#{item_uri} <#{@xplain_ns.uri}item_type> \"#{node.item.class.name}\"."
+    end
+    insert_stmt += "<#{@xplain_ns.uri + node.id}> <#{@xplain_ns.uri}item_type> #{item_uri}."
     insert_stmt += "<#{@xplain_ns.uri + node.id}> <#{@dcterms.uri}title> \"#{node.item.text}\"."
     insert_stmt += "<#{@xplain_ns.uri + node.id}> <#{@xplain_ns.uri}index> #{index}."
     child_index = 0
@@ -324,12 +331,12 @@ class RDFDataServer < DataServer
     end
     
     query = "prefix xsd: <#{@xsd_ns.uri}> 
-    SELECT ?node ?nodeText ?nodeIndex ?item ?child ?childIndex ?childText ?child_item 
+    SELECT ?node ?nodeText ?nodeIndex ?item ?itemType ?child ?childIndex ?childText ?child_item ?childType
     WHERE{OPTIONAL{?node <#{xplain_namespace}included_in> #{result_set_uri}.
-      ?node <#{@xplain_ns.uri}index> ?nodeIndex.  
-      ?node <#{@dcterms.uri}title> ?nodeText. ?node <#{xplain_namespace}has_item> ?item}. 
+      ?node <#{@xplain_ns.uri}index> ?nodeIndex.
+      ?node <#{@dcterms.uri}title> ?nodeText. ?node <#{xplain_namespace}has_item> ?item. OPTIONAL{?item <#{xplain_namespace}item_type> ?itemType}.}. 
       OPTIONAL{?node <#{xplain_namespace}children> ?child. ?child <#{@xplain_ns.uri}index> ?childIndex.  
-      ?child <#{@dcterms.uri}title> ?childText. ?child <#{xplain_namespace}has_item> ?child_item}.
+      ?child <#{@dcterms.uri}title> ?childText. ?child <#{xplain_namespace}has_item> ?child_item. OPTIONAL{?child_item <#{xplain_namespace}item_type> ?childType}.}.
     } ORDER BY xsd:integer(?nodeIndex) xsd:integer(?childIndex)"
     
     nodes = []
@@ -337,10 +344,10 @@ class RDFDataServer < DataServer
     puts "Loading Result Set..."
     puts query
     @graph.query(query).each do |solution|
-      next if !solution[:node]
+      next if !solution[:node] || !solution[:item]
       
       node_id = solution[:node].to_s.gsub(xplain_namespace, "")
-      item = build_item solution[:item]
+      item = build_item solution[:item], solution[:itemType]
       
       if !item.is_a?(Xplain::Literal)
         item.text = solution[:nodeText].to_s
@@ -360,7 +367,7 @@ class RDFDataServer < DataServer
               raise "Inconsistent Result Set: node must point to an Item!"
             end
             
-            child_item = build_item solution[:child_item]
+            child_item = build_item solution[:child_item], solution[:childType]
             if !child_item.is_a?(Xplain::Literal)
               child_item.text = solution[:childText].to_s
             end
@@ -373,24 +380,73 @@ class RDFDataServer < DataServer
     end
     #TODO create an array if the elements are literals.
     first_level = Set.new(nodes.select{|n| !n.parent})
-    intention_desc = nil
     if !intention.to_s.empty?
-      intention_desc = eval(intention) 
+      intention_desc = eval(intention)
     end
     Xplain::ResultSet.new(rs_id, first_level, intention_desc, title, notes.to_a)
     
   end
   
+  def add_result_set(session, result_set)
+    insert_stmt = "INSERT DATA{
+    <#{@xplain_ns.uri + session.id}> <#{@rdf_ns.uri}type> <#{@xplain_ns.uri}Session>.
+    <#{@xplain_ns.uri + session.id}> <#{@dcterms.uri}title> \"#{session.title}\". 
+    <#{@xplain_ns.uri + session.id}> <#{@xplain_ns.uri}contains_set> <#{@xplain_ns.uri + result_set.id}>}"
+    execute_update(insert_stmt, content_type: content_type)
+  end
+  
+  #TODO Document options: exploration_only
+  def find_result_sets_by_session(session, options={})
+    rs_uri_query = "SELECT ?o ?i WHERE{<#{@xplain_ns.uri + session.id}> <#{@xplain_ns.uri}contains_set> ?o.  OPTIONAL{?o <#{@xplain_ns.uri}intention> ?i}"
+    if options[:exploration_only]
+      rs_uri_query << " BIND (COALESCE(?i, \"no intention\") as ?i) FILTER NOT EXISTS {FILTER (regex(str(?i), \"visual: \s*true\",\"i\")) }." 
+    end
+    rs_uri_query << "}"
+
+    result_set_ids = []
+    @graph.query(rs_uri_query).each_solution do |solution|
+      result_set_ids << solution[:o].to_s.gsub(@xplain_ns.uri, "")
+    end
+    result_set_ids.map{|id| load_resultset(id)}
+  end
+  
+  def find_session_by_title(title)
+    session_query = "SELECT ?s WHERE{?s <#{@rdf_ns.uri}type> <#{@xplain_ns.uri}Session>. ?s <#{@dcterms.uri}title> \"#{title}\"}"
+    sessions = []
+    @graph.query(session_query).each do |solution|
+      session_id = solution[:s].to_s.gsub(@xplain_ns.uri, "")
+      sessions << Xplain::Session.new(session_id, title)
+    end
+    sessions
+  end
+  
+  def list_session_titles
+    session_query = "SELECT ?t WHERE{?s <#{@rdf_ns.uri}type> <#{@xplain_ns.uri}Session>. ?s <#{@dcterms.uri}title> ?t}"
+    titles = []
+    @graph.query(session_query).each do |solution|
+      titles << solution[:t].to_s
+    end
+    titles
+  end
+  
+  def delete_session(session)
+    
+    
+    delete_stmt = "DELETE WHERE{<#{@xplain_ns.uri + session.id}> ?p ?o}"
+    
+    execute_update(delete_stmt, content_type: content_type)
+    
+  end
+  
   def execute_update(query, options = {})
     puts query
-    begin 
-      rs = @graph.update(query)
+    begin
+      rs = @graph.update(query, options)
     rescue RDF::ReaderError => e
        
     end  
     
   end
-
   def dataset_filter(input_items = [], filter_expr)
     interpreter = SPARQLFilterInterpreter.new()
     results = Set.new

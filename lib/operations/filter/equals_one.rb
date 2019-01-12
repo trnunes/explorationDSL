@@ -1,2 +1,2 @@
-class Filter::EqualsOne < SimpleFilter
+class Filter::EqualsOne < RelationFilter
 end

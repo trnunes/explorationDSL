@@ -11,6 +11,7 @@ class GenericFilter < AuxiliaryFunction
     true
   end
   
+  #TODO remove redundance
   def method_missing(m, *args, &block)
 
     begin

@@ -2,7 +2,7 @@
 require './test/xplain_unit_test'
 require './operations/filter/filter_factory'
 require './operations/filter/generic_filter'
-require './operations/filter/simple_filter'
+require './operations/filter/relation_filter'
 require './operations/filter/composite_filter'
 
 require './operations/filter/in_memory_filter_interpreter'
@@ -349,10 +349,76 @@ class Xplain::RefineTest < XplainUnitTest
     
     expected_results = Set.new([Xplain::Entity.new("_:a1")])
     actual_results = Xplain::Refine.new(inputs: root) do
-      c_filter "|e| e.id == \"_:a1\""
+      c_filter "|e| e.item.id == \"_:a1\""
     end.execute()
     assert_false actual_results.to_tree.children.empty?
     assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
+  end
+  
+  def test_refine_named_cfilter_select
+    input_nodes = [
+      Node.new(Xplain::Entity.new("_:a1")),
+      Node.new(Xplain::Entity.new("_:a2")),
+      Node.new(Xplain::Entity.new("_:a3")),
+      Node.new(Xplain::Entity.new("_:a4")),
+    ]
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
+    expected_results = Set.new([Xplain::Entity.new("_:a1")])
+    actual_results = Xplain::Refine.new(inputs: root) do
+      c_filter name: :by_id, code: "|e| e.item.id == \"_:a1\""
+    end.execute()
+    assert_false actual_results.to_tree.children.empty?
+    assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
+  end
+
+  def test_refine_named_cfilter_select_AND
+    input_nodes = [
+      Node.new(Xplain::Entity.new("_:a1")),
+      Node.new(Xplain::Entity.new("_:a2")),
+      Node.new(Xplain::Entity.new("_:a3")),
+      Node.new(Xplain::Entity.new("_:a4")),
+    ]
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
+    expected_results = Set.new([Xplain::Entity.new("_:a1")])
+    actual_results = Xplain::Refine.new(inputs: root) do 
+      And do 
+        [
+          c_filter(name: :by_id, code: '|e| e.item.text.include? "a1"')
+        ]
+      end
+    end.execute()
+    assert_false actual_results.to_tree.children.empty?
+    assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
+  end
+
+  def test_refine_named_cfilter_select_AND_dataset_filter
+    input_nodes = [
+      Node.new(Xplain::Entity.new("_:paper1")),
+      Node.new(Xplain::Entity.new("_:p2")),
+      Node.new(Xplain::Entity.new("_:p3")),
+      Node.new(Xplain::Entity.new("_:p4")),
+      Node.new(Xplain::Entity.new("_:p5")),
+      Node.new(Xplain::Entity.new("_:p6")),
+      Node.new(Xplain::Entity.new("_:p8"))
+    ]
+    root = Xplain::ResultSet.new(nil, input_nodes)
+    
+    expected_results = Set.new([Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p8")])
+    actual_results = Xplain::Refine.new(inputs: root) do
+      And do [
+        equals do
+          relation "_:cite", "_:author"
+          entity "_:a1"
+        end,
+        c_filter(name: :by_id, code: '|e| e.item.text.include?("p6") || e.item.text.include?("p8")')
+      ]
+      end
+    end.execute()
+    assert_false actual_results.to_tree.children.empty?
+    assert_equal expected_results, Set.new(actual_results.to_tree.children.map{|node| node.item})
+
   end
   
   def test_refine_level_2_set
@@ -384,7 +450,7 @@ class Xplain::RefineTest < XplainUnitTest
         literal "2005"
       end
     end.execute()
-    
+    actual_results.title = expected_results1.title
     assert_same_result_set actual_results, expected_results1
 
     actual_results = Xplain::Refine.new(inputs: input, level: 2) do
@@ -393,7 +459,7 @@ class Xplain::RefineTest < XplainUnitTest
         literal "2010"
       end
     end.execute()
-    
+    actual_results.title = expected_results2.title
     assert_same_result_set actual_results, expected_results2
   end
 

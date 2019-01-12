@@ -21,6 +21,7 @@ module SPARQLHelper
     "<#{Xplain::Namespace.expand_uri(item.id)}>"
   end
   
+  #TODO Remove this method or specialize to convert only non-path relations
   def convert_path_relation(relation)
     relation.map{|r| "<" + Xplain::Namespace.expand_uri(r.id) + ">"}.join("/")
   end
@@ -223,7 +224,7 @@ module SPARQLHelper
     items.values
   end
   
-  def build_item(server_item)
+  def build_item(server_item, item_class = "Xplain::Entity")
     #TODO remove duplicated code in get_results function
     if server_item.nil?
       raise "Cannot build a nil item!"
@@ -231,11 +232,23 @@ module SPARQLHelper
     if(server_item.literal?)
       item = build_literal(server_item)
     else
-      item = Xplain::Entity.new(Xplain::Namespace.colapse_uri(server_item.to_s))
-      item.type = "rdfs:Resource"
-      item.add_server @server
-      item
+      if item_class == "Xplain::PathRelation"
+        schema_relations = server_item.to_s.split("/http").map do |uri| 
+          uri = "http" + uri if !uri.include?("http")
+          Xplain::SchemaRelation.new(id: Xplain::Namespace.colapse_uri(uri))
+        end
+        item = Xplain::PathRelation.new(relations: schema_relations)
+      elsif item_class == "Xplain::SchemaRelation"
+        item = Xplain::SchemaRelation.new(id: Xplain::Namespace.colapse_uri(server_item.to_s))
+      elsif item_class == "Xplain::Type"
+        item = Xplain::Type.new(Xplain::Namespace.colapse_uri(server_item.to_s))
+      else
+        item = Xplain::Entity.new(Xplain::Namespace.colapse_uri(server_item.to_s))
+        item.type = "rdfs:Resource"
+      end
+      item.server = @server
     end
+    item
   end
   
   def get_results(query, relation)

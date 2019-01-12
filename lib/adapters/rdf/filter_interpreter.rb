@@ -23,7 +23,7 @@ class SPARQLFilterInterpreter
   end
   
   def validate_filters(filter_expr, invalid_filters = [])
-    invalid_filters << filter_expr if !@@accepted_filters.include?(filter_expr.class)
+    invalid_filters << filter_expr if !@@accepted_filters.include?(filter_expr.class.name)
     if filter_expr.respond_to? :filters
       filter_expr.filters.each{|filter| validate_filters(filter, invalid_filters)}
     end
@@ -135,8 +135,10 @@ class SPARQLFilterInterpreter
 
       where_clause = where_clauses.join(" UNION ") 
       {where_clause => []}    
-    elsif f.class == Not
-      "not implemented"        
+    elsif f.class.name == "Filter::Not"
+      {}
+    else
+      {}        
     end
     filter_clause
   end

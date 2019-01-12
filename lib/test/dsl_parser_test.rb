@@ -2,7 +2,7 @@ require './test/xplain_unit_test'
 require './operations/filter/filter_factory'
 
 require './operations/filter/generic_filter'
-require './operations/filter/simple_filter'
+require './operations/filter/relation_filter'
 require './operations/filter/composite_filter'
 require './adapters/rdf/filter_interpreter'
 
@@ -38,7 +38,7 @@ class  DSLParserTest < XplainUnitTest
     
     actual_code = @parser.to_ruby(keyword_search_operation)
     
-    expected_code = "Xplain::KeywordSearch.new(keyword_phrase:\"paper1_keyword\")"
+    expected_code = "Xplain::KeywordSearch.new(keyword_phrase:'paper1_keyword')"
     assert_nothing_raised do
       eval(expected_code)
     end
@@ -80,7 +80,7 @@ class  DSLParserTest < XplainUnitTest
     
     actual_code = @parser.to_ruby(test_op)
     
-    expected_code = "Xplain::ResultSet.load(\"test\").pivot(level: 3, arg1: \"arg1\", arg2: \"arg2\") do relation \"_:author\";end"
+    expected_code = "Xplain::ResultSet.load(\"test\").pivot(level: 3, arg1: 'arg1', arg2: 'arg2') do relation \"_:author\";end"
     assert_nothing_raised do
       eval(expected_code)
     end
@@ -107,6 +107,30 @@ class  DSLParserTest < XplainUnitTest
     actual_code = @parser.to_ruby(test_op)
     
     expected_code = "Xplain::ResultSet.load(\"test\").refine do equals do relation \"_:author\"; entity \"_:p2\" end end"
+    assert_nothing_raised do
+      eval(expected_code)
+    end
+    assert_nothing_raised do
+      eval(actual_code)
+    end
+    expected_code = expected_code.gsub(" ", "").gsub("\n", "").gsub(";", "")
+    
+    assert_equal expected_code, actual_code.gsub(" ", "").gsub("\n", ""), "\nExpected:" + expected_code + " \n Actual:  " + actual_code
+    puts "-----CODE-----"
+    puts actual_code
+
+  end
+  
+  def test_parse_refine_cfilter
+    test_rs = Xplain::ResultSet.new("test", [])
+    test_rs.save
+    test_op = test_rs.refine do
+      c_filter name: "test_cfilter", code: "|i|i.id == \"test_id\""
+    end
+    
+    actual_code = @parser.to_ruby(test_op)
+    
+    expected_code = "Xplain::ResultSet.load(\"test\").refine do c_filter(name: 'test_cfilter', code: '|i|i.id == \"test_id\"')do end end"
     assert_nothing_raised do
       eval(expected_code)
     end

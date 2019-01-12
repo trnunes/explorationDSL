@@ -1,3 +1,3 @@
 
-  class GreaterThan < SimpleFilter
+  class GreaterThan < RelationFilter
   end

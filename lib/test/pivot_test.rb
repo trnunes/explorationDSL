@@ -76,6 +76,7 @@ class Xplain::PivotTest < XplainUnitTest
     expected_rs = Xplain::ResultSet.new(nil, [expec_p1, expec_p2])
 
     actual_results = Xplain::Pivot.new(inputs: root, server: @server, relation: Xplain::SchemaRelation.new(id:"_:r1", server: @server), group_by_domain: true).execute()
+    actual_results.title = expected_rs.title
     assert_same_result_set actual_results, expected_rs
   end
   
@@ -163,14 +164,18 @@ class Xplain::PivotTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, [Node.new(Xplain::Entity.new("_:p1"))])
     
     expected_rs = Xplain::ResultSet.new(nil, i1p1.children)
-    
-    assert_same_result_set expected_rs, input.pivot{relation computed_relation}.execute
-    
+   
+    actual = input.pivot{relation computed_relation}.execute
+    actual.title = expected_rs.title
+    assert_same_result_set expected_rs, actual 
+
     input = Xplain::ResultSet.new(nil, [Node.new(Xplain::Entity.new("_:p1")), Node.new(Xplain::Entity.new("_:p2"))])
     
     expected_rs = Xplain::ResultSet.new(nil, i1p1.children + i1p2.children)
-    
-    assert_same_result_set expected_rs, input.pivot{relation computed_relation}.execute
+    actual = input.pivot{relation computed_relation}.execute
+    actual.title = expected_rs.title
+    assert_same_result_set expected_rs, actual 
+
   end
   
   def test_pivot_inverse_computed_relation
@@ -186,13 +191,16 @@ class Xplain::PivotTest < XplainUnitTest
     
     expected_rs = Xplain::ResultSet.new(nil, [i1p1])
     
-    assert_same_result_set expected_rs, input.pivot{relation inverse: computed_relation}.execute
+    actual = input.pivot{relation inverse: computed_relation}.execute
+    actual.title = expected_rs.title
+    assert_same_result_set expected_rs, actual 
     
     input = Xplain::ResultSet.new(nil, [Node.new(Xplain::Entity.new("_:p1.1")), Node.new(Xplain::Entity.new("_:p3.1"))])
     
     expected_rs = Xplain::ResultSet.new(nil, [i1p1, i1p3])
-    
-    assert_same_result_set expected_rs, input.pivot{relation inverse: computed_relation}.execute
+    actual = input.pivot{relation inverse: computed_relation}.execute
+    actual.title = expected_rs.title
+    assert_same_result_set expected_rs, actual 
   end
  
 end

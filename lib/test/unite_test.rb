@@ -16,6 +16,7 @@ class Xplain::UniteTest < XplainUnitTest
     origin = Xplain::ResultSet.new(nil, input_nodes)
     
     actual_results = Xplain::Unite.new([origin]).execute()
+    origin.title = actual_results.title
     assert_same_result_set origin, actual_results
   end
   
@@ -79,7 +80,7 @@ class Xplain::UniteTest < XplainUnitTest
 
     actual_results = Xplain::Unite.new([input1, input2]).execute()
     assert_false actual_results.to_tree.children.empty?
-    
+    expected_output.title = actual_results.title
     assert_same_result_set expected_output, actual_results    
   end
     

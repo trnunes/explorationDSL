@@ -10,7 +10,7 @@ module Xplain
     
     
     def initialize(id, nodes_list, intention = nil, title = nil, annotations = [], inverse=false)
-      @id = id || SecureRandom.uuid
+      @id = id 
       input_is_list_of_items = nodes_list && !nodes_list.first.is_a?(Node)
       @nodes = 
         if input_is_list_of_items
@@ -22,7 +22,7 @@ module Xplain
       @intention = intention
       @inverse = inverse
       @annotations = annotations
-      @root_node = Node.new(Entity.new(self.id))
+      @root_node = Node.new()
       @root_node.children = @nodes
       @title = title || "Set #{Xplain::ResultSet.count + 1}"
     end
@@ -70,7 +70,7 @@ module Xplain
     def copy
       copied_root = @root_node.copy
       copied_root.children.each{|c| c.parent_edges = []}
-      Xplain::ResultSet.new(@root_node.item.id, copied_root.children, @title, @intention, @annotations, @inverse)
+      Xplain::ResultSet.new(self.id, copied_root.children, @intention, @title, @annotations, @inverse)
     end
     
     def get_page(total_items_by_page, page_number)
@@ -121,17 +121,17 @@ module Xplain
       )
       #TODO implement the group_by_domain option!
       image = @nodes.select{|node| restriction_items.include? node.item}.map{|node| node.children}.flatten.compact
-      Xplain::ResultSet.new(SecureRandom.uuid, image)
+      Xplain::ResultSet.new(nil, image)
     end
     
     def compute_restricted_domain(restriction)
       items_set = Set.new(restriction.map{|node| node.item})
       intersected_image = @nodes.map{|dnode| dnode.children}.flatten.select{|img_node| items_set.include? img_node.item}
-      ResultSet.new(SecureRandom.uuid, Set.new(intersected_image.map{|img_node| img_node.parent}))
+      ResultSet.new(nil, Set.new(intersected_image.map{|img_node| img_node.parent}))
     end
     
     def reverse()
-      Xplain::ResultSet.new(SecureRandom.uuid, @nodes, @intention, @title, @annotations, !inverse?)
+      Xplain::ResultSet.new(nil, @nodes, @intention, @title, @annotations, !inverse?)
     end
     
     def to_tree
@@ -291,7 +291,9 @@ module Xplain
       elsif !args[:inputs].is_a? Array
         args[:inputs] = [args[:inputs]]
       end
-      
+      if self.id.nil? || self.id.to_s.empty?
+        self.save
+      end
       args[:inputs] << self
       target_promisse = klass.new(args, &block)
           

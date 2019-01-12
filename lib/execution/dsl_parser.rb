@@ -55,7 +55,7 @@ class DSLParser
     elsif operation.args.respond_to? :each
       args_code += operation.args.map{|arg_value| parse_arg(arg_value)}
     else
-      operation.args.to_s
+      args_code << parse_arg(operation.args)
     end
     if !args_code.empty?
       constructor_code = "(#{args_code.join(", ")})"
@@ -67,7 +67,7 @@ class DSLParser
       if arg_value.is_a? Numeric
         arg_value.to_s
       elsif arg_value.is_a? String
-        "\"#{arg_value.to_s}\""
+        "'#{arg_value.to_s}'"
       elsif arg_value.is_a? Symbol
         ":#{arg_value}"
       else

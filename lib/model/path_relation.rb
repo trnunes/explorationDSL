@@ -169,7 +169,7 @@ module Xplain
   
     def group_by_image(nodes)
       grouped_nodes = hash_to_graph(@server.group_by(nodes, self))
-      ResultSet.new(SecureRandom.uuid, grouped_nodes)
+      ResultSet.new(nil, grouped_nodes)
     end
   
         

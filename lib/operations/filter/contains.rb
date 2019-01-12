@@ -1,3 +1,3 @@
 
-  class Filter::Contains < SimpleFilter
+  class Filter::Contains < RelationFilter
   end

@@ -20,6 +20,10 @@ module Xplain
     def find_by_node_id(node_id)
       Xplain::exploration_repository.resultset_by_node_id(node_id)
     end
+   #TODO Document options
+    def find_by_session(session, options = {})
+      Xplain::exploration_repository.find_result_sets_by_session(session, options)
+    end
     
     def count
       Xplain::exploration_repository.count_resultsets
@@ -31,26 +35,28 @@ module Xplain
     
     def load_all_tsorted()
       result_sets = Xplain::exploration_repository.load_all_resultsets
-      sorted_array = []
-      visited = Set.new
-      result_sets.each{|rs| visit(rs, sorted_array, visited)}
-      sorted_array
+      topological_sort(result_sets)
     end
     
     #TODO duplicated code with load_all_tsorted
     def load_all_tsorted_exploration_only
       result_sets = Xplain::exploration_repository.load_all_resultsets(exploration_only: true)
-      sorted_array = []
-      visited = Set.new
-      result_sets.each{|rs| visit(rs, sorted_array, visited)}
-      sorted_array
-
+      topological_sort(result_sets)
     end
     
     def load_all_exploration_only
       Xplain::exploration_repository.load_all_resultsets(exploration_only: true)
     end
+    
     #private
+    def topological_sort(result_sets)
+      sorted_array = []
+      visited = Set.new
+      result_sets.each{|rs| visit(rs, sorted_array, visited)}
+      sorted_array
+    end
+    
+
     def visit(rs, sorted_array, visited)
       #TODO change the intention setup to always be an Operation
       if rs.intention && rs.intention.is_a?(Operation)
@@ -60,6 +66,16 @@ module Xplain
         sorted_array << rs
         visited << rs.id
       end
+    end
+  end
+  
+  module SessionReadable
+    def find_by_title(title)
+      Xplain::exploration_repository.find_session_by_title(title)
+    end
+    
+    def list_titles
+      Xplain::exploration_repository.list_session_titles
     end
   end
 

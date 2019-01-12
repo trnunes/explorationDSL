@@ -1,4 +1,4 @@
 module Filter
-  class Equals < SimpleFilter
+  class Equals < RelationFilter
   end
 end

@@ -2,7 +2,7 @@ require './test/xplain_unit_test'
 require './operations/filter/filter_factory'
 
 require './operations/filter/generic_filter'
-require './operations/filter/simple_filter'
+require './operations/filter/relation_filter'
 require './operations/filter/composite_filter'
 require './adapters/rdf/filter_interpreter'
 

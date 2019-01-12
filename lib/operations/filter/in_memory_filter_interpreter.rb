@@ -6,12 +6,15 @@ class InMemoryFilterInterpreter
   end
   
   def visit(filter_expr)
-    if filter_expr.is_a? SimpleFilter
-
+    if !filter_expr.is_a? Filter::CompositeFilter
+      # binding.pry
       @nodes_to_filter.select{|node| filter_expr.filter(node)}
     else
 
-      @nodes_to_filter.select{|node| filter_expr.filter(node, filter_expr.filters & @filters_to_execute)}
+      @nodes_to_filter.select do |node|
+        # binding.pry 
+        filter_expr.filter(node, filter_expr.filters & @filters_to_execute)
+      end
     end
     
   end
