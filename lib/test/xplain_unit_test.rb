@@ -35,13 +35,9 @@ require './model/relation_handler'
 
 require './mixins/model_factory'
 
-require './adapters/navigational'
-require './adapters/searchable'
-require './adapters/data_server'
+(Dir["./adapters/*/lib/*.rb"] - Dir["./adapters/*/lib/*data_server.rb"]).each {|file| require file }
+Dir["./adapters/*/lib/data_server.rb"].each {|file| require file }
 
-require './adapters/rdf/rdf_navigational'
-require './adapters/rdf/sparql_helper'
-require './adapters/rdf/rdf_data_server'
 require './visualization/visualization'
 require 'securerandom'
 require './operations/auxiliary_function'
@@ -215,8 +211,8 @@ class XplainUnitTest < Test::Unit::TestCase
       
     end
 
-    @papers_server = RDFDataServer.new graph: papers_graph
-    Xplain.set_default_server class: RDFDataServer, graph: papers_graph
+    @papers_server = Xplain::RDF::DataServer.new graph: papers_graph
+    Xplain.set_default_server class: Xplain::RDF::DataServer, graph: papers_graph
   end
   
   def load_simple_server
@@ -236,7 +232,7 @@ class XplainUnitTest < Test::Unit::TestCase
       graph << [RDF::URI("_:o2"),  RDF::RDFS.label, RDF::Literal('lo2')]
     end
 
-    @server = RDFDataServer.new graph: @graph
+    @server = Xplain::RDF::DataServer.new graph: @graph
   end
   
   def create_nodes(items)

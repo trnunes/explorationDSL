@@ -4,7 +4,6 @@ require './operations/filter/filter_factory'
 require './operations/filter/generic_filter'
 require './operations/filter/relation_filter'
 require './operations/filter/composite_filter'
-require './adapters/rdf/filter_interpreter'
 
 require './execution/dsl_parser'
 

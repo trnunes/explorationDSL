@@ -1,3 +1,0 @@
-
-  class GreaterThanEqual < SimpleFilter
-  end

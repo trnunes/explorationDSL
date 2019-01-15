@@ -31,13 +31,7 @@ require 'model/result_set'
 require 'model/relation_handler'
 
 require 'mixins/model_factory'
-require 'adapters/navigational'
-require 'adapters/searchable'
-require 'adapters/data_server'
-require 'adapters/rdf/rdf_navigational'
-require 'adapters/rdf/sparql_helper'
-require 'adapters/rdf/rdf_data_server'
-require 'adapters/rdf/blazegraph_data_server'
+
 require 'visualization/visualization'
 require 'securerandom'
 require 'operations/auxiliary_function'
@@ -50,11 +44,15 @@ require 'operations/filter/generic_filter'
 require 'operations/filter/relation_filter'
 require 'operations/filter/composite_filter'
 require 'operations/filter/in_memory_filter_interpreter'
-require 'adapters/rdf/filter_interpreter'
 require 'execution/dsl_parser.rb'
 
+$BASE_DIR = $LOAD_PATH.grep(/xplain-/).first.to_s + "/"
+
+(Dir[$BASE_DIR + "adapters/*/lib/*.rb"] - Dir[$BASE_DIR + "adapters/*/lib/*data_server.rb"]).each {|file| require file }
+Dir[$BASE_DIR + "adapters/*/lib/*data_server.rb"].each {|file| require file }
+
 module Xplain
-  @@base_dir = $LOAD_PATH.grep(/xplain-/).first.to_s + "/"
+  @@base_dir = $BASE_DIR
   class << self
     def base_dir=(base_dir_path)
       @@base_dir = base_dir_path

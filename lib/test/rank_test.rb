@@ -141,8 +141,8 @@
 #     test_set1.add_item l3
 #
 #     # assert_equal [Entity.new('_:p2'), Entity.new('_:p4')], test_set1.rank(position: "domain"){|rf| rf.by_image}.each_item
-#     puts "-----------------test_rank_by_set_relation--------------------"
-#     puts test_set1.rank{|rf| rf.by_image}.inspect
+
+
 #   end
 #
 #   def test_rank_by_domain
@@ -176,8 +176,8 @@
 #     test_set1.add_item l3
 #
 #     # assert_equal [Entity.new('_:p2'), Entity.new('_:p4')], test_set1.rank(position: "domain"){|rf| rf.by_image}.each_item
-#     puts "-----------------test_rank_by_domain--------------------"
-#     puts test_set1.rank{|rf| rf.by_domain}.inspect
+
+
 #   end
 #
 #   def test_rank_by_schema_relation
@@ -188,8 +188,8 @@
 #
 #     test_set1.server = @papers_server
 #
-#     puts "-----------------------test_rank_by_schema_relation----------------------"
-#     puts test_set1.rank{|rf| rf.by_relation(relations: [SchemaRelation.new("_:publicationYear", @papers_server)])}.inspect
+
+
 #
 #   end
 #
@@ -203,7 +203,7 @@
 #     test_set1.server = @papers_server
 #
 #     rs = test_set1.rank{|gf| gf.by_relation(relations: [SchemaRelation.new("_:publishedOn", @papers_server)])}
-#     puts rs.inspect
+
 #
 #   end
 #
@@ -269,7 +269,7 @@
 #     set1 = test_set1.group{|g| g.by_relation(relations: [Relation.new("_:cite")])}
 #     set2 = set1.map{|mf| mf.count}
 #     rs = set1.rank{|gf| gf.by_relation(relations: [set2])}
-#     puts rs.extension.keys.to_a.map{|key|key.key.id}.inspect
+
 #     assert_equal [Entity.new("_:p5"), Entity.new("_:p3"), Entity.new("_:p2")], rs.extension.keys.to_a
 #
 #   end

@@ -1,3 +1,0 @@
-
-  class Contains < SimpleFilter
-  end

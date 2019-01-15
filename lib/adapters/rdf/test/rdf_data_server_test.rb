@@ -68,7 +68,7 @@ class RDFDataServerTest < XplainUnitTest
     
     expected_triples = Set.new
     expected_triples << [ "#{@xplain_ns}test_id", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "#{@xplain_ns}ResultSet"]
-    expected_triples << [ "#{@xplain_ns}test_id", "#{@xplain_ns}intention", "Xplain::ResultSet.load(\"resulted_from_set\").keyword_search(keyword_phrase: \"test_keyword\")"]
+    expected_triples << [ "#{@xplain_ns}test_id", "#{@xplain_ns}intention", "Xplain::ResultSet.load(\"resulted_from_set\").keyword_search(keyword_phrase: 'test_keyword')"]
     expected_triples << [ "#{@xplain_ns}test_id", "#{@dcterms}title", "title_set"]
     expected_triples << [ "#{@xplain_ns}np1", "#{@xplain_ns}included_in", "#{@xplain_ns}test_id"]
     expected_triples << [ "#{@xplain_ns}np1", "#{@dcterms}title", "_:p1"]
@@ -80,7 +80,7 @@ class RDFDataServerTest < XplainUnitTest
     expected_triples << [ "#{@xplain_ns}np2", "#{@xplain_ns}has_item", "_:p2"]
     
     sparql_query = "SELECT ?s ?p ?o WHERE{?s ?p ?o. values ?p{<#{@xplain_ns}resulted_from> <#{@xplain_ns}included_in> <#{@xplain_ns}index> <#{@xplain_ns}has_item> <#{@dcterms}title> <#{@xplain_ns}intention> <#{@rdf_ns}type>}.}" 
-    puts sparql_query
+    
     assert_equal expected_triples, get_triples_set(sparql_query)
   
     
@@ -250,7 +250,7 @@ class RDFDataServerTest < XplainUnitTest
     
     assert_same_result_set input_rs, expected_rs
     dsl_parser = DSLParser.new
-    assert_equal dsl_parser.to_ruby(expected_rs.intention), "Xplain::ResultSet.load(\"resulted_from_set\").keyword_search(keyword_phrase: \"test_keyword\")"
+    assert_equal dsl_parser.to_ruby(expected_rs.intention), "Xplain::ResultSet.load(\"resulted_from_set\").keyword_search(keyword_phrase: 'test_keyword')"
     assert_same_result_set expected_rs.intention.inputs.first, resulted_from
 
   end

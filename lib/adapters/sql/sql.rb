@@ -1,5 +1,4 @@
-require './model/xset.rb'
-class RelationalSet < Xset
+class RelationalSet
   
   def initialize
   end

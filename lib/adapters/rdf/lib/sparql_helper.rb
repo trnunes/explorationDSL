@@ -134,9 +134,7 @@ module SPARQLHelper
       label_relations = try_label_relations_by_relation(relation)
     end
     
-    label_relations_not_found = label_relations.empty?
-    
-    if label_relations_not_found
+    if label_relations.empty?
       if relation
         type = sample_type(items, relation_uri, relation.inverse?)
       else

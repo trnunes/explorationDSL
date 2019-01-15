@@ -15,30 +15,30 @@ module Xplain
   module ResultSetWritable
     def save()
       self.id ||= SecureRandom.uuid
-      Xplain::exploration_repository.save_resultset(self)
+      Xplain::exploration_repository.result_set_save(self)
     end
     
     def delete()
-      Xplain::exploration_repository.delete_resultset(self)
+      Xplain::exploration_repository.result_set_delete(self)
     end
         
     def self.delete_all()
-      Xplain::exploration_repository.delete_all_resultsets()
+      Xplain::exploration_repository.result_set_delete_all()
     end
   end
   
   module SessionWritable
     def add_result_set(result_set)
-      Xplain::exploration_repository.add_result_set(self, result_set)
+      Xplain::exploration_repository.session_add_result_set(self, result_set)
     end
     
     def load_result_sets
-      Xplain::exploration_repository.load_session_result_sets(self)
+      Xplain::exploration_repository.session_load_result_sets(self)
       return []
     end
     
     def delete
-      Xplain::exploration_repository.delete_session(self)
+      Xplain::exploration_repository.session_delete(self)
     end
   end
 end

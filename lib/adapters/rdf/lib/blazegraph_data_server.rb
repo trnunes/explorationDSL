@@ -1,4 +1,4 @@
-class BlazegraphDataServer < RDFDataServer
+class BlazegraphDataServer < Xplain::RDF::DataServer
   def match_all(keyword_pattern, restriction_nodes = [], offset = 0, limit = 0)
     blaze_graph_search(keyword_pattern, restriction_nodes, offset, limit)
   end

@@ -18,11 +18,11 @@ class MemoryRepository
     @@nodes_hash[node_id]
   end
   
-  def resultset_by_node_id(node_id)
+  def result_set_find_by_node_id(node_id)
     @@results_hash.values.select{|result_set| result_set.include_node?(node_id)}
   end
   
-  def count_resultsets
+  def result_set_count
     @@results_hash.values.size
   end
   
@@ -37,11 +37,11 @@ class MemoryRepository
     @@workflow_hash[workflow_id]
   end
   
-  def save_resultset(resultset)
+  def result_set_save(resultset)
     @@results_hash[resultset.id] = resultset
   end
   
-  def load_resultset(resultset_id)
+  def result_set_load(resultset_id)
     if resultset_id.nil? || resultset_id.empty?
       raise ArgumentError.new("The result set id must be a non-empty string!")
     end

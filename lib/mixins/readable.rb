@@ -14,38 +14,38 @@ module Xplain
 
   module ResultSetReadable
     def load(id)
-      Xplain::exploration_repository.load_resultset(id)      
+      Xplain::exploration_repository.result_set_load(id)      
     end
     
     def find_by_node_id(node_id)
-      Xplain::exploration_repository.resultset_by_node_id(node_id)
+      Xplain::exploration_repository.result_set_find_by_node_id(node_id)
     end
    #TODO Document options
     def find_by_session(session, options = {})
-      Xplain::exploration_repository.find_result_sets_by_session(session, options)
+      Xplain::exploration_repository.result_set_find_by_session(session, options)
     end
     
     def count
-      Xplain::exploration_repository.count_resultsets
+      Xplain::exploration_repository.result_set_count
     end
     
     def load_all
-      Xplain::exploration_repository.load_all_resultsets
+      Xplain::exploration_repository.result_set_load_all
     end
     
     def load_all_tsorted()
-      result_sets = Xplain::exploration_repository.load_all_resultsets
+      result_sets = Xplain::exploration_repository.result_set_load_all
       topological_sort(result_sets)
     end
     
     #TODO duplicated code with load_all_tsorted
     def load_all_tsorted_exploration_only
-      result_sets = Xplain::exploration_repository.load_all_resultsets(exploration_only: true)
+      result_sets = Xplain::exploration_repository.result_set_load_all(exploration_only: true)
       topological_sort(result_sets)
     end
     
     def load_all_exploration_only
-      Xplain::exploration_repository.load_all_resultsets(exploration_only: true)
+      Xplain::exploration_repository.result_set_load_all(exploration_only: true)
     end
     
     #private
@@ -71,11 +71,11 @@ module Xplain
   
   module SessionReadable
     def find_by_title(title)
-      Xplain::exploration_repository.find_session_by_title(title)
+      Xplain::exploration_repository.session_find_by_title(title)
     end
     
     def list_titles
-      Xplain::exploration_repository.list_session_titles
+      Xplain::exploration_repository.session_list_titles
     end
   end
 

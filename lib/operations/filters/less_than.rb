@@ -1,3 +1,0 @@
-
-  class LessThan < SimpleFilter
-  end

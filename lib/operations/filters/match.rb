@@ -1,4 +1,0 @@
-
-  class Match < SimpleFilter
-  end
-  
