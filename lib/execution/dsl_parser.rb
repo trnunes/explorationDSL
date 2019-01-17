@@ -78,9 +78,9 @@ class DSLParser
   
   def parse_filter(filter, spaces_count=2)
     parsed_filter = ""    
-    if filter.is_a? Filter::CompositeFilter
+    if filter.is_a? RefineAux::CompositeFilter
       spaces_count.times{parsed_filter << " "}
-      parsed_filter << "#{filter.class.name.gsub("Filter::", "")} do\n   [" << filter.filters.map do |child_filter|
+      parsed_filter << "#{filter.class.name.gsub("RefineAux::", "")} do\n   [" << filter.filters.map do |child_filter|
         parse_filter child_filter, 4
       end.join(", ") << "\n"
       spaces_count.times{parsed_filter << " "}

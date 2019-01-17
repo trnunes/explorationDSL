@@ -1,4 +1,4 @@
-module GroupBy
+module GroupAux
   class ByImage < GroupingRelation  
     include Xplain::RelationFactory
     

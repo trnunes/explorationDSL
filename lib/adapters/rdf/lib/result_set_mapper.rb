@@ -39,12 +39,12 @@ module Xplain::RDF
         rs_uri = solution[:o].to_s
       end
       if rs_uri
-        [load_resultset(rs_uri.gsub(@xplain_ns.uri, ""))]
+        [result_set_load(rs_uri.gsub(@xplain_ns.uri, ""))]
       end
     end
     
     def result_set_delete_all
-      load_all_resultsets.each{|rs| delete_resultset rs}
+      result_set_load_all.each{|rs| delete_resultset rs}
     end
     
     def result_set_delete(result_set)

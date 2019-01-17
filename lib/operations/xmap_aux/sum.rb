@@ -1,4 +1,4 @@
-module MapTo
+module XmapAux
   class Sum < AuxiliaryFunction
     include Xplain::RelationFactory
     

@@ -6,7 +6,7 @@ class InMemoryFilterInterpreter
   end
   
   def visit(filter_expr)
-    if !filter_expr.is_a? Filter::CompositeFilter
+    if !filter_expr.is_a? RefineAux::CompositeFilter
       # binding.pry
       @nodes_to_filter.select{|node| filter_expr.filter(node)}
     else

@@ -1,5 +1,5 @@
 class Xplain::Xmap < Xplain::Operation
-  @function_module = "MapTo"
+  @function_module = "XmapAux"
   def initialize(args={}, &block)
     super(args, &block)
     if args[:mapping_relation]

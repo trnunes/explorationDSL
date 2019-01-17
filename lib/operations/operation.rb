@@ -95,60 +95,48 @@ class Xplain::Operation
   def method_missing(m, *args, &block)
 
     instance = nil
-
-    begin
-      require Xplain.base_dir + "operations/" + m.to_s.to_underscore + ".rb"
-
+    
+    operation_files = Dir[Xplain.base_dir + "operations/*.rb"]
+    
+    target_operation_file = Xplain.base_dir + "operations/" + m.to_s.to_underscore + ".rb"
+    
+    if operation_files.include? target_operation_file
+      load target_operation_file
       klass = Object.const_get "Xplain::" + m.to_s.to_camel_case
-    rescue LoadError
+      if args.nil? || args.empty?
+        args = {}
+      elsif args[0].is_a? Hash 
+         args = args[0]
+      else
+        args = {:inputs => args}
+      end
+       
+      if !args[:inputs]
+        args[:inputs] = []
+      elsif !args[:inputs].is_a? Array
+        args[:inputs] = [args[:inputs]]
+      end
+      
+      args[:inputs] << self    
+      target_promisse = klass.new(args, &block)
+          
+      return target_promisse
 
-      if self.class.function_module
-
-        Dir[Xplain.base_dir + "operations/" + self.class.function_module.to_s.to_underscore + "/*.rb"].each {|file| require file }
-
-        begin
-        klass = Object.const_get self.class.function_module.to_camel_case + "::" + m.to_s.to_camel_case
-        rescue LoadError
-          raise "operation/auxiliary function not available!"
-        end
+    else
+      class_name_no_module = self.class.name.to_s.gsub("Xplain::", "")
+      aux_function_files = Dir[Xplain.base_dir + "operations/" + class_name_no_module.to_underscore  + "_aux/*.rb"]
+      target_aux_function_file = Xplain.base_dir + "operations/" + class_name_no_module.to_underscore  + "_aux/#{m.to_s.to_underscore}.rb"
+      if aux_function_files.include? target_aux_function_file
+        load target_aux_function_file
+        klass = Object.const_get class_name_no_module.to_camel_case + "Aux::" + m.to_s.to_camel_case
+        handle_auxiliary_function(klass, *args, &block)
+      else
+        super
       end
     end
-
-    if !Xplain::Operation.operation_class? klass
-      if !auxiliary_function? klass
-        raise NameError.new("Auxiliary function #{klass.to_s} does not exist!")
-      end      
-      return handle_auxiliary_function(klass, *args, &block)
-    end
-    
-    
-
-    if args.nil? || args.empty?
-      args = {}
-    elsif args[0].is_a? Hash 
-       args = args[0]
-    else
-      args = {:inputs => args}
-    end
-     
-    if !args[:inputs]
-      args[:inputs] = []
-    elsif !args[:inputs].is_a? Array
-      args[:inputs] = [args[:inputs]]
-    end
-    
-    args[:inputs] << self    
-    target_promisse = klass.new(args, &block)
-        
-    return target_promisse
   end  
   
   
-  def auxiliary_function?(function_klass)
-    auxiliary_function_subclasses = ObjectSpace.each_object(Class).select {|space_klass| space_klass < AuxiliaryFunction}
-    auxiliary_function_subclasses.include? function_klass    
-  end
-   
   def handle_auxiliary_function(klass, *args, &block)
 
     @auxiliar_function = klass.new(*args, &block)

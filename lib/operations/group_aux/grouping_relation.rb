@@ -1,4 +1,4 @@
-module GroupBy
+module GroupAux
   class GroupingRelation < AuxiliaryFunction
   
     def initialize(*args, &block)

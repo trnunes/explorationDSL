@@ -1,13 +1,11 @@
 
 require './test/xplain_unit_test'
-require './operations/filter/filter_factory'
-require './operations/filter/generic_filter'
-require './operations/filter/relation_filter'
-require './operations/filter/composite_filter'
+require './operations/refine_aux/filter_factory'
+require './operations/refine_aux/generic_filter'
+require './operations/refine_aux/relation_filter'
+require './operations/refine_aux/composite_filter'
 
-require './operations/filter/in_memory_filter_interpreter'
-
-
+require './operations/refine_aux/in_memory_filter_interpreter'
 
 class Xplain::RefineTest < XplainUnitTest
   

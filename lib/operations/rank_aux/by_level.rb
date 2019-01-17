@@ -1,4 +1,4 @@
-module RankBy
+module RankAux
   class ByLevel < AuxiliaryFunction
     include Xplain::RelationFactory
     

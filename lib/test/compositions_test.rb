@@ -1,9 +1,9 @@
 require './test/xplain_unit_test'
-require './operations/filter/filter_factory'
+require './operations/refine_aux/filter_factory'
 
-require './operations/filter/generic_filter'
-require './operations/filter/relation_filter'
-require './operations/filter/composite_filter'
+require './operations/refine_aux/generic_filter'
+require './operations/refine_aux/relation_filter'
+require './operations/refine_aux/composite_filter'
 
 
 class CompositionsTest < XplainUnitTest
@@ -11,7 +11,7 @@ class CompositionsTest < XplainUnitTest
   def test_inexistent_auxiliary_function    
     base_op = Xplain::KeywordSearch.new
     
-    assert_raise NameError do
+    assert_raise NoMethodError do
       op = base_op.refine() do
         equals do
           relation "_:author"

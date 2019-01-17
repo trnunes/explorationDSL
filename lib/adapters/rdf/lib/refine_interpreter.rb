@@ -1,6 +1,6 @@
 class SPARQLFilterInterpreter
   include SPARQLHelper
-  @@accepted_filters =   ["Filter::And", "Filter::Or", "Filter::Equals", "Filter::Contains", "Filter::EqualsOne", "Filter::LessThan", "Filter::LessThanEqual", "Filter::GreaterThan", "Filter::GreaterThanEqual"]
+  @@accepted_filters =   ["RefineAux::And", "RefineAux::Or", "RefineAux::Equals", "RefineAux::Contains", "RefineAux::EqualsOne", "RefineAux::LessThan", "RefineAux::LessThanEqual", "RefineAux::GreaterThan", "RefineAux::GreaterThanEqual"]
   
   ACCEPT_PATH_QUERY = false
   ACCEPT_PATH_CLAUSE = false
@@ -70,10 +70,10 @@ class SPARQLFilterInterpreter
 
     hash = {}
     filter_clause = 
-    if f.class.name == "Filter::Equals"
+    if f.class.name == "RefineAux::Equals"
       
       generate_where_hash(f.relation, "=", f.values.first)
-    elsif f.class.name == "Filter::Contains"
+    elsif f.class.name == "RefineAux::Contains"
       if(f.respond_to? :relation)
         where_clause = "?s <#{f.relation}> ?o#{@relations_index+=1}"
        
@@ -83,7 +83,7 @@ class SPARQLFilterInterpreter
       end 
       {where_clause => []}
       
-    elsif f.class.name == "Filter::EqualsOne"
+    elsif f.class.name == "RefineAux::EqualsOne"
 
      if(f.respond_to? :relation)
        where_clause = "?s <#{f.relation}> ?o#{@relations_index+=1}"
@@ -93,15 +93,15 @@ class SPARQLFilterInterpreter
       #TODO apply the filter to the subjects
      end 
      {where_clause => []}
-    elsif f.class.name ==  "Filter::LessThan"
+    elsif f.class.name ==  "RefineAux::LessThan"
       generate_where_hash(f.relation, "<", f.values.first)
-    elsif f.class.name == "Filter::LessThanEqual"
+    elsif f.class.name == "RefineAux::LessThanEqual"
       generate_where_hash(f.relation, "<=", f.values.first)
-    elsif f.class.name == "Filter::GreaterThan"
+    elsif f.class.name == "RefineAux::GreaterThan"
       generate_where_hash(f.relation, ">", f.values.first)
-    elsif f.class.name == "Filter::GreaterThanEqual"
+    elsif f.class.name == "RefineAux::GreaterThanEqual"
       generate_where_hash(f.relation, ">=", f.values.first)
-    elsif f.class.name == "Filter::And"
+    elsif f.class.name == "RefineAux::And"
       hash = {}
       where_clauses = []
       filters = []
@@ -116,7 +116,7 @@ class SPARQLFilterInterpreter
       where_clause = where_clauses.join(". ") << " Filter(" + filters.join(" && ") + ")"
       {where_clause => []}    
       
-    elsif f.class.name == "Filter::Or"
+    elsif f.class.name == "RefineAux::Or"
       hash = {}
       where_clauses = []
 
@@ -135,7 +135,7 @@ class SPARQLFilterInterpreter
 
       where_clause = where_clauses.join(" UNION ") 
       {where_clause => []}    
-    elsif f.class.name == "Filter::Not"
+    elsif f.class.name == "RefineAux::Not"
       {}
     else
       {}        

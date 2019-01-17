@@ -1,5 +1,5 @@
 class Xplain::Rank < Xplain::Operation
-  @function_module = "RankBy"
+  @function_module = "RankAux"
   
   def initialize(args = {}, &block)
     super(args, &block)

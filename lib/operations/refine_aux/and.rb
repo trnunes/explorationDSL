@@ -1,4 +1,4 @@
-module Filter
+module RefineAux
   class And < CompositeFilter
 
     def filter(node, child_filters = @filters)

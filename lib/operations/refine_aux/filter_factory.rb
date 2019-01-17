@@ -1,3 +1,4 @@
+#TODO REFACTOR
 module Xplain
   module FilterFactory
     attr_accessor :values

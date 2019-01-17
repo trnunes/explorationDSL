@@ -1,4 +1,4 @@
-module Filter
+module RefineAux
   class Equals < RelationFilter
   end
 end

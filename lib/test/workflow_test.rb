@@ -32,14 +32,14 @@
   # end
   # def test_inexistent_operation
     # wf = Xplain.new_workflow
-    # assert_raise NameError do
+    # assert_raise NoMethodError do
       # op = wf.inexistent_operation(input: Node.new('root'))
     # end
   # end
 #   
   # def test_inexistent_auxiliary_function
     # wf = Xplain.new_workflow
-    # assert_raise NameError do
+    # assert_raise NoMethodError do
       # op = wf.refine(input: Node.new('root')) do
         # equals do
           # relation "_:author"

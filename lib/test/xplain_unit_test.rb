@@ -73,7 +73,7 @@ module Xplain
       klass = Object.const_get "Xplain::" + name.to_s.to_camel_case
   
       if !Xplain::Operation.operation_class? klass
-        raise NameError.new("Operation #{klass.to_s} not supported!")           
+        raise NoMethodError.new("Operation #{klass.to_s} not supported!")           
       end
           
       return klass

@@ -1,4 +1,4 @@
-module Filter
+module RefineAux
   class CompositeFilter < GenericFilter
     attr_accessor :filters
     

@@ -1,4 +1,4 @@
-module RankBy
+module RankAux
   class ByImage < AuxiliaryFunction
     include Xplain::RelationFactory
     

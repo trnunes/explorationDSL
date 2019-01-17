@@ -1,11 +1,11 @@
 require './test/xplain_unit_test'
-
+Dir['./operations/xmap_aux/*.rb'].each{|f| require f}
 class MapTest < XplainUnitTest
 
   def test_map_by_empty_input_set
     root = Xplain::ResultSet.new(nil, [])
 
-    rs = Xplain::Xmap.new(inputs: root, mapping_relation: MapTo::Sum.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute
+    rs = Xplain::Xmap.new(inputs: root, mapping_relation: XmapAux::Sum.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute
 
     assert_true rs.to_tree.children.empty?, rs.inspect
   end
@@ -15,7 +15,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    rs = Xplain::Xmap.new(inputs: input, mapping_relation: MapTo::Sum.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
+    rs = Xplain::Xmap.new(inputs: input, mapping_relation: XmapAux::Sum.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
     
     assert_same_items_set rs.to_tree.children, input_nodes
     assert_true rs.to_tree.children.map{|n| n.children}.flatten.empty?
@@ -26,7 +26,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
     assert_raise NumericItemRequiredException do
-      rs = Xplain::Xmap.new(inputs: input, mapping_relation: MapTo::Sum.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute()
+      rs = Xplain::Xmap.new(inputs: input, mapping_relation: XmapAux::Sum.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute()
     end
   end
   
@@ -35,7 +35,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    rs = Xplain::Xmap.new(inputs: input, mapping_relation: MapTo::Sum.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
+    rs = Xplain::Xmap.new(inputs: input, mapping_relation: XmapAux::Sum.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
     
     assert_equal 3, rs.to_tree.children.size
     assert_same_items_set input_nodes, rs.to_tree.children
@@ -56,7 +56,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    rs = Xplain::Xmap.new(inputs: input, mapping_relation: MapTo::Count.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute()
+    rs = Xplain::Xmap.new(inputs: input, mapping_relation: XmapAux::Count.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute()
     
     assert_equal 3, rs.to_tree.children.size
     assert_same_items_set input_nodes, rs.to_tree.children
@@ -76,7 +76,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    rs = Xplain::Xmap.new(inputs: input, mapping_relation: MapTo::Count.new(Xplain::SchemaRelation.new(id: "_:cite", inverse: true))).execute()
+    rs = Xplain::Xmap.new(inputs: input, mapping_relation: XmapAux::Count.new(Xplain::SchemaRelation.new(id: "_:cite", inverse: true))).execute()
     
     assert_equal 3, rs.to_tree.children.size
     assert_same_items_set input_nodes, rs.to_tree.children
@@ -92,12 +92,11 @@ class MapTest < XplainUnitTest
   end
   
   def test_average
-    require './operations/map_to/avg'
     input_nodes = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
     input = Xplain::ResultSet.new(nil, input_nodes)
     
     
-    rs = Xplain::Xmap.new(inputs: input, mapping_relation: MapTo::Avg.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
+    rs = Xplain::Xmap.new(inputs: input, mapping_relation: XmapAux::Avg.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
     
     assert_equal 3, rs.to_tree.children.size
     assert_same_items_set input_nodes, rs.to_tree.children
@@ -116,7 +115,7 @@ class MapTest < XplainUnitTest
     input_nodes = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
     input = Xplain::ResultSet.new(nil, input_nodes)
     computed_relation = input.to_tree.get_level_relation(1)
-    rs = Xplain::Xmap.new(inputs: input, level: 1, mapping_relation: MapTo::Count.new()).execute()
+    rs = Xplain::Xmap.new(inputs: input, level: 1, mapping_relation: XmapAux::Count.new()).execute()
     assert_equal 1, rs.to_tree.children.size
     assert_same_items_set create_nodes([Xplain::Literal.new(3)]), rs.to_tree.children
     
@@ -130,7 +129,7 @@ class MapTest < XplainUnitTest
     
     input = Xplain::ResultSet.new(nil, input_nodes)
     
-    rs = Xplain::Xmap.new(inputs: input, level: 2, mapping_relation: MapTo::Count.new()).execute()
+    rs = Xplain::Xmap.new(inputs: input, level: 2, mapping_relation: XmapAux::Count.new()).execute()
     assert_equal 3, rs.to_tree.children.size
 
     p2 = rs.to_tree.children.select{|node| node.item.id == "_:p2"}.first
