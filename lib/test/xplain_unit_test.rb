@@ -7,6 +7,7 @@ require './mixins/config'
 require './mixins/operation_factory'
 require './mixins/writable.rb'
 require './mixins/readable.rb'
+require './mixins/dsl_callable.rb'
 require './execution/workflow.rb'
 
 require './mixins/enumerable'

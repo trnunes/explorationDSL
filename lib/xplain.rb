@@ -4,6 +4,7 @@ require 'mixins/graph_converter'
 require 'mixins/operation_factory'
 require 'adapters/memory/memory_repository'
 require 'mixins/config.rb'
+require 'mixins/dsl_callable.rb'
 require 'mixins/writable.rb'
 require 'mixins/readable.rb'
 require 'execution/workflow.rb'
@@ -47,12 +48,14 @@ require 'operations/refine_aux/in_memory_filter_interpreter'
 require 'execution/dsl_parser.rb'
 
 $BASE_DIR = $LOAD_PATH.grep(/xplain-/).first.to_s + "/"
+Dir[$BASE_DIR + "operations/*.rb"].each{|f| require f}
 
 (Dir[$BASE_DIR + "adapters/*/lib/*.rb"] - Dir[$BASE_DIR + "adapters/*/lib/*data_server.rb"]).each {|file| require file }
 Dir[$BASE_DIR + "adapters/*/lib/*data_server.rb"].each {|file| require file }
 
 module Xplain
   @@base_dir = $BASE_DIR
+  
   class << self
     def base_dir=(base_dir_path)
       @@base_dir = base_dir_path
@@ -60,32 +63,6 @@ module Xplain
     
     def base_dir
       @@base_dir
-    end
-    
-    def const_missing(name)
-      
-  
-      instance = nil
-      
-      begin
-        require Xplain.base_dir + "operations/" + name.to_s.to_underscore + ".rb"
-        
-      rescue Exception => e
-
-        puts e.to_s
-      end
-      
-      begin
-        klass = Object.const_get "Xplain::" + name.to_s.to_camel_case
-      rescue Exception => e
-
-      end
-  
-      if !Xplain::Operation.operation_class? klass
-        raise NameError.new("Operation #{klass.to_s} not supported!")           
-      end
-          
-      return klass
     end
   end
 end
