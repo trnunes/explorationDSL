@@ -33,14 +33,14 @@
   # def test_inexistent_operation
     # wf = Xplain.new_workflow
     # assert_raise NoMethodError do
-      # op = wf.inexistent_operation(input: Node.new('root'))
+      # op = wf.inexistent_operation(input: Xplain::Node.new('root'))
     # end
   # end
 #   
   # def test_inexistent_auxiliary_function
     # wf = Xplain.new_workflow
     # assert_raise NoMethodError do
-      # op = wf.refine(input: Node.new('root')) do
+      # op = wf.refine(input: Xplain::Node.new('root')) do
         # equals do
           # relation "_:author"
           # entity "_:p2"
@@ -51,7 +51,7 @@
 #   
   # def test_chain_two_operations
     # wf = Xplain.new_workflow
-    # op = wf.refine(input: Node.new('root')) do
+    # op = wf.refine(input: Xplain::Node.new('root')) do
       # equals do
         # relation "_:author"
         # entity "_:p2"
@@ -68,13 +68,13 @@
 # 
   # def test_chain_two_operations_executing_last_one
      # input_nodes = [
-       # Node.new(Xplain::Entity.new("_:paper1")),
-       # Node.new(Xplain::Entity.new("_:p2")),
-       # Node.new(Xplain::Entity.new("_:p3")),
-       # Node.new(Xplain::Entity.new("_:p4")),
-       # Node.new(Xplain::Entity.new("_:p5")),
-       # Node.new(Xplain::Entity.new("_:p6")),
-       # Node.new(Xplain::Entity.new("_:p8"))
+       # Xplain::Node.new(Xplain::Entity.new("_:paper1")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p2")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p3")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p4")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p5")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p6")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p8"))
      # ]
 # 
      # root = Xplain::ResultSet.new(nil, input_nodes)
@@ -96,13 +96,13 @@
 #   
   # def test_chain_intersect
     # wf = Xplain.new_workflow
-    # ref = wf.refine(input: Node.new('root')) do
+    # ref = wf.refine(input: Xplain::Node.new('root')) do
       # equals do
         # relation "_:author"
         # entity "_:p2"
       # end
     # end
-    # pivot = wf.pivot(input: Node.new('root')){relation "_:author"}
+    # pivot = wf.pivot(input: Xplain::Node.new('root')){relation "_:author"}
     # op = pivot.intersect ref
     # workflow = Xplain.get_current_workflow
     # intersect_node = workflow.nodes.select{|node| node.item.is_a? Intersect}.first
@@ -112,13 +112,13 @@
 #   
   # def test_chain_unite
     # wf = Xplain.new_workflow
-    # ref = wf.refine(input: Node.new('root')) do
+    # ref = wf.refine(input: Xplain::Node.new('root')) do
       # equals do
         # relation "_:author"
         # entity "_:p2"
       # end
     # end
-    # pivot = wf.pivot(input: Node.new('root')){relation "_:author"}
+    # pivot = wf.pivot(input: Xplain::Node.new('root')){relation "_:author"}
     # op = pivot.unite ref
     # workflow = Xplain.get_current_workflow
     # intersect_node = workflow.nodes.select{|node| node.item.is_a? Unite}.first
@@ -128,13 +128,13 @@
 #   
   # def test_chain_diff
     # wf = Xplain.new_workflow
-    # ref = wf.refine(input: Node.new('root')) do
+    # ref = wf.refine(input: Xplain::Node.new('root')) do
       # equals do
         # relation "_:author"
         # entity "_:p2"
       # end
     # end
-    # pivot = wf.pivot(input: Node.new('root')){relation "_:author"}
+    # pivot = wf.pivot(input: Xplain::Node.new('root')){relation "_:author"}
     # op = pivot.diff ref
     # workflow = Xplain.get_current_workflow
     # intersect_node = workflow.nodes.select{|node| node.item.is_a? Diff}.first
@@ -143,13 +143,13 @@
 #   
   # def test_pivot_refine
     # input_nodes = [
-      # Node.new(Xplain::Entity.new("_:paper1")),
-      # Node.new(Xplain::Entity.new("_:p2")),
-      # Node.new(Xplain::Entity.new("_:p3")),
-      # Node.new(Xplain::Entity.new("_:p4")),
-      # Node.new(Xplain::Entity.new("_:p5")),
-      # Node.new(Xplain::Entity.new("_:p6")),
-      # Node.new(Xplain::Entity.new("_:p8"))
+      # Xplain::Node.new(Xplain::Entity.new("_:paper1")),
+      # Xplain::Node.new(Xplain::Entity.new("_:p2")),
+      # Xplain::Node.new(Xplain::Entity.new("_:p3")),
+      # Xplain::Node.new(Xplain::Entity.new("_:p4")),
+      # Xplain::Node.new(Xplain::Entity.new("_:p5")),
+      # Xplain::Node.new(Xplain::Entity.new("_:p6")),
+      # Xplain::Node.new(Xplain::Entity.new("_:p8"))
     # ]
 # 
     # root = Xplain::ResultSet.new(nil, input_nodes)
@@ -174,13 +174,13 @@
 #    
    # def test_pivot_refine_intersect
      # input_nodes = [
-       # Node.new(Xplain::Entity.new("_:paper1")),
-       # Node.new(Xplain::Entity.new("_:p2")),
-       # Node.new(Xplain::Entity.new("_:p3")),
-       # Node.new(Xplain::Entity.new("_:p4")),
-       # Node.new(Xplain::Entity.new("_:p5")),
-       # Node.new(Xplain::Entity.new("_:p6")),
-       # Node.new(Xplain::Entity.new("_:p8"))
+       # Xplain::Node.new(Xplain::Entity.new("_:paper1")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p2")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p3")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p4")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p5")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p6")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p8"))
      # ]
 # 
      # root = Xplain::ResultSet.new(nil, input_nodes)
@@ -209,13 +209,13 @@
 #    
    # def test_pivot_refine_unite
      # input_nodes = [
-       # Node.new(Xplain::Entity.new("_:paper1")),
-       # Node.new(Xplain::Entity.new("_:p2")),
-       # Node.new(Xplain::Entity.new("_:p3")),
-       # Node.new(Xplain::Entity.new("_:p4")),
-       # Node.new(Xplain::Entity.new("_:p5")),
-       # Node.new(Xplain::Entity.new("_:p6")),
-       # Node.new(Xplain::Entity.new("_:p8"))
+       # Xplain::Node.new(Xplain::Entity.new("_:paper1")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p2")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p3")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p4")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p5")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p6")),
+       # Xplain::Node.new(Xplain::Entity.new("_:p8"))
      # ]
 # 
      # root = Xplain::ResultSet.new(nil, input_nodes)

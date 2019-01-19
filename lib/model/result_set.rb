@@ -3,6 +3,7 @@ module Xplain
     extend Forwardable
     include Xplain::ResultSetWritable
     extend Xplain::ResultSetReadable
+    include Xplain::DslCallable
     
     attr_accessor :intention, :nodes, :id, :inverse, :annotations, :title
     def_delegators :@nodes, :each, :map, :select, :empty?, :size, :uniq, :sort
@@ -11,10 +12,10 @@ module Xplain
     
     def initialize(id, nodes_list, intention = nil, title = nil, annotations = [], inverse=false)
       @id = id 
-      input_is_list_of_items = nodes_list && !nodes_list.first.is_a?(Node)
+      input_is_list_of_items = nodes_list && !nodes_list.first.is_a?(Xplain::Node)
       @nodes = 
         if input_is_list_of_items
-          nodes_list.map{|item| Node.new(item)}          
+          nodes_list.map{|item| Xplain::Node.new(item)}          
         else
           nodes_list
         end
@@ -22,7 +23,7 @@ module Xplain
       @intention = intention
       @inverse = inverse
       @annotations = annotations
-      @root_node = Node.new()
+      @root_node = Xplain::Node.new()
       @root_node.children = @nodes
       @title = title || "Set #{Xplain::ResultSet.count + 1}"
     end
@@ -202,7 +203,7 @@ module Xplain
       items_hash = {}
       @nodes.each do |node|
         #TODO IMPLEMENT A SHALLOW CLONE METHOD
-        items_hash[node.item] = Node.new node.item
+        items_hash[node.item] = Xplain::Node.new node.item
       end
       Xplain::ResultSet.new(@id.to_s + "_uniq", items_hash.values)
     end
@@ -260,44 +261,5 @@ module Xplain
       @nodes.inject{|concat_string, node| concat_string.to_s + ", #{node.item.text}"}
     end
     
-    #TODO generalize duplicate method_missing
-    def method_missing(m, *args, &block)
-
-      instance = nil
-      
-      begin
-        require Xplain.base_dir + "operations/" + m.to_s + ".rb"
-        Dir[Xplain.base_dir + "operations/" + m.to_s + "/*.rb"].each {|file| require file }
-      rescue Exception => e
-
-        puts "Operation cannot be loaded: " + Xplain.base_dir + "operations/" + m.to_s + ".rb"
-      end
-      
-      klass = Object.const_get "Xplain::" + m.to_s.to_camel_case
-  
-      if !Xplain::Operation.operation_class? klass
-        raise NameError.new("Operation #{klass.to_s} not supported!")           
-      end
-      if args.nil? || args.empty?
-        args = {}
-      elsif args[0].is_a? Hash 
-         args = args[0]
-      else
-        args = {:inputs => args}
-      end
-       
-      if !args[:inputs]
-        args[:inputs] = []
-      elsif !args[:inputs].is_a? Array
-        args[:inputs] = [args[:inputs]]
-      end
-      if self.id.nil? || self.id.to_s.empty?
-        self.save
-      end
-      args[:inputs] << self
-      target_promisse = klass.new(args, &block)
-          
-      return target_promisse
-    end  
   end
 end

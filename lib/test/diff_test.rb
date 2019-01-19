@@ -23,8 +23,8 @@ class Xplain::DiffTest < XplainUnitTest
   
   def test_nil_input
     input_nodes = [
-      Node.new(Xplain::Entity.new("_:p1")),
-      Node.new(Xplain::Entity.new("_:p2"))
+      Xplain::Node.new(Xplain::Entity.new("_:p1")),
+      Xplain::Node.new(Xplain::Entity.new("_:p2"))
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
@@ -33,14 +33,14 @@ class Xplain::DiffTest < XplainUnitTest
     
   def test_diff_1_height
     input1_nodes = [
-      Node.new(Xplain::Entity.new("_:p1")),
-      Node.new(Xplain::Entity.new("_:p2"))
+      Xplain::Node.new(Xplain::Entity.new("_:p1")),
+      Xplain::Node.new(Xplain::Entity.new("_:p2"))
     ]
     input_1 = Xplain::ResultSet.new(nil, input1_nodes)
 
     input2_nodes = [
-      Node.new(Xplain::Entity.new("_:p2")),
-      Node.new(Xplain::Entity.new("_:p3"))
+      Xplain::Node.new(Xplain::Entity.new("_:p2")),
+      Xplain::Node.new(Xplain::Entity.new("_:p3"))
     ]
     input_2 = Xplain::ResultSet.new(nil, input2_nodes)
     
@@ -54,26 +54,26 @@ class Xplain::DiffTest < XplainUnitTest
   end
 
   def test_diff_2_height
-    i1p1 = Node.new(Xplain::Entity.new("_:p1"))
-    i1p2 = Node.new(Xplain::Entity.new("_:p2"))
-    i1p3 = Node.new(Xplain::Entity.new("_:p3"))
-    i1p1.children = [Node.new(Xplain::Entity.new("_:p1.1")), Node.new(Xplain::Entity.new("_:p1.2"))]
-    i1p2.children = [Node.new(Xplain::Entity.new("_:p2.1")), Node.new(Xplain::Entity.new("_:p2.2"))]
-    i1p3.children = [Node.new(Xplain::Entity.new("_:p3.1"))]
+    i1p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
+    i1p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    i1p3 = Xplain::Node.new(Xplain::Entity.new("_:p3"))
+    i1p1.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1")), Xplain::Node.new(Xplain::Entity.new("_:p1.2"))]
+    i1p2.children = [Xplain::Node.new(Xplain::Entity.new("_:p2.1")), Xplain::Node.new(Xplain::Entity.new("_:p2.2"))]
+    i1p3.children = [Xplain::Node.new(Xplain::Entity.new("_:p3.1"))]
     input1 = Xplain::ResultSet.new(nil, [i1p1, i1p2, i1p3])
 
-    i2p1 = Node.new(Xplain::Entity.new("_:p1"))
-    i2p2 = Node.new(Xplain::Entity.new("_:p2"))
-    i2p3 = Node.new(Xplain::Entity.new("_:p3"))
-    i2p1.children = [Node.new(Xplain::Entity.new("_:p1.1")), Node.new(Xplain::Entity.new("_:p1.3"))]
-    i2p2.children = [Node.new(Xplain::Entity.new("_:p2.1")), Node.new(Xplain::Entity.new("_:p2.3"))]
-    i2p3.children = [Node.new(Xplain::Entity.new("_:p3.1"))]
+    i2p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
+    i2p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    i2p3 = Xplain::Node.new(Xplain::Entity.new("_:p3"))
+    i2p1.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1")), Xplain::Node.new(Xplain::Entity.new("_:p1.3"))]
+    i2p2.children = [Xplain::Node.new(Xplain::Entity.new("_:p2.1")), Xplain::Node.new(Xplain::Entity.new("_:p2.3"))]
+    i2p3.children = [Xplain::Node.new(Xplain::Entity.new("_:p3.1"))]
     input2 = Xplain::ResultSet.new(nil, [i2p1, i2p2, i2p3])
     
-    expected_p1 = Node.new(Xplain::Entity.new("_:p1"))
-    expected_p2 = Node.new(Xplain::Entity.new("_:p2"))
-    expected_p1.children = [Node.new(Xplain::Entity.new("_:p1.2"))]
-    expected_p2.children = [Node.new(Xplain::Entity.new("_:p2.2"))]
+    expected_p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
+    expected_p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    expected_p1.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.2"))]
+    expected_p2.children = [Xplain::Node.new(Xplain::Entity.new("_:p2.2"))]
     
     expected_output = Xplain::ResultSet.new(nil,[expected_p1, expected_p2])
 

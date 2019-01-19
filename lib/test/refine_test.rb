@@ -131,11 +131,11 @@ class Xplain::RefineTest < XplainUnitTest
   
   def test_refine_equal
     input_nodes = [
-      Node.new(Xplain::Entity.new("_:paper1")),
-      Node.new(Xplain::Entity.new("_:p2")),
-      Node.new(Xplain::Entity.new("_:p3")),
-      Node.new(Xplain::Entity.new("_:p4")),
-      Node.new(Xplain::Entity.new("_:p5"))
+      Xplain::Node.new(Xplain::Entity.new("_:paper1")),
+      Xplain::Node.new(Xplain::Entity.new("_:p2")),
+      Xplain::Node.new(Xplain::Entity.new("_:p3")),
+      Xplain::Node.new(Xplain::Entity.new("_:p4")),
+      Xplain::Node.new(Xplain::Entity.new("_:p5"))
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
@@ -155,8 +155,8 @@ class Xplain::RefineTest < XplainUnitTest
   
   def test_refine_equal_literal
     input_nodes = [
-      Node.new(Xplain::Entity.new("_:journal1")),
-      Node.new(Xplain::Entity.new("_:journal2")),
+      Xplain::Node.new(Xplain::Entity.new("_:journal1")),
+      Xplain::Node.new(Xplain::Entity.new("_:journal2")),
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
@@ -175,8 +175,8 @@ class Xplain::RefineTest < XplainUnitTest
 
   def test_refine_equal_literal_OR_same_relation
     input_nodes = [
-      Node.new(Xplain::Entity.new("_:journal1")),
-      Node.new(Xplain::Entity.new("_:journal2")),
+      Xplain::Node.new(Xplain::Entity.new("_:journal1")),
+      Xplain::Node.new(Xplain::Entity.new("_:journal2")),
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
@@ -234,12 +234,12 @@ class Xplain::RefineTest < XplainUnitTest
 
   def test_refine_equal_literal_AND_same_relation
     input_nodes = [
-      Node.new(Xplain::Entity.new("_:paper1")),
-      Node.new(Xplain::Entity.new("_:p2")),
-      Node.new(Xplain::Entity.new("_:p3")),
-      Node.new(Xplain::Entity.new("_:p4")),
-      Node.new(Xplain::Entity.new("_:p5")),
-      Node.new(Xplain::Entity.new("_:p6"))
+      Xplain::Node.new(Xplain::Entity.new("_:paper1")),
+      Xplain::Node.new(Xplain::Entity.new("_:p2")),
+      Xplain::Node.new(Xplain::Entity.new("_:p3")),
+      Xplain::Node.new(Xplain::Entity.new("_:p4")),
+      Xplain::Node.new(Xplain::Entity.new("_:p5")),
+      Xplain::Node.new(Xplain::Entity.new("_:p6"))
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
@@ -264,13 +264,13 @@ class Xplain::RefineTest < XplainUnitTest
   
   def test_refine_property_path
     input_nodes = [
-      Node.new(Xplain::Entity.new("_:paper1")),
-      Node.new(Xplain::Entity.new("_:p2")),
-      Node.new(Xplain::Entity.new("_:p3")),
-      Node.new(Xplain::Entity.new("_:p4")),
-      Node.new(Xplain::Entity.new("_:p5")),
-      Node.new(Xplain::Entity.new("_:p6")),
-      Node.new(Xplain::Entity.new("_:p8"))
+      Xplain::Node.new(Xplain::Entity.new("_:paper1")),
+      Xplain::Node.new(Xplain::Entity.new("_:p2")),
+      Xplain::Node.new(Xplain::Entity.new("_:p3")),
+      Xplain::Node.new(Xplain::Entity.new("_:p4")),
+      Xplain::Node.new(Xplain::Entity.new("_:p5")),
+      Xplain::Node.new(Xplain::Entity.new("_:p6")),
+      Xplain::Node.new(Xplain::Entity.new("_:p8"))
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
@@ -294,13 +294,13 @@ class Xplain::RefineTest < XplainUnitTest
   
   def test_refine_property_path_size3
     input_nodes = [
-      Node.new(Xplain::Entity.new("_:paper1")),
-      Node.new(Xplain::Entity.new("_:p2")),
-      Node.new(Xplain::Entity.new("_:p3")),
-      Node.new(Xplain::Entity.new("_:p4")),
-      Node.new(Xplain::Entity.new("_:p5")),
-      Node.new(Xplain::Entity.new("_:p6")),
-      Node.new(Xplain::Entity.new("_:p8"))
+      Xplain::Node.new(Xplain::Entity.new("_:paper1")),
+      Xplain::Node.new(Xplain::Entity.new("_:p2")),
+      Xplain::Node.new(Xplain::Entity.new("_:p3")),
+      Xplain::Node.new(Xplain::Entity.new("_:p4")),
+      Xplain::Node.new(Xplain::Entity.new("_:p5")),
+      Xplain::Node.new(Xplain::Entity.new("_:p6")),
+      Xplain::Node.new(Xplain::Entity.new("_:p8"))
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
@@ -318,10 +318,10 @@ class Xplain::RefineTest < XplainUnitTest
   
   def test_refine_inverse_property_path
     input_nodes = [
-      Node.new(Xplain::Entity.new("_:a1")),
-      Node.new(Xplain::Entity.new("_:a2")),
-      Node.new(Xplain::Entity.new("_:a3")),
-      Node.new(Xplain::Entity.new("_:a4")),
+      Xplain::Node.new(Xplain::Entity.new("_:a1")),
+      Xplain::Node.new(Xplain::Entity.new("_:a2")),
+      Xplain::Node.new(Xplain::Entity.new("_:a3")),
+      Xplain::Node.new(Xplain::Entity.new("_:a4")),
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
@@ -338,10 +338,10 @@ class Xplain::RefineTest < XplainUnitTest
   
   def test_refine_custom_filter_select
     input_nodes = [
-      Node.new(Xplain::Entity.new("_:a1")),
-      Node.new(Xplain::Entity.new("_:a2")),
-      Node.new(Xplain::Entity.new("_:a3")),
-      Node.new(Xplain::Entity.new("_:a4")),
+      Xplain::Node.new(Xplain::Entity.new("_:a1")),
+      Xplain::Node.new(Xplain::Entity.new("_:a2")),
+      Xplain::Node.new(Xplain::Entity.new("_:a3")),
+      Xplain::Node.new(Xplain::Entity.new("_:a4")),
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
@@ -355,10 +355,10 @@ class Xplain::RefineTest < XplainUnitTest
   
   def test_refine_named_cfilter_select
     input_nodes = [
-      Node.new(Xplain::Entity.new("_:a1")),
-      Node.new(Xplain::Entity.new("_:a2")),
-      Node.new(Xplain::Entity.new("_:a3")),
-      Node.new(Xplain::Entity.new("_:a4")),
+      Xplain::Node.new(Xplain::Entity.new("_:a1")),
+      Xplain::Node.new(Xplain::Entity.new("_:a2")),
+      Xplain::Node.new(Xplain::Entity.new("_:a3")),
+      Xplain::Node.new(Xplain::Entity.new("_:a4")),
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
@@ -372,10 +372,10 @@ class Xplain::RefineTest < XplainUnitTest
 
   def test_refine_named_cfilter_select_AND
     input_nodes = [
-      Node.new(Xplain::Entity.new("_:a1")),
-      Node.new(Xplain::Entity.new("_:a2")),
-      Node.new(Xplain::Entity.new("_:a3")),
-      Node.new(Xplain::Entity.new("_:a4")),
+      Xplain::Node.new(Xplain::Entity.new("_:a1")),
+      Xplain::Node.new(Xplain::Entity.new("_:a2")),
+      Xplain::Node.new(Xplain::Entity.new("_:a3")),
+      Xplain::Node.new(Xplain::Entity.new("_:a4")),
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
@@ -393,13 +393,13 @@ class Xplain::RefineTest < XplainUnitTest
 
   def test_refine_named_cfilter_select_AND_dataset_filter
     input_nodes = [
-      Node.new(Xplain::Entity.new("_:paper1")),
-      Node.new(Xplain::Entity.new("_:p2")),
-      Node.new(Xplain::Entity.new("_:p3")),
-      Node.new(Xplain::Entity.new("_:p4")),
-      Node.new(Xplain::Entity.new("_:p5")),
-      Node.new(Xplain::Entity.new("_:p6")),
-      Node.new(Xplain::Entity.new("_:p8"))
+      Xplain::Node.new(Xplain::Entity.new("_:paper1")),
+      Xplain::Node.new(Xplain::Entity.new("_:p2")),
+      Xplain::Node.new(Xplain::Entity.new("_:p3")),
+      Xplain::Node.new(Xplain::Entity.new("_:p4")),
+      Xplain::Node.new(Xplain::Entity.new("_:p5")),
+      Xplain::Node.new(Xplain::Entity.new("_:p6")),
+      Xplain::Node.new(Xplain::Entity.new("_:p8"))
     ]
     root = Xplain::ResultSet.new(nil, input_nodes)
     
@@ -421,25 +421,25 @@ class Xplain::RefineTest < XplainUnitTest
   
   def test_refine_level_2_set
 
-    paper1 = Node.new(Xplain::Entity.new("_:paper1"))
-    p2 = Node.new(Xplain::Entity.new("_:p2"))
-    p3 = Node.new(Xplain::Entity.new("_:p3"))
-    p4 = Node.new(Xplain::Entity.new("_:p4"))
+    paper1 = Xplain::Node.new(Xplain::Entity.new("_:paper1"))
+    p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    p3 = Xplain::Node.new(Xplain::Entity.new("_:p3"))
+    p4 = Xplain::Node.new(Xplain::Entity.new("_:p4"))
     
-    journal1 = Node.new(Xplain::Entity.new("_:journal1"))
-    journal2 = Node.new(Xplain::Entity.new("_:journal2"))
+    journal1 = Xplain::Node.new(Xplain::Entity.new("_:journal1"))
+    journal2 = Xplain::Node.new(Xplain::Entity.new("_:journal2"))
     
     journal1.children = [paper1, p2]
     journal2.children = [p3, p4]
     
     input = Xplain::ResultSet.new(nil, [journal1, journal2])
     
-    expected_journal1 = Node.new(Xplain::Entity.new("_:journal1"))
-    expected_journal1.children = [Node.new(Xplain::Entity.new("_:paper1")), Node.new(Xplain::Entity.new("_:p2"))]
+    expected_journal1 = Xplain::Node.new(Xplain::Entity.new("_:journal1"))
+    expected_journal1.children = [Xplain::Node.new(Xplain::Entity.new("_:paper1")), Xplain::Node.new(Xplain::Entity.new("_:p2"))]
     expected_results1 = Xplain::ResultSet.new(nil, [expected_journal1])
     
-    expected_journal2 = Node.new(Xplain::Entity.new("_:journal2"))
-    expected_journal2.children = [Node.new(Xplain::Entity.new("_:p3")), Node.new(Xplain::Entity.new("_:p4"))]    
+    expected_journal2 = Xplain::Node.new(Xplain::Entity.new("_:journal2"))
+    expected_journal2.children = [Xplain::Node.new(Xplain::Entity.new("_:p3")), Xplain::Node.new(Xplain::Entity.new("_:p4"))]    
     expected_results2 = Xplain::ResultSet.new(nil, [expected_journal2])
     
     actual_results = Xplain::Refine.new(inputs: input, level: 2) do
@@ -463,24 +463,24 @@ class Xplain::RefineTest < XplainUnitTest
 
   def test_refine_level_3_set
 
-    paper1 = Node.new(Xplain::Entity.new("_:paper1"))
-    p2 = Node.new(Xplain::Entity.new("_:p2"))
-    p3 = Node.new(Xplain::Entity.new("_:p3"))
-    p4 = Node.new(Xplain::Entity.new("_:p4"))
+    paper1 = Xplain::Node.new(Xplain::Entity.new("_:paper1"))
+    p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    p3 = Xplain::Node.new(Xplain::Entity.new("_:p3"))
+    p4 = Xplain::Node.new(Xplain::Entity.new("_:p4"))
     
-    journal1 = Node.new(Xplain::Entity.new("_:journal1"))
-    journal2 = Node.new(Xplain::Entity.new("_:journal2"))
+    journal1 = Xplain::Node.new(Xplain::Entity.new("_:journal1"))
+    journal2 = Xplain::Node.new(Xplain::Entity.new("_:journal2"))
     
     journal1.children = [paper1, p2]
     journal2.children = [p3, p4]
 
     input = Xplain::ResultSet.new("test_set", [journal1, journal2])
     
-    expected_journal1 = Node.new(Xplain::Entity.new("_:journal1"))
-    expected_journal1.children = [Node.new(Xplain::Entity.new("_:paper1")), Node.new(Xplain::Entity.new("_:p2"))]
+    expected_journal1 = Xplain::Node.new(Xplain::Entity.new("_:journal1"))
+    expected_journal1.children = [Xplain::Node.new(Xplain::Entity.new("_:paper1")), Xplain::Node.new(Xplain::Entity.new("_:p2"))]
     
-    expected_journal2 = Node.new(Xplain::Entity.new("_:journal2"))
-    expected_journal2.children = [Node.new(Xplain::Entity.new("_:p3"))]
+    expected_journal2 = Xplain::Node.new(Xplain::Entity.new("_:journal2"))
+    expected_journal2.children = [Xplain::Node.new(Xplain::Entity.new("_:p3"))]
     
     expected_results1 = Xplain::ResultSet.new("test_set", [expected_journal1])
     expected_results2 = Xplain::ResultSet.new("test_set", [expected_journal2])
@@ -505,25 +505,25 @@ class Xplain::RefineTest < XplainUnitTest
   
   def test_refine_level_3_set_repeated_children
 
-    paper1 = Node.new(Xplain::Entity.new("_:paper1"))
-    p2 = Node.new(Xplain::Entity.new("_:p2"))
-    p3 = Node.new(Xplain::Entity.new("_:p3"))
-    p4 = Node.new(Xplain::Entity.new("_:p4"))
+    paper1 = Xplain::Node.new(Xplain::Entity.new("_:paper1"))
+    p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    p3 = Xplain::Node.new(Xplain::Entity.new("_:p3"))
+    p4 = Xplain::Node.new(Xplain::Entity.new("_:p4"))
     
-    journal1 = Node.new(Xplain::Entity.new("_:journal1"))
-    journal2 = Node.new(Xplain::Entity.new("_:journal2"))
+    journal1 = Xplain::Node.new(Xplain::Entity.new("_:journal1"))
+    journal2 = Xplain::Node.new(Xplain::Entity.new("_:journal2"))
     
-    p3_j1 = Node.new(Xplain::Entity.new("_:p3"))
+    p3_j1 = Xplain::Node.new(Xplain::Entity.new("_:p3"))
     journal1.children = [paper1, p2, p3_j1]
     journal2.children = [p3, p4]
 
     input = Xplain::ResultSet.new("test_set", [journal1, journal2])
     
-    expected_journal1 = Node.new(Xplain::Entity.new("_:journal1"))
-    expected_journal1.children = [Node.new(Xplain::Entity.new("_:p3"))]
+    expected_journal1 = Xplain::Node.new(Xplain::Entity.new("_:journal1"))
+    expected_journal1.children = [Xplain::Node.new(Xplain::Entity.new("_:p3"))]
     
-    expected_journal2 = Node.new(Xplain::Entity.new("_:journal2"))
-    expected_journal2.children = [Node.new(Xplain::Entity.new("_:p3"))]
+    expected_journal2 = Xplain::Node.new(Xplain::Entity.new("_:journal2"))
+    expected_journal2.children = [Xplain::Node.new(Xplain::Entity.new("_:p3"))]
     
     
     expected_results = Xplain::ResultSet.new("test_set", [expected_journal2, expected_journal1])

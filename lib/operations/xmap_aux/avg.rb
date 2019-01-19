@@ -27,7 +27,7 @@ module XmapAux
       image = @relation.nil? ? @images_hash[node] : @images_hash[node.item]
       
       avg_literal = Xplain::Literal.new(image.map{|img| img.item.value}.inject(0, :+)/image.size.to_f)
-      [Node.new(avg_literal)]
+      [Xplain::Node.new(avg_literal)]
     end
   end
 end

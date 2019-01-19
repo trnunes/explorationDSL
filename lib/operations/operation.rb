@@ -40,7 +40,7 @@ class Xplain::Operation
   def setup_input(args)
     inputs = args[:inputs]
     is_result_set_or_operation = inputs.is_a?(Xplain::ResultSet) || inputs.is_a?(Xplain::Operation)
-    is_array_of_nodes =  inputs.is_a?(Array) && (inputs.map{|input| input.class}.uniq == [Node])
+    is_array_of_nodes =  inputs.is_a?(Array) && (inputs.map{|input| input.class}.uniq == [Xplain::Node])
     if is_result_set_or_operation || is_array_of_nodes 
       @inputs = [inputs]
     else 

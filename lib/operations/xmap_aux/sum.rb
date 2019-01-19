@@ -22,7 +22,7 @@ module XmapAux
         img.value.to_f
       end.inject(0, :+)
       
-      [Node.new(Xplain::Literal.new(sum))]
+      [Xplain::Node.new(Xplain::Literal.new(sum))]
     end
   end
 end

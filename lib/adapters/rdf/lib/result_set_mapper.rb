@@ -133,7 +133,7 @@ module Xplain::RDF
         
         node = nodes_hash[node_id]
         if !node
-          node = Node.new(item, node_id)
+          node = Xplain::Node.new(item, node_id)
           nodes_hash[node_id] = node
         end
         
@@ -149,7 +149,7 @@ module Xplain::RDF
               if !child_item.is_a?(Xplain::Literal)
                 child_item.text = solution[:childText].to_s
               end
-              cnode = Node.new(child_item, child_id)
+              cnode = Xplain::Node.new(child_item, child_id)
               nodes_hash[child_id] = cnode
             end
             node << cnode

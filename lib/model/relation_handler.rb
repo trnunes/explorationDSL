@@ -1,6 +1,6 @@
 class RelationHandler
   def initialize(item)
-    @item = Node.new item
+    @item = Xplain::Node.new item
   end
   
   def handle_call(m, *args, &block)

@@ -37,14 +37,14 @@ class Xplain::Group < Xplain::Operation
       
 
       new_groups.each do |grouping_node|
-        new_grouping_node = Node.new(grouping_node.item)
+        new_grouping_node = Xplain::Node.new(grouping_node.item)
         relation_node = grouping_node.children.first
-        new_relation_node = Node.new(relation_node.item)
+        new_relation_node = Xplain::Node.new(relation_node.item)
         new_grouping_node << new_relation_node
         relation_children_items = Set.new(relation_node.children.map{|node| node.item})
         children.select{|node| relation_children_items.include?(node.item)}.each do |child|
           child.parent_edges = [] 
-          new_relation_node << Node.new(child.item)
+          new_relation_node << Xplain::Node.new(child.item)
 
         end
         if !new_relation_node.children.empty?

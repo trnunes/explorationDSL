@@ -9,12 +9,12 @@ module Xplain
             hash_to_graph(relations)
           else
             relations.map do |related_item|          
-              related_node = Node.new(related_item)
+              related_node = Xplain::Node.new(related_item)
               nodes << related_node if return_image
               related_node
             end
           end
-        node = Node.new(item)
+        node = Xplain::Node.new(item)
         node.children = children_set
         nodes << node unless return_image
       end
@@ -26,7 +26,7 @@ module Xplain
     end
     
     def to_nodes(items_list)
-      items_list.map{|item| Node.new(item)}
+      items_list.map{|item| Xplain::Node.new(item)}
     end
   end
 end

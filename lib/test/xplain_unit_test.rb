@@ -90,7 +90,7 @@ class InputProxy
   
   def get_level(level)
     if(level == 1)
-      root = Node.new("rootProxy")
+      root = Xplain::Node.new("rootProxy")
       root.children = @input_nodes
       return [root]
     elsif(level == 2)
@@ -237,15 +237,15 @@ class XplainUnitTest < Test::Unit::TestCase
   end
   
   def create_nodes(items)
-    items.map{|item| Node.new(item)}
+    items.map{|item| Xplain::Node.new(item)}
   end
   
   def assert_same_items(node_list1, node_list2)
     
     assert_equal node_list1.class, node_list2.class
     
-    items_list1 = node_list1.to_a.compact.map{|node| node.item if node.is_a? Node}
-    items_list2 = node_list2.to_a.compact.map{|node| node.item if node.is_a? Node}
+    items_list1 = node_list1.to_a.compact.map{|node| node.item if node.is_a? Xplain::Node}
+    items_list2 = node_list2.to_a.compact.map{|node| node.item if node.is_a? Xplain::Node}
     
     nodes_list_class = node_list1.class
     assert_equal nodes_list_class.new(items_list1), nodes_list_class.new(items_list2)    
@@ -256,8 +256,8 @@ class XplainUnitTest < Test::Unit::TestCase
   end
   
   def assert_same_items_tree_set(root1, root2)
-    item1 = root1.item if root1.is_a? Node
-    item2 = root2.item if root2.is_a? Node
+    item1 = root1.item if root1.is_a? Xplain::Node
+    item2 = root2.item if root2.is_a? Xplain::Node
     assert_equal item1, item2
     assert_same_items_set root1.children, root2.children
     
@@ -293,17 +293,17 @@ class XplainUnitTest < Test::Unit::TestCase
     
 
   def test_assert_same_items_1_level
-    i1p1 = Node.new(Xplain::Entity.new("_:p1"))
-    i1p2 = Node.new(Xplain::Entity.new("_:p2"))
+    i1p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
+    i1p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
     input1 = Xplain::ResultSet.new("_:rs", [i1p1, i1p2])
 
-    i2p1 = Node.new(Xplain::Entity.new("_:p1"))
-    i2p2 = Node.new(Xplain::Entity.new("_:p2"))
-    i2p3 = Node.new(Xplain::Entity.new("_:p3"))    
+    i2p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
+    i2p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    i2p3 = Xplain::Node.new(Xplain::Entity.new("_:p3"))    
     input2 = Xplain::ResultSet.new("_:rs", [i2p1, i2p2, i2p3])
 
-    i3p1 = Node.new(Xplain::Entity.new("_:p1"))
-    i3p2 = Node.new(Xplain::Entity.new("_:p2"))
+    i3p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
+    i3p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
     input3 = Xplain::ResultSet.new("_:rs2", [i3p1, i3p2])
     
     
@@ -314,24 +314,24 @@ class XplainUnitTest < Test::Unit::TestCase
   end
 
   def test_assert_same_items_2_levels
-    i1p1 = Node.new(Xplain::Entity.new("_:p1"))
-    i1p2 = Node.new(Xplain::Entity.new("_:p2"))
-    i1p1.children = [Node.new(Xplain::Entity.new("_:p1.1")), Node.new(Xplain::Entity.new("_:p1.2"))]
-    i1p2.children = [Node.new(Xplain::Entity.new("_:p2.1")), Node.new(Xplain::Entity.new("_:p2.2"))]
+    i1p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
+    i1p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    i1p1.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1")), Xplain::Node.new(Xplain::Entity.new("_:p1.2"))]
+    i1p2.children = [Xplain::Node.new(Xplain::Entity.new("_:p2.1")), Xplain::Node.new(Xplain::Entity.new("_:p2.2"))]
     input1 = Xplain::ResultSet.new(nil, [i1p1, i1p2])
 
-    i2p1 = Node.new(Xplain::Entity.new("_:p1"))
-    i2p2 = Node.new(Xplain::Entity.new("_:p2"))
-    i2p3 = Node.new(Xplain::Entity.new("_:p3"))
-    i2p1.children = [Node.new(Xplain::Entity.new("_:p1.1")), Node.new(Xplain::Entity.new("_:p1.3"))]
-    i2p2.children = [Node.new(Xplain::Entity.new("_:p2.1")), Node.new(Xplain::Entity.new("_:p2.3"))]
-    i2p3.children = [Node.new(Xplain::Entity.new("_:p3.1"))]
+    i2p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
+    i2p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    i2p3 = Xplain::Node.new(Xplain::Entity.new("_:p3"))
+    i2p1.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1")), Xplain::Node.new(Xplain::Entity.new("_:p1.3"))]
+    i2p2.children = [Xplain::Node.new(Xplain::Entity.new("_:p2.1")), Xplain::Node.new(Xplain::Entity.new("_:p2.3"))]
+    i2p3.children = [Xplain::Node.new(Xplain::Entity.new("_:p3.1"))]
     input2 = Xplain::ResultSet.new(nil, [i2p1, i2p2, i2p3])
 
-    i3p1 = Node.new(Xplain::Entity.new("_:p1"))
-    i3p2 = Node.new(Xplain::Entity.new("_:p2"))
-    i3p1.children = [Node.new(Xplain::Entity.new("_:p1.1")), Node.new(Xplain::Entity.new("_:p1.2"))]
-    i3p2.children = [Node.new(Xplain::Entity.new("_:p2.1")), Node.new(Xplain::Entity.new("_:p2.2"))]
+    i3p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
+    i3p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    i3p1.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1")), Xplain::Node.new(Xplain::Entity.new("_:p1.2"))]
+    i3p2.children = [Xplain::Node.new(Xplain::Entity.new("_:p2.1")), Xplain::Node.new(Xplain::Entity.new("_:p2.2"))]
     input3 = Xplain::ResultSet.new(nil, [i3p1, i3p2])
     
     
@@ -342,18 +342,18 @@ class XplainUnitTest < Test::Unit::TestCase
   end
   
   def test_assert_same_items_different_levels
-    i1p1 = Node.new(Xplain::Entity.new("_:p1"))
-    i1p2 = Node.new(Xplain::Entity.new("_:p2"))
-    i1p1.children = [Node.new(Xplain::Entity.new("_:p1.1"))]    
+    i1p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
+    i1p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    i1p1.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"))]    
     input1 = Xplain::ResultSet.new(nil, [i1p1, i1p2])
 
-    i2p1 = Node.new(Xplain::Entity.new("_:p1"))
-    i2p2 = Node.new(Xplain::Entity.new("_:p2"))
+    i2p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
+    i2p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
     input2 = Xplain::ResultSet.new(nil, [i2p1, i2p2])
 
-    i3p1 = Node.new(Xplain::Entity.new("_:p1"))
-    i3p2 = Node.new(Xplain::Entity.new("_:p2"))
-    i3p1.children = [Node.new(Xplain::Entity.new("_:p1.1"))]
+    i3p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
+    i3p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    i3p1.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"))]
     input3 = Xplain::ResultSet.new(nil, [i3p1, i3p2])
     
     

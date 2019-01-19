@@ -57,9 +57,9 @@ module Xplain
       grouped_nodes.each do |node|
         node.children.each do |child|
           if !groups.has_key? child.item
-            groups[child.item] = Node.new(child.item)
+            groups[child.item] = Xplain::Node.new(child.item)
           end
-          groups[child.item] << Node.new(node.item)
+          groups[child.item] << Xplain::Node.new(node.item)
         end
       end
       ResultSet.new(nil, groups.values)

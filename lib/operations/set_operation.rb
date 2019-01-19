@@ -4,7 +4,7 @@ class Xplain::SetOperation < Xplain::Operation
   MULTI_SET = true
   
   def get_results()
-    parent = Node.new('unite')
+    parent = Xplain::Node.new('unite')
     
     input = @inputs[0]
     target = @inputs[1]

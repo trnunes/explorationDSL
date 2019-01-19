@@ -30,13 +30,13 @@ class Xplain::GroupTest < XplainUnitTest
   end
   
   def test_group_by_single_relation
-    a1 = Node.new(Xplain::Entity.new("_:a1"))
-    g_relation_a1 = Node.new(Xplain::SchemaRelation.new(id: "_:author", inverse: true))
+    a1 = Xplain::Node.new(Xplain::Entity.new("_:a1"))
+    g_relation_a1 = Xplain::Node.new(Xplain::SchemaRelation.new(id: "_:author", inverse: true))
     g_relation_a1.children = create_nodes [Xplain::Entity.new("_:p2"),Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:paper1")]
     a1.children = [g_relation_a1]
     
-    a2 = Node.new(Xplain::Entity.new("_:a2"))
-    g_relation_a2 = Node.new(Xplain::SchemaRelation.new(id: "_:author", inverse: true))
+    a2 = Xplain::Node.new(Xplain::Entity.new("_:a2"))
+    g_relation_a2 = Xplain::Node.new(Xplain::SchemaRelation.new(id: "_:author", inverse: true))
     g_relation_a2.children = create_nodes [Xplain::Entity.new("_:p3"),Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:paper1")]
     a2.children = [g_relation_a2] 
     

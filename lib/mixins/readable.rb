@@ -1,6 +1,6 @@
 module Xplain
   
-  module NodeReadable
+  module Xplain::NodeReadable
     def load(id)
       Xplain::exploration_repository.load_node(id)      
     end

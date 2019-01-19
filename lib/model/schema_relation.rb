@@ -12,7 +12,7 @@ module Xplain
       @server = server
       @inverse = args[:inverse] || false
       @server = args[:server] || Xplain.default_server
-      @root = Node.new(self)
+      @root = Xplain::Node.new(self)
     end
     
     def meta_relation?
@@ -113,7 +113,7 @@ module Xplain
       images_hash = @server.restricted_image(options)
       images_hash.each do |key_item, related_items|
         #TODO define the roles of each component e.g. relations should return nodes or items?
-        results_hash[key_item] = related_items.map{|related_item| Node.new(related_item)}
+        results_hash[key_item] = related_items.map{|related_item| Xplain::Node.new(related_item)}
       end
       results_hash
     end

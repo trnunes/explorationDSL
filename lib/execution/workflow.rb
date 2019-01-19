@@ -17,8 +17,8 @@ class Workflow
     target_node = nil
     
     if @nodes.empty?
-      input_node = Node.new(input_operation)
-      target_node = Node.new(target_operation)
+      input_node = Xplain::Node.new(input_operation)
+      target_node = Xplain::Node.new(target_operation)
       @nodes += [input_node, target_node]
     else
       nodes.each do |node| 
@@ -28,12 +28,12 @@ class Workflow
     end
 
     if(input_node.nil?)
-      input_node = Node.new(input_operation)
+      input_node = Xplain::Node.new(input_operation)
       @nodes << input_node
     end
     
     if(target_node.nil?)
-      target_node = Node.new(target_operation)
+      target_node = Xplain::Node.new(target_operation)
       @nodes << target_node
     end
     
@@ -68,7 +68,7 @@ class Workflow
   end
   
   def handle_operation_instance(operation_new_instance)
-    @nodes << Node.new(operation_new_instance)
+    @nodes << Xplain::Node.new(operation_new_instance)
   end
   
   def chain_set_operation(operation_node, depedencies)

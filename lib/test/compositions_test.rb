@@ -40,13 +40,13 @@ class CompositionsTest < XplainUnitTest
 
   def test_chain_two_operations_executing_last_one
      input_nodes = [
-       Node.new(Xplain::Entity.new("_:paper1")),
-       Node.new(Xplain::Entity.new("_:p2")),
-       Node.new(Xplain::Entity.new("_:p3")),
-       Node.new(Xplain::Entity.new("_:p4")),
-       Node.new(Xplain::Entity.new("_:p5")),
-       Node.new(Xplain::Entity.new("_:p6")),
-       Node.new(Xplain::Entity.new("_:p8"))
+       Xplain::Node.new(Xplain::Entity.new("_:paper1")),
+       Xplain::Node.new(Xplain::Entity.new("_:p2")),
+       Xplain::Node.new(Xplain::Entity.new("_:p3")),
+       Xplain::Node.new(Xplain::Entity.new("_:p4")),
+       Xplain::Node.new(Xplain::Entity.new("_:p5")),
+       Xplain::Node.new(Xplain::Entity.new("_:p6")),
+       Xplain::Node.new(Xplain::Entity.new("_:p8"))
      ]
 
      root = Xplain::ResultSet.new(nil, input_nodes)
@@ -68,13 +68,13 @@ class CompositionsTest < XplainUnitTest
   
   def test_chain_intersect
 
-    ref = Xplain::Refine.new(inputs: Node.new('root')) do
+    ref = Xplain::Refine.new(inputs: Xplain::Node.new('root')) do
       equals do
         relation "_:author"
         entity "_:p2"
       end
     end
-    pivot = Xplain::Pivot.new(inputs: Node.new('root')){relation "_:author"}
+    pivot = Xplain::Pivot.new(inputs: Xplain::Node.new('root')){relation "_:author"}
     intersect = pivot.intersect ref
     
     
@@ -84,38 +84,38 @@ class CompositionsTest < XplainUnitTest
   
   def test_chain_unite
 
-    ref = Xplain::Refine.new(inputs: Node.new('root')) do
+    ref = Xplain::Refine.new(inputs: Xplain::Node.new('root')) do
       equals do
         relation "_:author"
         entity "_:p2"
       end
     end
-    pivot = Xplain::Pivot.new(inputs: Node.new('root')){relation "_:author"}
+    pivot = Xplain::Pivot.new(inputs: Xplain::Node.new('root')){relation "_:author"}
     unite = pivot.unite ref
     assert_equal Set.new([pivot, ref]), Set.new(unite.inputs)    
   end
   
   def test_chain_diff
-    ref = Xplain::Refine.new(inputs: Node.new('root')) do
+    ref = Xplain::Refine.new(inputs: Xplain::Node.new('root')) do
       equals do
         relation "_:author"
         entity "_:p2"
       end
     end
-    pivot = Xplain::Pivot.new(inputs: Node.new('root')){relation "_:author"}
+    pivot = Xplain::Pivot.new(inputs: Xplain::Node.new('root')){relation "_:author"}
     diff = pivot.diff ref
     assert_equal Set.new([pivot, ref]), Set.new(diff.inputs)
   end
   
   def test_pivot_refine
     input_nodes = [
-      Node.new(Xplain::Entity.new("_:paper1")),
-      Node.new(Xplain::Entity.new("_:p2")),
-      Node.new(Xplain::Entity.new("_:p3")),
-      Node.new(Xplain::Entity.new("_:p4")),
-      Node.new(Xplain::Entity.new("_:p5")),
-      Node.new(Xplain::Entity.new("_:p6")),
-      Node.new(Xplain::Entity.new("_:p8"))
+      Xplain::Node.new(Xplain::Entity.new("_:paper1")),
+      Xplain::Node.new(Xplain::Entity.new("_:p2")),
+      Xplain::Node.new(Xplain::Entity.new("_:p3")),
+      Xplain::Node.new(Xplain::Entity.new("_:p4")),
+      Xplain::Node.new(Xplain::Entity.new("_:p5")),
+      Xplain::Node.new(Xplain::Entity.new("_:p6")),
+      Xplain::Node.new(Xplain::Entity.new("_:p8"))
     ]
 
     root = Xplain::ResultSet.new(nil, input_nodes)
@@ -140,13 +140,13 @@ class CompositionsTest < XplainUnitTest
    
    def test_pivot_refine_intersect
      input_nodes = [
-       Node.new(Xplain::Entity.new("_:paper1")),
-       Node.new(Xplain::Entity.new("_:p2")),
-       Node.new(Xplain::Entity.new("_:p3")),
-       Node.new(Xplain::Entity.new("_:p4")),
-       Node.new(Xplain::Entity.new("_:p5")),
-       Node.new(Xplain::Entity.new("_:p6")),
-       Node.new(Xplain::Entity.new("_:p8"))
+       Xplain::Node.new(Xplain::Entity.new("_:paper1")),
+       Xplain::Node.new(Xplain::Entity.new("_:p2")),
+       Xplain::Node.new(Xplain::Entity.new("_:p3")),
+       Xplain::Node.new(Xplain::Entity.new("_:p4")),
+       Xplain::Node.new(Xplain::Entity.new("_:p5")),
+       Xplain::Node.new(Xplain::Entity.new("_:p6")),
+       Xplain::Node.new(Xplain::Entity.new("_:p8"))
      ]
 
      root = Xplain::ResultSet.new(nil, input_nodes)
@@ -174,13 +174,13 @@ class CompositionsTest < XplainUnitTest
    
    def test_pivot_refine_unite
      input_nodes = [
-       Node.new(Xplain::Entity.new("_:paper1")),
-       Node.new(Xplain::Entity.new("_:p2")),
-       Node.new(Xplain::Entity.new("_:p3")),
-       Node.new(Xplain::Entity.new("_:p4")),
-       Node.new(Xplain::Entity.new("_:p5")),
-       Node.new(Xplain::Entity.new("_:p6")),
-       Node.new(Xplain::Entity.new("_:p8"))
+       Xplain::Node.new(Xplain::Entity.new("_:paper1")),
+       Xplain::Node.new(Xplain::Entity.new("_:p2")),
+       Xplain::Node.new(Xplain::Entity.new("_:p3")),
+       Xplain::Node.new(Xplain::Entity.new("_:p4")),
+       Xplain::Node.new(Xplain::Entity.new("_:p5")),
+       Xplain::Node.new(Xplain::Entity.new("_:p6")),
+       Xplain::Node.new(Xplain::Entity.new("_:p8"))
      ]
 
      root = Xplain::ResultSet.new(nil, input_nodes)

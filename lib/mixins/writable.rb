@@ -1,6 +1,6 @@
 require 'json'
 module Xplain
-  module NodeWritable
+  module Xplain::NodeWritable
     def save()
       Xplain::exploration_repository.save_node(self)
     end
