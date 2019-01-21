@@ -1,11 +1,10 @@
 class Xplain::Refine < Xplain::Operation
   include Xplain::FilterFactory
-  attr_accessor :auxiliary_function
-  @function_module = "Filter"  
+  
   def initalize(args = {}, &block)
     super(args, &block)
-    if !@auxiliary_function && args[:filter]
-      @auxiliary_function = args[:filter]
+    if !@auxiliar_function && args[:filter]
+      @auxiliar_function = args[:filter]
     end
   end
   
@@ -33,7 +32,7 @@ class Xplain::Refine < Xplain::Operation
       return []
     end
 
-    input_set = @inputs.first.to_tree
+    input_set = @inputs.first
     if(input_set.children.empty?)
       return []
     end

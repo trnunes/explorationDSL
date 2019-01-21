@@ -23,7 +23,7 @@ module Xplain
     end
     
     def new_relation(*relations)
-      relations = relations.select{|r| !r.to_s.empty?}
+      relations = relations.select{|r| !r.to_s.empty? || r.is_a?(Xplain::Relation)}
       if relations.empty?
         return nil
       end

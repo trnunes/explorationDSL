@@ -133,7 +133,7 @@ module Xplain::RDF
         
         node = nodes_hash[node_id]
         if !node
-          node = Xplain::Node.new(item, node_id)
+          node = Xplain::Node.new(id: node_id, item: item)
           nodes_hash[node_id] = node
         end
         
@@ -149,7 +149,7 @@ module Xplain::RDF
               if !child_item.is_a?(Xplain::Literal)
                 child_item.text = solution[:childText].to_s
               end
-              cnode = Xplain::Node.new(child_item, child_id)
+              cnode = Xplain::Node.new(id: child_id, item: child_item)
               nodes_hash[child_id] = cnode
             end
             node << cnode
@@ -161,7 +161,7 @@ module Xplain::RDF
       if !intention.to_s.empty?
         intention_desc = eval(intention)
       end
-      Xplain::ResultSet.new(rs_id, first_level, intention_desc, title, notes.to_a)
+      Xplain::ResultSet.new(id: rs_id, nodes: first_level, intention: intention_desc, title: title, notes: notes.to_a)
       
     end
     
@@ -182,6 +182,9 @@ module Xplain::RDF
     
     #private
     def generate_insert(index, node, result_set)
+      if !node.id
+        node.id = SecureRandom.uuid
+      end
       included_in_pred = "<#{@xplain_ns.uri}included_in>"
       result_set_uri = "<" + @xplain_ns.uri + result_set.id + ">"
       item_uri = parse_item(node.item)

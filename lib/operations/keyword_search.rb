@@ -16,7 +16,7 @@ class Xplain::KeywordSearch < Xplain::Operation
     
     if !@inplace
       results = @server.match_all(parse_keyword_phrase(), restriction_nodes)      
-      result_nodes = results.map{|item| Xplain::Node.new(item)}
+      result_nodes = results.map{|item| Xplain::Node.new(item: item)}
     end
     
     result_nodes

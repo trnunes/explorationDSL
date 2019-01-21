@@ -1,5 +1,4 @@
 class Xplain::Rank < Xplain::Operation
-  @function_module = "RankAux"
   
   def initialize(args = {}, &block)
     super(args, &block)
@@ -11,6 +10,7 @@ class Xplain::Rank < Xplain::Operation
     set_to_rank = @inputs.first
     @level ||= set_to_rank.count_levels
     sorting_items_parents = set_to_rank.get_level(@level - 1)
+    
     if(@auxiliar_function)
       ranking_items = set_to_rank.get_level(@level)
       @auxiliar_function.prepare(ranking_items)
@@ -21,6 +21,7 @@ class Xplain::Rank < Xplain::Operation
       begin
         children.sort! do |c1, c2|
           if (@auxiliar_function)
+            
             @multiplier * @auxiliar_function.compare(c1, c2)
           else
             @multiplier * (c1 <=> c2)
@@ -29,9 +30,8 @@ class Xplain::Rank < Xplain::Operation
       rescue Exception => e
         puts "Something is wrong with the ranking."
       end
-
-      parent_item.children = children 
       
+      parent_item.children = children 
     end
     set_to_rank.get_level(2)
   end

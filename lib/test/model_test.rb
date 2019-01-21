@@ -87,7 +87,7 @@ class ModelTest < XplainUnitTest
 
   def test_empty_computed_relation
 
-    cite = Xplain::ComputedRelation.new()
+    cite = Xplain::ResultSet.new()
     actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:paper2")])
     assert_equal Set.new(), Set.new(actual_image)
     
@@ -98,19 +98,20 @@ class ModelTest < XplainUnitTest
     res_dom = cite.restricted_domain(create_nodes [Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7")])
     assert_equal Set.new(), Set.new(res_dom)
     
-    cite = Xplain::ComputedRelation.new(inverse: true)
+    cite = Xplain::ResultSet.new()
+    cite = cite.reverse
     actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7")])
     assert_equal Set.new(), Set.new(actual_image)
     
   end
   
   def test_restricted_image_computed_relation
-    paper1 = Xplain::Node.new(Xplain::Entity.new("_:paper1"))
-    p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    paper1 = Xplain::Node.new(item: Xplain::Entity.new("_:paper1"))
+    p2 = Xplain::Node.new(item: Xplain::Entity.new("_:p2"))
     paper1.children = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
     p2.children = create_nodes [Xplain::Entity.new("_:p5")]
 
-    cite = Xplain::ComputedRelation.new(domain: [paper1, p2])
+    cite = Xplain::ResultSet.new(nodes:  [paper1, p2])
     actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:paper1")])
     expected_image = Set.new(create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")])
     assert_same_items_set expected_image, actual_image
@@ -118,20 +119,20 @@ class ModelTest < XplainUnitTest
   end
   
   def test_restricted_domain_computed_relation
-    paper1 = Xplain::Node.new(Xplain::Entity.new("_:paper1"))
-    p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    paper1 = Xplain::Node.new(item: Xplain::Entity.new("_:paper1"))
+    p2 = Xplain::Node.new(item: Xplain::Entity.new("_:p2"))
     paper1.children = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
     p2.children = create_nodes [Xplain::Entity.new("_:p5")]
     
-    cite = Xplain::ComputedRelation.new(domain: [paper1, p2])
+    cite = Xplain::ResultSet.new(nodes:  [paper1, p2])
     res_dom = cite.restricted_domain(create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")])
     expected_domain = Set.new(create_nodes [Xplain::Entity.new("_:paper1")])
     assert_same_items_set expected_domain, res_dom
   end  
   
   def test_group_by_computed_relation
-    paper1 = Xplain::Node.new(Xplain::Entity.new("_:paper1"))
-    p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
+    paper1 = Xplain::Node.new(item: Xplain::Entity.new("_:paper1"))
+    p2 = Xplain::Node.new(item: Xplain::Entity.new("_:p2"))
     paper1.children = create_nodes [Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
     p2.children = create_nodes [Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5")]
     
@@ -140,7 +141,7 @@ class ModelTest < XplainUnitTest
     p4_children = [paper1]
     p5_children = [p2]
     
-    actual_groups = Xplain::ComputedRelation.new(domain: [paper1, p2]).group_by_image([p2, paper1])
+    actual_groups = Xplain::ResultSet.new(nodes:  [paper1, p2]).group_by_image()
     assert_same_items_set expected_groups, actual_groups
     
     actual_p3_children = actual_groups.select{|n| n.item.id == "_:p3"}[0].children
@@ -252,39 +253,39 @@ class ModelTest < XplainUnitTest
   end
   
   def test_result_set_uniq_items
-    input = Xplain::ResultSet.new(nil, [Xplain::Node.new(Xplain::Entity.new("_:p1")), Xplain::Node.new(Xplain::Entity.new("_:p2")), Xplain::Node.new(Xplain::Entity.new("_:p2"))])
+    input = Xplain::ResultSet.new(nodes:  [Xplain::Node.new(item: Xplain::Entity.new("_:p1")), Xplain::Node.new(item: Xplain::Entity.new("_:p2")), Xplain::Node.new(item: Xplain::Entity.new("_:p2"))])
     assert_equal input.size, 3
-    expected_result_set = Xplain::ResultSet.new(nil, [Xplain::Node.new(Xplain::Entity.new("_:p1")), Xplain::Node.new(Xplain::Entity.new("_:p2"))])
+    expected_result_set = Xplain::ResultSet.new(nodes:  [Xplain::Node.new(item: Xplain::Entity.new("_:p1")), Xplain::Node.new(item: Xplain::Entity.new("_:p2"))])
     assert_same_result_set expected_result_set, input.uniq
   end
   
   def test_result_set_sort
-    input = Xplain::ResultSet.new(nil, [Xplain::Node.new(Xplain::Entity.new("_:a")), Xplain::Node.new(Xplain::Entity.new("_:c")), Xplain::Node.new(Xplain::Entity.new("_:b"))])
-    expected_nodes_array = [Xplain::Node.new(Xplain::Entity.new("_:a")), Xplain::Node.new(Xplain::Entity.new("_:b")), Xplain::Node.new(Xplain::Entity.new("_:c"))]
+    input = Xplain::ResultSet.new(nodes:  [Xplain::Node.new(item: Xplain::Entity.new("_:a")), Xplain::Node.new(item: Xplain::Entity.new("_:c")), Xplain::Node.new(item: Xplain::Entity.new("_:b"))])
+    expected_nodes_array = [Xplain::Node.new(item: Xplain::Entity.new("_:a")), Xplain::Node.new(item: Xplain::Entity.new("_:b")), Xplain::Node.new(item: Xplain::Entity.new("_:c"))]
     assert_same_items input.sort_asc.nodes, expected_nodes_array
   end
   
   def test_result_set_sort_by_text
-    input = Xplain::ResultSet.new(nil, [Xplain::Node.new(Xplain::Entity.new("_:a", "b")), Xplain::Node.new(Xplain::Entity.new("_:c", "a")), Xplain::Node.new(Xplain::Entity.new("_:b", "c"))])
-    expected_nodes_array = [Xplain::Node.new(Xplain::Entity.new("_:c")), Xplain::Node.new(Xplain::Entity.new("_:a")), Xplain::Node.new(Xplain::Entity.new("_:b"))]
+    input = Xplain::ResultSet.new(nodes:  [Xplain::Node.new(item: Xplain::Entity.new("_:a", "b")), Xplain::Node.new(item: Xplain::Entity.new("_:c", "a")), Xplain::Node.new(item: Xplain::Entity.new("_:b", "c"))])
+    expected_nodes_array = [Xplain::Node.new(item: Xplain::Entity.new("_:c")), Xplain::Node.new(item: Xplain::Entity.new("_:a")), Xplain::Node.new(item: Xplain::Entity.new("_:b"))]
     assert_same_items input.sort_asc.nodes, expected_nodes_array
   end
   
   def test_result_set_sort_literals_string
-    input = Xplain::ResultSet.new(nil, [Xplain::Node.new(Xplain::Literal.new("b")), Xplain::Node.new(Xplain::Literal.new("a")), Xplain::Node.new(Xplain::Literal.new("c"))])
-    expected_nodes_array = [Xplain::Node.new(Xplain::Literal.new("a")), Xplain::Node.new(Xplain::Literal.new("b")), Xplain::Node.new(Xplain::Literal.new("c"))]
+    input = Xplain::ResultSet.new(nodes:  [Xplain::Node.new(item: Xplain::Literal.new("b")), Xplain::Node.new(item: Xplain::Literal.new("a")), Xplain::Node.new(item: Xplain::Literal.new("c"))])
+    expected_nodes_array = [Xplain::Node.new(item: Xplain::Literal.new("a")), Xplain::Node.new(item: Xplain::Literal.new("b")), Xplain::Node.new(item: Xplain::Literal.new("c"))]
     assert_same_items input.sort_asc.nodes, expected_nodes_array
   end
   
   def test_result_set_sort_literals_string_numeric
-    input = Xplain::ResultSet.new(nil, [Xplain::Node.new(Xplain::Literal.new("12")), Xplain::Node.new(Xplain::Literal.new("112")), Xplain::Node.new(Xplain::Literal.new("3"))])
-    expected_nodes_array = [Xplain::Node.new(Xplain::Literal.new("3")), Xplain::Node.new(Xplain::Literal.new("12")), Xplain::Node.new(Xplain::Literal.new("112"))]
+    input = Xplain::ResultSet.new(nodes:  [Xplain::Node.new(item: Xplain::Literal.new("12")), Xplain::Node.new(item: Xplain::Literal.new("112")), Xplain::Node.new(item: Xplain::Literal.new("3"))])
+    expected_nodes_array = [Xplain::Node.new(item: Xplain::Literal.new("3")), Xplain::Node.new(item: Xplain::Literal.new("12")), Xplain::Node.new(item: Xplain::Literal.new("112"))]
     assert_same_items input.sort_asc.nodes, expected_nodes_array
   end
   
   def test_result_set_sort_literals_numeric
-    input = Xplain::ResultSet.new(nil, [Xplain::Node.new(Xplain::Literal.new(12)), Xplain::Node.new(Xplain::Literal.new(112)), Xplain::Node.new(Xplain::Literal.new(3))])
-    expected_nodes_array = [Xplain::Node.new(Xplain::Literal.new(112)), Xplain::Node.new(Xplain::Literal.new(12)), Xplain::Node.new(Xplain::Literal.new(3))]
+    input = Xplain::ResultSet.new(nodes:  [Xplain::Node.new(item: Xplain::Literal.new(12)), Xplain::Node.new(item: Xplain::Literal.new(112)), Xplain::Node.new(item: Xplain::Literal.new(3))])
+    expected_nodes_array = [Xplain::Node.new(item: Xplain::Literal.new(112)), Xplain::Node.new(item: Xplain::Literal.new(12)), Xplain::Node.new(item: Xplain::Literal.new(3))]
     assert_same_items expected_nodes_array, input.sort.nodes
   end
 end

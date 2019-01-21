@@ -8,7 +8,7 @@ class Xplain::Operation
   attr_accessor :params, :server, :inputs, :id, :auxiliar_function, :definition_block, :args
   @base_dir = ""
   class << self
-    attr_accessor :base_dir, :function_module
+    attr_accessor :base_dir
   end
   
   def initialize(args={}, &block)
@@ -67,7 +67,7 @@ class Xplain::Operation
     resolve_dependencies()
     result_nodes = get_results()
     result_nodes.each{|node| node.parent_edges = []}
-    Xplain::ResultSet.new(nil, result_nodes, self)        
+    Xplain::ResultSet.new( nodes: result_nodes, intention: self)        
   end
   
   def resolve_dependencies

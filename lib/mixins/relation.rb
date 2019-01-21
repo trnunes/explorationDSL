@@ -46,7 +46,7 @@ module Xplain
     end
     
     def to_s
-      @id
+      @id.to_s
     end
     
     def inspect

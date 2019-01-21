@@ -103,7 +103,7 @@ class DSLParser
     end
     if relation.is_a? Xplain::SchemaRelation
       parsed_relation = parse_schema_relation relation
-    elsif relation.is_a? Xplain::ComputedRelation
+    elsif relation.is_a? Xplain::ResultSet
       #TODO implement this step
     else
       parsed_relation = parse_path_relation(relation)

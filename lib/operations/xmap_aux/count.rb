@@ -22,8 +22,8 @@ module XmapAux
       
     def visit(node)
       image = @relation.nil? ? @images_hash[node] : @images_hash[node.item]
-      return [Xplain::Node.new(Xplain::Literal.new(0))] if !image
-      [Xplain::Node.new(Xplain::Literal.new(image.size))]
+      return [Xplain::Node.new(item: Xplain::Literal.new(0))] if !image
+      [Xplain::Node.new(item: Xplain::Literal.new(image.size))]
     end
   end
 end

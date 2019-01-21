@@ -28,7 +28,6 @@ require './model/type'
 require './model/session'
 require './model/literal'
 require './model/schema_relation'
-require './model/computed_relation'
 require './model/path_relation'
 require './model/namespace'
 require './model/result_set'
@@ -237,7 +236,7 @@ class XplainUnitTest < Test::Unit::TestCase
   end
   
   def create_nodes(items)
-    items.map{|item| Xplain::Node.new(item)}
+    items.map{|item| Xplain::Node.new(item: item)}
   end
   
   def assert_same_items(node_list1, node_list2)
@@ -288,23 +287,23 @@ class XplainUnitTest < Test::Unit::TestCase
     assert_equal rs1.class, rs2.class
     assert_equal rs1.title, rs2.title, "Titles are not the same!"
     assert_equal rs1.annotations, rs2.annotations, "Annotations are not the same!"
-    assert_same_items_tree_set_no_root rs1.to_tree, rs2.to_tree
+    assert_same_items_tree_set_no_root rs1, rs2
   end
     
 
   def test_assert_same_items_1_level
-    i1p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
-    i1p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
-    input1 = Xplain::ResultSet.new("_:rs", [i1p1, i1p2])
+    i1p1 = Xplain::Node.new(item: Xplain::Entity.new("_:p1"))
+    i1p2 = Xplain::Node.new(item: Xplain::Entity.new("_:p2"))
+    input1 = Xplain::ResultSet.new(id: "_:rs", nodes:  [i1p1, i1p2])
 
-    i2p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
-    i2p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
-    i2p3 = Xplain::Node.new(Xplain::Entity.new("_:p3"))    
-    input2 = Xplain::ResultSet.new("_:rs", [i2p1, i2p2, i2p3])
+    i2p1 = Xplain::Node.new(item: Xplain::Entity.new("_:p1"))
+    i2p2 = Xplain::Node.new(item: Xplain::Entity.new("_:p2"))
+    i2p3 = Xplain::Node.new(item: Xplain::Entity.new("_:p3"))    
+    input2 = Xplain::ResultSet.new(id: "_:rs", nodes:  [i2p1, i2p2, i2p3])
 
-    i3p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
-    i3p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
-    input3 = Xplain::ResultSet.new("_:rs2", [i3p1, i3p2])
+    i3p1 = Xplain::Node.new(item: Xplain::Entity.new("_:p1"))
+    i3p2 = Xplain::Node.new(item: Xplain::Entity.new("_:p2"))
+    input3 = Xplain::ResultSet.new(id: "_:rs2", nodes:  [i3p1, i3p2])
     
     
     assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1, input3)}
@@ -314,25 +313,25 @@ class XplainUnitTest < Test::Unit::TestCase
   end
 
   def test_assert_same_items_2_levels
-    i1p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
-    i1p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
-    i1p1.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1")), Xplain::Node.new(Xplain::Entity.new("_:p1.2"))]
-    i1p2.children = [Xplain::Node.new(Xplain::Entity.new("_:p2.1")), Xplain::Node.new(Xplain::Entity.new("_:p2.2"))]
-    input1 = Xplain::ResultSet.new(nil, [i1p1, i1p2])
+    i1p1 = Xplain::Node.new(item: Xplain::Entity.new("_:p1"))
+    i1p2 = Xplain::Node.new(item: Xplain::Entity.new("_:p2"))
+    i1p1.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1")), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"))]
+    i1p2.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p2.1")), Xplain::Node.new(item: Xplain::Entity.new("_:p2.2"))]
+    input1 = Xplain::ResultSet.new(nodes:  [i1p1, i1p2])
 
-    i2p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
-    i2p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
-    i2p3 = Xplain::Node.new(Xplain::Entity.new("_:p3"))
-    i2p1.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1")), Xplain::Node.new(Xplain::Entity.new("_:p1.3"))]
-    i2p2.children = [Xplain::Node.new(Xplain::Entity.new("_:p2.1")), Xplain::Node.new(Xplain::Entity.new("_:p2.3"))]
-    i2p3.children = [Xplain::Node.new(Xplain::Entity.new("_:p3.1"))]
-    input2 = Xplain::ResultSet.new(nil, [i2p1, i2p2, i2p3])
+    i2p1 = Xplain::Node.new(item: Xplain::Entity.new("_:p1"))
+    i2p2 = Xplain::Node.new(item: Xplain::Entity.new("_:p2"))
+    i2p3 = Xplain::Node.new(item: Xplain::Entity.new("_:p3"))
+    i2p1.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1")), Xplain::Node.new(item: Xplain::Entity.new("_:p1.3"))]
+    i2p2.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p2.1")), Xplain::Node.new(item: Xplain::Entity.new("_:p2.3"))]
+    i2p3.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p3.1"))]
+    input2 = Xplain::ResultSet.new(nodes:  [i2p1, i2p2, i2p3])
 
-    i3p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
-    i3p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
-    i3p1.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1")), Xplain::Node.new(Xplain::Entity.new("_:p1.2"))]
-    i3p2.children = [Xplain::Node.new(Xplain::Entity.new("_:p2.1")), Xplain::Node.new(Xplain::Entity.new("_:p2.2"))]
-    input3 = Xplain::ResultSet.new(nil, [i3p1, i3p2])
+    i3p1 = Xplain::Node.new(item: Xplain::Entity.new("_:p1"))
+    i3p2 = Xplain::Node.new(item: Xplain::Entity.new("_:p2"))
+    i3p1.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1")), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"))]
+    i3p2.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p2.1")), Xplain::Node.new(item: Xplain::Entity.new("_:p2.2"))]
+    input3 = Xplain::ResultSet.new(nodes:  [i3p1, i3p2])
     
     
     assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1, input3)}
@@ -342,19 +341,19 @@ class XplainUnitTest < Test::Unit::TestCase
   end
   
   def test_assert_same_items_different_levels
-    i1p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
-    i1p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
-    i1p1.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"))]    
-    input1 = Xplain::ResultSet.new(nil, [i1p1, i1p2])
+    i1p1 = Xplain::Node.new(item: Xplain::Entity.new("_:p1"))
+    i1p2 = Xplain::Node.new(item: Xplain::Entity.new("_:p2"))
+    i1p1.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"))]    
+    input1 = Xplain::ResultSet.new(nodes:  [i1p1, i1p2])
 
-    i2p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
-    i2p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
-    input2 = Xplain::ResultSet.new(nil, [i2p1, i2p2])
+    i2p1 = Xplain::Node.new(item: Xplain::Entity.new("_:p1"))
+    i2p2 = Xplain::Node.new(item: Xplain::Entity.new("_:p2"))
+    input2 = Xplain::ResultSet.new(nodes:  [i2p1, i2p2])
 
-    i3p1 = Xplain::Node.new(Xplain::Entity.new("_:p1"))
-    i3p2 = Xplain::Node.new(Xplain::Entity.new("_:p2"))
-    i3p1.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"))]
-    input3 = Xplain::ResultSet.new(nil, [i3p1, i3p2])
+    i3p1 = Xplain::Node.new(item: Xplain::Entity.new("_:p1"))
+    i3p2 = Xplain::Node.new(item: Xplain::Entity.new("_:p2"))
+    i3p1.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"))]
+    input3 = Xplain::ResultSet.new(nodes:  [i3p1, i3p2])
     
     
     assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1, input3)}

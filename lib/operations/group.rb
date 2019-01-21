@@ -1,6 +1,5 @@
 class Xplain::Group < Xplain::Operation
-  @function_module = "GroupBy"
-  
+    
   def initialize(args={}, &block)
     super(args, &block)
     if args[:grouping_relation]
@@ -16,7 +15,7 @@ class Xplain::Group < Xplain::Operation
 
     input_set = @inputs.first
     
-    if input_set.nil? || input_set.to_tree.children.empty?
+    if input_set.nil? || input_set.children.empty?
       return []
     end
     
@@ -37,14 +36,14 @@ class Xplain::Group < Xplain::Operation
       
 
       new_groups.each do |grouping_node|
-        new_grouping_node = Xplain::Node.new(grouping_node.item)
+        new_grouping_node = Xplain::Node.new(item: grouping_node.item)
         relation_node = grouping_node.children.first
-        new_relation_node = Xplain::Node.new(relation_node.item)
+        new_relation_node = Xplain::Node.new(item: relation_node.item)
         new_grouping_node << new_relation_node
         relation_children_items = Set.new(relation_node.children.map{|node| node.item})
         children.select{|node| relation_children_items.include?(node.item)}.each do |child|
           child.parent_edges = [] 
-          new_relation_node << Xplain::Node.new(child.item)
+          new_relation_node << Xplain::Node.new(item: child.item)
 
         end
         if !new_relation_node.children.empty?

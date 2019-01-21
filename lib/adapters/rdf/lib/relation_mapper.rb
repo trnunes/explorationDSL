@@ -137,12 +137,10 @@ module Xplain::RDF
     end
     
     ##TODO implement
-    # TODO remove the crossed and &block parameters
     def relations_domain(options = {}, &block)
       []
     end
   
-    # TODO remove the crossed and &block parameters  
     def has_type_image(options= {} &block)
       
       query = "SELECT DISTINCT ?class WHERE { ?s a ?class.}"

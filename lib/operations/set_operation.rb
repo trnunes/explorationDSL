@@ -4,7 +4,7 @@ class Xplain::SetOperation < Xplain::Operation
   MULTI_SET = true
   
   def get_results()
-    parent = Xplain::Node.new('unite')
+    parent = Xplain::Node.new()
     
     input = @inputs[0]
     target = @inputs[1]
@@ -12,12 +12,12 @@ class Xplain::SetOperation < Xplain::Operation
       return []
     end
     
-    if(input.nil? || input.to_tree.children.empty?)
+    if(input.nil? || input.children.empty?)
       if(target)
         return target.children
       end
     else
-      if(target.nil? || target.to_tree.children.empty?)
+      if(target.nil? || target.children.empty?)
         return input.children
       end
     end

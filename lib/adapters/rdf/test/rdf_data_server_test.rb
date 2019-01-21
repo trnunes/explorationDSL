@@ -31,11 +31,11 @@ class RDFDataServerTest < XplainUnitTest
   
   def test_save_resultset_flat
     input_nodes = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]    
     
-    rs = Xplain::ResultSet.new("test_id", input_nodes)
+    rs = Xplain::ResultSet.new(id: "test_id", nodes: input_nodes)
     rs.save()
     
     expected_triples = Set.new
@@ -56,13 +56,13 @@ class RDFDataServerTest < XplainUnitTest
 
   def test_save_resultset_title_intention
     input_nodes = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]
-    resulted_from = Xplain::ResultSet.new("resulted_from_set", [])
+    resulted_from = Xplain::ResultSet.new(id: "resulted_from_set")
     operation = Xplain::KeywordSearch.new(inputs: [resulted_from], keyword_phrase:  'test_keyword')
     
-    rs = Xplain::ResultSet.new("test_id", input_nodes, operation, "title_set")
+    rs = Xplain::ResultSet.new(id: "test_id", nodes: input_nodes, intention: operation, title: "title_set")
     
     rs.save()
     
@@ -88,13 +88,13 @@ class RDFDataServerTest < XplainUnitTest
   
   def test_save_resultset_two_levels
     input_nodes = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]
     
-    input_nodes.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"), "np1.1"), Xplain::Node.new(Xplain::Entity.new("_:p1.2"), "np1.2")]
+    input_nodes.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"), id: "np1.1"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"), id: "np1.2")]
     
-    rs = Xplain::ResultSet.new("test_id", input_nodes)
+    rs = Xplain::ResultSet.new(id: "test_id", nodes: input_nodes)
     rs.save()
     
     expected_triples = []
@@ -121,17 +121,17 @@ class RDFDataServerTest < XplainUnitTest
   
   def test_save_same_item_two_rs_flat
     input_nodes = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]
 
     input_nodes2 = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1rs2"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2rs2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1rs2"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2rs2")
     ]
     
-    rs1 = Xplain::ResultSet.new("test_id1", input_nodes)
-    rs2 = Xplain::ResultSet.new("test_id2", input_nodes2)
+    rs1 = Xplain::ResultSet.new(id: "test_id1", nodes: input_nodes)
+    rs2 = Xplain::ResultSet.new(id: "test_id2", nodes: input_nodes2)
     rs1.save
     rs2.save
     
@@ -161,19 +161,19 @@ class RDFDataServerTest < XplainUnitTest
   
   def test_save_same_item_two_rs_two_level
     input_nodes1 = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]
     
-    input_nodes1.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"), "np1.1"), Xplain::Node.new(Xplain::Entity.new("_:p1.2"), "np1.2")]
+    input_nodes1.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"), id: "np1.1"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"), id: "np1.2")]
     input_nodes2 = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1rs2"),
-      Xplain::Node.new(Xplain::Entity.new("_:p3"), "np3")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1rs2"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p3"), id: "np3")
     ]
-    input_nodes2.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"), "np1.1rs2"), Xplain::Node.new(Xplain::Entity.new("_:p1.2"), "np1.2rs2")]
+    input_nodes2.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"), id: "np1.1rs2"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"), id: "np1.2rs2")]
     
-    rs1 = Xplain::ResultSet.new("test_id1", input_nodes1)
-    rs2 = Xplain::ResultSet.new("test_id2", input_nodes2)
+    rs1 = Xplain::ResultSet.new(id: "test_id1", nodes: input_nodes1)
+    rs2 = Xplain::ResultSet.new(id: "test_id2", nodes: input_nodes2)
     rs1.save
     rs2.save
     
@@ -221,11 +221,11 @@ class RDFDataServerTest < XplainUnitTest
 
   def test_load_flat_rs
     input_nodes = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]
     
-    input_rs = Xplain::ResultSet.new("test_id", input_nodes)
+    input_rs = Xplain::ResultSet.new(id: "test_id", nodes: input_nodes)
     input_rs.save()
     
     expected_rs = Xplain::ResultSet.load("test_id")
@@ -237,13 +237,13 @@ class RDFDataServerTest < XplainUnitTest
   
   def test_load_flat_rs_title_intention
     input_nodes = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]
-    resulted_from = Xplain::ResultSet.new("resulted_from_set", [Xplain::Node.new(Xplain::Entity.new("_:p1"), "nprs1")])
+    resulted_from = Xplain::ResultSet.new(id: "resulted_from_set", nodes: [Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "nprs1")])
     resulted_from.save
     operation = Xplain::KeywordSearch.new(inputs: [resulted_from], keyword_phrase:  'test_keyword')
-    input_rs = Xplain::ResultSet.new("test_id", input_nodes, operation, "title_set")
+    input_rs = Xplain::ResultSet.new(id: "test_id", nodes: input_nodes, intention: operation, title: "title_set")
     input_rs.save()
     
     expected_rs = Xplain::ResultSet.load("test_id")
@@ -257,15 +257,15 @@ class RDFDataServerTest < XplainUnitTest
 
   def test_load_flat_two_rs
     input_nodes1 = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]
     input_nodes2 = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1rs2"),
-      Xplain::Node.new(Xplain::Entity.new("_:p3"), "np3")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1rs2"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p3"), id: "np3")
     ]
-    rs1 = Xplain::ResultSet.new("test_id1", input_nodes1)
-    rs2 = Xplain::ResultSet.new("test_id2", input_nodes2)
+    rs1 = Xplain::ResultSet.new(id: "test_id1", nodes: input_nodes1)
+    rs2 = Xplain::ResultSet.new(id: "test_id2", nodes: input_nodes2)
     rs1.save
     rs2.save
     
@@ -279,13 +279,13 @@ class RDFDataServerTest < XplainUnitTest
   
   def test_load_flat_rs_multilevel
     input_nodes1 = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]
     
-    input_nodes1.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"), "np1.1"), Xplain::Node.new(Xplain::Entity.new("_:p1.2"), "np1.2")]
+    input_nodes1.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"), id: "np1.1"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"), id: "np1.2")]
     
-    rs1 = Xplain::ResultSet.new("test_id1", input_nodes1)
+    rs1 = Xplain::ResultSet.new(id: "test_id1", nodes: input_nodes1)
     rs1.save
     
     loaded_rs1 = Xplain::ResultSet.load("test_id1")
@@ -297,19 +297,19 @@ class RDFDataServerTest < XplainUnitTest
 
   def test_load_two_rs_two_level
     input_nodes1 = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]
     
-    input_nodes1.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"), "np1.1"), Xplain::Node.new(Xplain::Entity.new("_:p1.2"), "np1.2")]
+    input_nodes1.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"), id: "np1.1"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"), id: "np1.2")]
     input_nodes2 = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1rs2"),
-      Xplain::Node.new(Xplain::Entity.new("_:p3"), "np3")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1rs2"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p3"), id: "np3")
     ]
-    input_nodes2.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"), "np1.1rs2"), Xplain::Node.new(Xplain::Entity.new("_:p1.2"), "np1.2rs2")]
+    input_nodes2.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"), id: "np1.1rs2"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"), id: "np1.2rs2")]
     
-    rs1 = Xplain::ResultSet.new("test_id1", input_nodes1)
-    rs2 = Xplain::ResultSet.new("test_id2", input_nodes2)
+    rs1 = Xplain::ResultSet.new(id: "test_id1", nodes: input_nodes1)
+    rs2 = Xplain::ResultSet.new(id: "test_id2", nodes: input_nodes2)
     rs1.save
     rs2.save
     
@@ -322,17 +322,17 @@ class RDFDataServerTest < XplainUnitTest
   
   def test_load_level3_set
     input_nodes1 = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]
     
-    input_nodes1.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"), "np1.1"), Xplain::Node.new(Xplain::Entity.new("_:p1.2"), "np1.2")]
-    input_nodes1[1].children = [Xplain::Node.new(Xplain::Entity.new("_:p2.1"), "np2.1"), Xplain::Node.new(Xplain::Entity.new("_:p2.2"), "np2.2")]
+    input_nodes1.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"), id: "np1.1"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"), id: "np1.2")]
+    input_nodes1[1].children = [Xplain::Node.new(item: Xplain::Entity.new("_:p2.1"), id: "np2.1"), Xplain::Node.new(item: Xplain::Entity.new("_:p2.2"), id: "np2.2")]
     
     #setting level 3
-    input_nodes1.first.children.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1.1"), "np1.1.1"), Xplain::Node.new(Xplain::Entity.new("_:p1.1.2"), "np1.1.2")]
+    input_nodes1.first.children.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1.1"), id: "np1.1.1"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.1.2"), id: "np1.1.2")]
     
-    rs1 = Xplain::ResultSet.new("test_id1", input_nodes1)
+    rs1 = Xplain::ResultSet.new(id: "test_id1", nodes: input_nodes1)
     rs1.save
     
     loaded_rs1 = Xplain::ResultSet.load("test_id1")
@@ -405,13 +405,13 @@ class RDFDataServerTest < XplainUnitTest
     @sparql_client.update(insert_items)
 
      input_nodes = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]
     
-    input_nodes.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"), "np1.1"), Xplain::Node.new(Xplain::Entity.new("_:p1.2"), "np1.2")]
+    input_nodes.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"), id: "np1.1"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"), id: "np1.2")]
     
-    rs = Xplain::ResultSet.new("test_id", input_nodes, nil, "Set 1")
+    rs = Xplain::ResultSet.new(id: "test_id", nodes: input_nodes, title: "Set 1")
 
     rs.delete
 
@@ -508,22 +508,22 @@ class RDFDataServerTest < XplainUnitTest
     @sparql_client.update(insert_items)
     
     input_nodes = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]
     
-    input_nodes.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"), "np1.1"), Xplain::Node.new(Xplain::Entity.new("_:p1.2"), "np1.2")]
+    input_nodes.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"), id: "np1.1"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"), id: "np1.2")]
     
-    expected_rs1 = Xplain::ResultSet.new("test_id", input_nodes, nil, "Set 1")
+    expected_rs1 = Xplain::ResultSet.new(id: "test_id", nodes: input_nodes, title: "Set 1")
     
     input_nodes = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "npt1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "npt2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "npt1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "npt2")
     ]
     
-    input_nodes.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"), "npt1.1"), Xplain::Node.new(Xplain::Entity.new("_:p1.2"), "npt1.2")]
+    input_nodes.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"), id: "npt1.1"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"), id: "npt1.2")]
     
-    expected_rs2 = Xplain::ResultSet.new("test_id2", input_nodes, nil, "Set 2")
+    expected_rs2 = Xplain::ResultSet.new(id: "test_id2", nodes: input_nodes, title: "Set 2")
     
     all_sets = Xplain::ResultSet.load_all
     actual_rs1, actual_rs2 = all_sets.select{|s| s.id == "test_id"}.first, all_sets.select{|s| s.id == "test_id2"}.first
@@ -644,23 +644,23 @@ class RDFDataServerTest < XplainUnitTest
   
   def test_save_session
     input_nodes1 = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]
     
-    input_nodes1.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"), "np1.1"), Xplain::Node.new(Xplain::Entity.new("_:p1.2"), "np1.2")]
+    input_nodes1.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"), id: "np1.1"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"), id: "np1.2")]
     input_nodes2 = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "npt1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "npt2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "npt1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "npt2")
     ]
-    input_nodes2.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"), "npt1.1"), Xplain::Node.new(Xplain::Entity.new("_:p1.2"), "npt1.2")]
+    input_nodes2.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"), id: "npt1.1"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"), id: "npt1.2")]
     
-    rs1 = Xplain::ResultSet.new("test_id", input_nodes1)
+    rs1 = Xplain::ResultSet.new(id: "test_id", nodes: input_nodes1)
     rs1.save
     session = Xplain::Session.new("test_session")
     session << rs1
     
-    rs2 = Xplain::ResultSet.new("test_id2", input_nodes2)
+    rs2 = Xplain::ResultSet.new(id: "test_id2", nodes: input_nodes2)
     rs2.save
     session << rs2
     
@@ -716,22 +716,22 @@ class RDFDataServerTest < XplainUnitTest
   
   def test_load_session
     input_nodes = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "np1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "np2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "np1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "np2")
     ]
     
-    input_nodes.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"), "np1.1"), Xplain::Node.new(Xplain::Entity.new("_:p1.2"), "np1.2")]
+    input_nodes.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"), id: "np1.1"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"), id: "np1.2")]
     
-    expected_rs1 = Xplain::ResultSet.new("test_id", input_nodes, nil, "Set 1")
+    expected_rs1 = Xplain::ResultSet.new(id: "test_id", nodes: input_nodes, title: "Set 1")
     
     input_nodes2 = [
-      Xplain::Node.new(Xplain::Entity.new("_:p1"), "npt1"),
-      Xplain::Node.new(Xplain::Entity.new("_:p2"), "npt2")
+      Xplain::Node.new(item: Xplain::Entity.new("_:p1"), id: "npt1"),
+      Xplain::Node.new(item: Xplain::Entity.new("_:p2"), id: "npt2")
     ]
     
-    input_nodes2.first.children = [Xplain::Node.new(Xplain::Entity.new("_:p1.1"), "npt1.1"), Xplain::Node.new(Xplain::Entity.new("_:p1.2"), "npt1.2")]
+    input_nodes2.first.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p1.1"), id: "npt1.1"), Xplain::Node.new(item: Xplain::Entity.new("_:p1.2"), id: "npt1.2")]
     
-    expected_rs2 = Xplain::ResultSet.new("test_id2", input_nodes2, nil, "Set 2")
+    expected_rs2 = Xplain::ResultSet.new(id: "test_id2", nodes: input_nodes2, title: "Set 2")
 
     rs1_triples = [
       ["http://tecweb.inf.puc-rio.br/xplain/test_id", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://tecweb.inf.puc-rio.br/xplain/ResultSet"],

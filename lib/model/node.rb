@@ -1,15 +1,15 @@
 module Xplain
   class Node
     attr_accessor :id, :item, :parent_edges, :children_edges, :annotations
-    
-    def initialize(item = nil, id = nil, annotations = [])
+    def initialize(params = {})
       @children_edges = Set.new
-      @annotations = annotations
+      
+      @annotations = params[:notes] || []
       if item.is_a? Xplain::Node
         raise InvalidArgumentError("The item cannot be a Xplain::Node!");
       end
-      @item = item
-      @id = id || "node:" + SecureRandom.uuid
+      @item = params[:item]
+      @id = params[:id]
       @parent_edges = Set.new
     end
     
@@ -69,6 +69,7 @@ module Xplain
     end
     
     def children=(children_set)
+      
       if children_set
         @children_edges = children_set.map do |child| 
           child.add_parent self
@@ -97,8 +98,9 @@ module Xplain
       @children_edges.map{|edge| edge.target}
     end
     
+    #TODO Deprecate
     def get_level_relation(level)
-      Xplain::ComputedRelation.new(domain: get_level(level))
+      Xplain::ResultSet.new(nodes: get_level(level))
     end
     
     def leaf?
@@ -106,7 +108,7 @@ module Xplain
     end
     
     def copy
-      node_copy = Xplain::Node.new(self.item)
+      node_copy = Xplain::Node.new(item: self.item)
   
       node_copy.children_edges = self.children_edges.map{|edge| Edge.new(node_copy, edge.target.copy, edge.annotations)}
       node_copy.children.each{|child| child.parent_edge = Edge.new(node_copy, child)}
@@ -163,18 +165,12 @@ module Xplain
       each_level.last
     end
     
-    def eql?(node)
-      node.id == @id
-    end
     
     def <<(child)
       @children_edges << Edge.new(self, child)
       child.add_parent self
     end
     
-    def hash
-      @id.hash
-    end
     
     def to_s
       
@@ -198,6 +194,56 @@ module Xplain
       children.map{|node| node.item}    
     end
     
+    def breadth_first_search(all_occurrences=true, &block)
+      nodes_found = []
+      nodes_to_search = children
+      while !nodes_to_search.empty?
+        nodes_found += nodes_to_search.select do |node|
+          yield(node)
+        end
+        
+        if !nodes_found.empty? && !all_occurrences
+          return [nodes_found.first]
+        end
+        
+        nodes_to_search = nodes_to_search.map{|node| node.children}.flatten
+      end
+      nodes_found
+  
+    end
+    
+    def build_h(&block)
+      results_hash = {}
+      children.each do |node|
+        yield(node, results_hash)
+      end
+      results_hash
+    end
+    
+    def to_h
+      build_h{|node, results_hash| add_value(results_hash, node.parent, node)}
+    end
+    
+    def to_item_h
+      build_h{|node, results_hash| add_value(results_hash, node.parent.item, node.item)}
+    end
+
+    def to_inverse_h
+      build_h{|node, results_hash| add_value(results_hash, node, node.parent)}
+    end
+    
+    def add_value(hash, key, value)
+      if(!hash.has_key?(key))
+        if value.is_a? Xplain::Literal
+          hash[key] = []
+        else
+          hash[key] = Set.new
+        end
+      end
+      hash[key] << value
+    end
+
+    
     def inspect
       inspect_string = ""
       
@@ -206,6 +252,8 @@ module Xplain
     end
     
     alias == eql?
+    
+
     
   end
 end

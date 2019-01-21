@@ -47,11 +47,11 @@ module Xplain
   
   
     def image(offset=0, limit=-1)
-      ResultSet.new SecureRandom.uuid, build_image_results(@server.image(self, [], offset, limit))
+      ResultSet.new nodes: build_image_results(@server.image(self, [], offset, limit))
     end
   
     def domain(offset=0, limit=-1)
-      ResultSet.new SecureRandom.uuid, build_domain_results(@server.domain(self, [], offset, limit))    
+      ResultSet.new nodes: build_domain_results(@server.domain(self, [], offset, limit))    
     end
   
     def restricted?
@@ -116,7 +116,7 @@ module Xplain
       relations.each do |r|
         result_pairs = r.restricted_domain(Set.new(result_pairs), options)
       end
-      ResultSet.new SecureRandom.uuid, build_results(result_pairs)
+      ResultSet.new nodes: build_results(result_pairs)
     end
     
     def schema_restricted_image(restriction, options = {})
@@ -124,13 +124,13 @@ module Xplain
       options[:relation] = self
       results = hash_to_graph(@server.restricted_image(options), !options[:group_by_domain])
 
-      ResultSet.new SecureRandom.uuid, results
+      ResultSet.new nodes: results
     end
     
     def schema_restricted_domain(restriction, options = {})
       options[:restriction] = restriction
       options[:relation] = self
-      ResultSet.new SecureRandom.uuid, hash_to_graph(@server.restricted_domain(options))
+      ResultSet.new nodes: hash_to_graph(@server.restricted_domain(options))
     end
   
     def restricted_image(restriction, options = {})
@@ -169,7 +169,7 @@ module Xplain
   
     def group_by_image(nodes)
       grouped_nodes = hash_to_graph(@server.group_by(nodes, self))
-      ResultSet.new(nil, grouped_nodes)
+      ResultSet.new(nodes: grouped_nodes)
     end
   
         

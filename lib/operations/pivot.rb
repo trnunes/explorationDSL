@@ -23,7 +23,7 @@ class Xplain::Pivot < Xplain::Operation
       return []
     end
     
-    @input_set = @inputs.first.to_tree
+    @input_set = @inputs.first
     if server && @relation.respond_to?(:server)
       @relation.server = server
     end

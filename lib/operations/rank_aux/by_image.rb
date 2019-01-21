@@ -21,7 +21,6 @@ module RankAux
       if @images_hash[node2.item]
         comparable2 = @images_hash[node2.item].first        
       end
-      
       return comparable1 <=> comparable2 if (comparable1 && comparable2)      
       return -1 if (!comparable1 && comparable2)
       return 1 if (!comparable2 && comparable1)

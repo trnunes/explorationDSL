@@ -15,7 +15,7 @@ class  DSLParserTest < XplainUnitTest
   end
   
   def test_parse_resultset_only_extension
-    test_rs = Xplain::ResultSet.new("test", [])
+    test_rs = Xplain::ResultSet.new(id: "test")
     test_rs.save
     
     actual_code = @parser.to_ruby(test_rs)
@@ -52,7 +52,7 @@ class  DSLParserTest < XplainUnitTest
   end
   
   def test_parse_pivot
-    test_rs = Xplain::ResultSet.new("test", [])
+    test_rs = Xplain::ResultSet.new(id: "test")
     test_rs.save
     test_op = test_rs.pivot(){relation "_:author"}
     
@@ -73,7 +73,7 @@ class  DSLParserTest < XplainUnitTest
   end
   
   def test_parse_pivot_params
-    test_rs = Xplain::ResultSet.new("test", [])
+    test_rs = Xplain::ResultSet.new(id: "test")
     test_rs.save
     test_op = test_rs.pivot(level: 3, arg1: "arg1", arg2: "arg2"){relation "_:author"}
     
@@ -94,7 +94,7 @@ class  DSLParserTest < XplainUnitTest
   end
 
   def test_parse_refine
-    test_rs = Xplain::ResultSet.new("test", [])
+    test_rs = Xplain::ResultSet.new(id: "test")
     test_rs.save
     test_op = test_rs.refine do
       equals do
@@ -121,7 +121,7 @@ class  DSLParserTest < XplainUnitTest
   end
   
   def test_parse_refine_cfilter
-    test_rs = Xplain::ResultSet.new("test", [])
+    test_rs = Xplain::ResultSet.new(id: "test")
     test_rs.save
     test_op = test_rs.refine do
       c_filter name: "test_cfilter", code: "|i|i.id == \"test_id\""
@@ -145,7 +145,7 @@ class  DSLParserTest < XplainUnitTest
   end
   
   def test_parse_refine_visual
-    test_rs = Xplain::ResultSet.new("test", [])
+    test_rs = Xplain::ResultSet.new(id: "test")
     test_rs.save
     test_op = test_rs.refine(visual: true) do
       equals do
@@ -172,7 +172,7 @@ class  DSLParserTest < XplainUnitTest
   end
 
   def test_parse_refine_and
-    test_rs = Xplain::ResultSet.new("test", [])
+    test_rs = Xplain::ResultSet.new(id: "test")
     test_rs.save
     test_op = test_rs.refine do
       And do [
@@ -218,7 +218,7 @@ class  DSLParserTest < XplainUnitTest
   end
   
   def test_parse_group
-    test_rs = Xplain::ResultSet.new("test", [])
+    test_rs = Xplain::ResultSet.new(id: "test")
     test_rs.save
     test_op = test_rs.group{by_image{relation "_:author"}}
     
@@ -241,7 +241,7 @@ class  DSLParserTest < XplainUnitTest
   end
 
   def test_parse_map_count
-    test_rs = Xplain::ResultSet.new("test", [])
+    test_rs = Xplain::ResultSet.new(id: "test")
     test_rs.save
     test_op = test_rs.xmap{count}
     
@@ -264,7 +264,7 @@ class  DSLParserTest < XplainUnitTest
   end
   
   def test_parse_args_aux_function
-    test_rs = Xplain::ResultSet.new("test", [])
+    test_rs = Xplain::ResultSet.new(id: "test")
     test_rs.save
     test_op = test_rs.rank(order: :desc, level: 2){by_level(3)}
     
@@ -287,9 +287,9 @@ class  DSLParserTest < XplainUnitTest
   end
   
   def test_parse_unite
-    test_rs1 = Xplain::ResultSet.new("test1", [])
+    test_rs1 = Xplain::ResultSet.new(id: "test1")
     test_rs1.save
-    test_rs2 = Xplain::ResultSet.new("test2", [])
+    test_rs2 = Xplain::ResultSet.new(id: "test2")
     test_rs2.save
 
     test_op = test_rs1.unite(test_rs2)

@@ -1,7 +1,7 @@
 class Xplain::Diff < Xplain::SetOperation
   
   def compute(input, target)
-    parent = Xplain::Node.new('diff')
+    parent = Xplain::Node.new()
     node_diff(input, target)
     return input.children
   end
