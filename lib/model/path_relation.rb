@@ -1,24 +1,20 @@
 module Xplain
   #TODO implement the group_by_domain option for mixed paths
-  class PathRelation
+  class PathRelation < Item
     include Xplain::Relation
     include Xplain::GraphConverter
     
     extend Forwardable
-    attr_accessor :id, :server, :inverse, :text, :relations, :limit, :root
+    attr_accessor :inverse, :relations, :limit
     def_delegators :@relations, :map, :each, :size, :unshift, :last
   
   
     def initialize(args = {})
+      super(args)
       @limit = args[:limit]
       @relations = args[:relations]
-      @id = args[:id]
-      @server = args[:server] || Xplain.default_server
       @domain_restriction = args[:domain_restriction] || []
       @image_restriction = args[:image_restriction] || []
-
-      @root = Xplain::Entity.new(@relations.map{|r| r.id}.join("/"))
-      @cursor = Xplain::Cursor.new(self)
     end
   
     def reverse
@@ -37,7 +33,7 @@ module Xplain
     end
   
     def can_fire_path_query
-      are_all_schema_relations = (@relations.select{|r| !r.schema?}.size == 0)
+      are_all_schema_relations = (@relations.select{|r| !r.is_a? Xplain::SchemaRelation}.size == 0)
       are_all_schema_relations
     end
   
@@ -120,17 +116,11 @@ module Xplain
     end
     
     def schema_restricted_image(restriction, options = {})
-      options[:restriction] = restriction
-      options[:relation] = self
-      results = hash_to_graph(@server.restricted_image(options), !options[:group_by_domain])
-
-      ResultSet.new nodes: results
+      @server.restricted_image(self, restriction, options)
     end
     
     def schema_restricted_domain(restriction, options = {})
-      options[:restriction] = restriction
-      options[:relation] = self
-      ResultSet.new nodes: hash_to_graph(@server.restricted_domain(options))
+      @server.restricted_domain(self, restriction, options)
     end
   
     def restricted_image(restriction, options = {})
@@ -167,10 +157,6 @@ module Xplain
       end
     end
   
-    def group_by_image(nodes)
-      grouped_nodes = hash_to_graph(@server.group_by(nodes, self))
-      ResultSet.new(nodes: grouped_nodes)
-    end
   
         
     def text

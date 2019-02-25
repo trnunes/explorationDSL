@@ -1,4 +1,4 @@
-module XmapAux
+module AggregateAux
   class Count < AuxiliaryFunction
     include Xplain::RelationFactory
     
@@ -17,15 +17,23 @@ module XmapAux
       end
     end
       
-    def visit(node)
-      if @relation
-        image_size = @pivoted_nodes.restricted_image([node]).size
-        literal = Xplain::Literal.new(image_size)
-      else
-        literal = Xplain::Literal.new(node.children.size)
-      end
+    def map(node, acc_value)
       
-      return [Xplain::Node.new(item: literal)]
+      if @relation
+        return count_related_items(node, acc_value)
+      end
+      acc_value ||= 0      
+      acc_value + 1
+    end
+    
+    def count_related_items(node, acc_value)
+      acc_value ||= []
+      count = @pivoted_nodes.restricted_image([node]).size
+      count_node = Xplain::Node.new(item: Xplain::Literal.new(count))
+      node.children_edges = []
+      node.children = [count_node]
+      acc_value << node
+      acc_value
     end
   end
 end

@@ -71,18 +71,44 @@ class Xplain::Operation
   end
   
   def resolve_dependencies
-    @inputs = @inputs.map do |input|
-      if input.is_a? Xplain::Operation
-        rs = input.execute()
-        rs.save
-        rs.copy
-      else
-        if input.id.nil?
-          input.save
+    @inputs.map! do |input|
+      input_set = 
+        if input.is_a? Xplain::Operation
+          input.execute()
+        else
+          input
         end
-        input.copy
+      if input_set.id.nil?
+        input_set.save
       end
-    end  
+      input_set
+    end
+  end
+  
+  def parse_item_specs(item_spec)
+    return if item_spec.nil?
+    if item_spec.is_a?(Xplain::Item) || item_spec.is_a?(Xplain::Node)
+      return item_spec
+    elsif item_spec.is_a? Hash
+      item_class = item_spec.keys.first
+      item_id = item_spec[item_class]
+      item = eval(item_class.to_s.camelcase + ".new(#{item_id})")
+      if item.class == xplain::Literal && item_spec.has_key?(:datatype)
+        item.datatype = item_spec[:datatype]
+      end
+      return item
+    else
+      return Xplain::Literal.new(item_spec)
+    end
+    
+  end
+  
+  def visual?
+    @visual
+  end
+  
+  def inputs_working_copy
+    @inputs.map{|i|i.copy}
   end
   
   def validate

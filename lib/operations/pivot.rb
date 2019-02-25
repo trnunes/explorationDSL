@@ -23,14 +23,14 @@ class Xplain::Pivot < Xplain::Operation
       return []
     end
     
-    @input_set = @inputs.first
+    input_set = inputs_working_copy.first
     if server && @relation.respond_to?(:server)
       @relation.server = server
     end
     
     #TODO repeated code, generalize it!
-    @level ||= @input_set.count_levels
-    level_items = @input_set.get_level(@level)
+    @level ||= input_set.count_levels
+    level_items = input_set.get_level(@level)
     level_items = level_items[0..@limit] if @limit > 0
     result_set = @relation.restricted_image(level_items, group_by_domain: @group_by_domain)
     if @group_by_domain
@@ -42,7 +42,7 @@ class Xplain::Pivot < Xplain::Operation
         end
       end
       binding.pry if @debug
-      nodes_to_return = @input_set.get_level(2)
+      nodes_to_return = input_set.get_level(2)
     else
       result_set.uniq! if result_set.contain_literals?
       nodes_to_return = result_set.nodes

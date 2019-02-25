@@ -14,6 +14,7 @@ module Xplain::RDF
       result_set_type_uri = "<#{namespace + "ResultSet"}>"
       insert_rs_query = "INSERT DATA{ " + result_set_uri + " <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> " + result_set_type_uri + "."
       insert_rs_query << "#{result_set_uri} <http://purl.org/dc/terms/title> \"#{result_set.title}\". "
+      
       intention_parser = DSLParser.new
       if result_set.intention
         insert_rs_query << "#{result_set_uri} <#{namespace}intention> \"#{intention_parser.to_ruby(result_set.intention).gsub("\"", '\"').gsub("\n", "\\n")}\". "
@@ -44,7 +45,7 @@ module Xplain::RDF
     end
     
     def result_set_delete_all
-      result_set_load_all.each{|rs| delete_resultset rs}
+      result_set_load_all.each{|rs| result_set_delete rs}
     end
     
     def result_set_delete(result_set)
@@ -109,18 +110,16 @@ module Xplain::RDF
       end
       
       query = "prefix xsd: <#{@xsd_ns.uri}> 
-      SELECT ?node ?nodeText ?nodeIndex ?item ?itemType ?child ?childIndex ?childText ?child_item ?childType
+      SELECT ?node ?nodeText ?nodeIndex ?item ?itemType ?child ?childIndex ?childText ?child_item ?childType ?nodeTextProp ?childTextProp
       WHERE{OPTIONAL{?node <#{xplain_namespace}included_in> #{result_set_uri}.
         ?node <#{@xplain_ns.uri}index> ?nodeIndex.
-        ?node <#{@dcterms.uri}title> ?nodeText. ?node <#{xplain_namespace}has_item> ?item. OPTIONAL{?item <#{xplain_namespace}item_type> ?itemType}.}. 
+        OPTIONAL{ ?node <#{@xplain_ns.uri}text_relation> ?nodeTextProp. ?item ?nodeTextProp ?nodeText}. ?node <#{xplain_namespace}has_item> ?item. OPTIONAL{?item <#{xplain_namespace}item_type> ?itemType}.}. 
         OPTIONAL{?node <#{xplain_namespace}children> ?child. ?child <#{@xplain_ns.uri}index> ?childIndex.  
-        ?child <#{@dcterms.uri}title> ?childText. ?child <#{xplain_namespace}has_item> ?child_item. OPTIONAL{?child_item <#{xplain_namespace}item_type> ?childType}.}.
+        OPTIONAL{?child <#{@xplain_ns.uri}text_relation> ?childTextProp. ?child_item ?childTextProp ?childText}. ?child <#{xplain_namespace}has_item> ?child_item. OPTIONAL{?child_item <#{xplain_namespace}item_type> ?childType}.}.
       } ORDER BY xsd:integer(?nodeIndex) xsd:integer(?childIndex)"
       
       nodes = []
       nodes_hash = {}
-      
-      
       @graph.query(query).each do |solution|
         next if !solution[:node] || !solution[:item]
         
@@ -129,11 +128,14 @@ module Xplain::RDF
         
         if !item.is_a?(Xplain::Literal)
           item.text = solution[:nodeText].to_s
+          item.text_relation = Xplain::Namespace.colapse_uri solution[:nodeTextProp].to_s
         end
         
         node = nodes_hash[node_id]
         if !node
+          
           node = Xplain::Node.new(id: node_id, item: item)
+          
           nodes_hash[node_id] = node
         end
         
@@ -148,6 +150,7 @@ module Xplain::RDF
               child_item = build_item solution[:child_item], solution[:childType]
               if !child_item.is_a?(Xplain::Literal)
                 child_item.text = solution[:childText].to_s
+                child_item.text_relation = Xplain::Namespace.colapse_uri solution[:childTextProp].to_s
               end
               cnode = Xplain::Node.new(id: child_id, item: child_item)
               nodes_hash[child_id] = cnode
@@ -195,7 +198,13 @@ module Xplain::RDF
         insert_stmt += "#{item_uri} <#{@xplain_ns.uri}item_type> \"#{node.item.class.name}\"."
       end
       insert_stmt += "<#{@xplain_ns.uri + node.id}> <#{@xplain_ns.uri}item_type> #{item_uri}."
-      insert_stmt += "<#{@xplain_ns.uri + node.id}> <#{@dcterms.uri}title> \"#{node.item.text}\"."
+      if !node.item.is_a? Xplain::Literal 
+        insert_stmt += "<#{@xplain_ns.uri + node.id}> <#{@xplain_ns.uri}text_relation>  <#{Xplain::Namespace.expand_uri node.item.text_relation}> ."
+        
+        if node.item.text_relation == "xplain:has_text"
+          insert_stmt += "#{item_uri} <#{@xplain_ns.uri}has_text>  \"#{node.item.text}\" ."
+        end
+      end
       insert_stmt += "<#{@xplain_ns.uri + node.id}> <#{@xplain_ns.uri}index> #{index}."
       child_index = 0
       node.children.each do |child|

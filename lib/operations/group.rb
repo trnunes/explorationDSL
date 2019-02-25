@@ -13,7 +13,7 @@ class Xplain::Group < Xplain::Operation
       return []
     end
 
-    input_set = @inputs.first
+    input_set = inputs_working_copy.first
     
     if input_set.nil? || input_set.children.empty?
       return []
@@ -29,29 +29,27 @@ class Xplain::Group < Xplain::Operation
     new_groups = []
     @auxiliar_function.prepare(nodes_to_group, new_groups)
     new_groups = @auxiliar_function.group(nodes_to_group)
-    
+    # binding.pry
     next_to_last_level.each do |node|
       children = node.children
       node.children_edges = []
       
 
       new_groups.each do |grouping_node|
-        new_grouping_node = Xplain::Node.new(item: grouping_node.item)
-        relation_node = grouping_node.children.first
-        new_relation_node = Xplain::Node.new(item: relation_node.item)
-        new_grouping_node << new_relation_node
-        relation_children_items = Set.new(relation_node.children.map{|node| node.item})
-        children.select{|node| relation_children_items.include?(node.item)}.each do |child|
-          child.parent_edges = [] 
-          new_relation_node << Xplain::Node.new(item: child.item)
-
+        
+        children_intersection = grouping_node.children.select{|cnode| children.map{|n|n.item}.include?(cnode.item)}
+        if !children_intersection.empty?
+          
+          children_intersection.each{|child| child.parent_edges = []}
+          
+          new_grouping_node = Xplain::Node.new(item: grouping_node.item)
+          
+          new_grouping_node.children = children_intersection
+          node << new_grouping_node  
         end
-        if !new_relation_node.children.empty?
-          node << new_grouping_node
-        end
-
       end
     end
+    
     
     groups = input_set.get_level(2)
 

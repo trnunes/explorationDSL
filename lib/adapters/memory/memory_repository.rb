@@ -2,6 +2,7 @@ class MemoryRepository
   @@nodes_hash = {}
   @@results_hash = {}
   @@workflow_hash = {}
+  @@session_hash = {}
   
   def initialize(args ={})
     
@@ -37,8 +38,15 @@ class MemoryRepository
     @@workflow_hash[workflow_id]
   end
   
-  def result_set_save(resultset)
+  def result_set_save(resultset)    
+    
+    setup_ids resultset
     @@results_hash[resultset.id] = resultset
+  end
+  
+  def setup_ids(node)
+    node.id ||= SecureRandom.uuid
+    node.children.each{|c| setup_ids c}
   end
   
   def result_set_load(resultset_id)
@@ -47,5 +55,26 @@ class MemoryRepository
     end
     @@results_hash[resultset_id]
   end
+  
+  def session_save(session)
+   @@session_hash[session.id] = session 
+  end
+  
+  def session_find_by_title(title)
+    @@session_hash.values.select{|s| s.title == title}
+  end
+  
+  def session_load(id)
+    @@session_hash[id]
+  end
+  
+  def session_delete(session)
+    @@session_hash.delete(session.id)
+  end
+  
+  def sessions
+    @@session_hash
+  end
+
 
 end

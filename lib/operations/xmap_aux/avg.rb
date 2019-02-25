@@ -7,27 +7,32 @@ module XmapAux
       if !@relation
         @relation = args.first
       end
-      
-      @images_hash = {}
     end
     
     #TODO Treat the case of relation not specified: it should use the input set as the relation
     #TODO generalize the visitor operations
     def prepare(nodes)
-      @images_hash =
-        if @relation
-          @relation.group_by_domain_hash(nodes)
-        else
-          #TODO: No need for children.map!
-          nodes.map{|node| [node, node.children.map{|child_node| child_node}]}.to_h
-        end
+      if @relation
+        pivot_relation = @relation
+        @pivoted_nodes = Xplain::ResultSet.new(nodes: nodes)
+          .pivot(group_by_domain: true){relation pivot_relation}.execute
+      end
     end
       
     def visit(node)
-      image = @relation.nil? ? @images_hash[node] : @images_hash[node.item]
       
-      avg_literal = Xplain::Literal.new(image.map{|img| img.item.value}.inject(0, :+)/image.size.to_f)
-      [Xplain::Node.new(item: avg_literal)]
+      if @relation
+        image = @pivoted_nodes.restricted_image([node])
+      else
+        image = node.children
+      end
+      if !image.empty?
+        avg_literal = Xplain::Literal.new(image.map{|img| img.item.value}.inject(0, :+)/image.size.to_f)
+        [Xplain::Node.new(item: avg_literal)]
+      else
+        []
+      end
+      
     end
   end
 end

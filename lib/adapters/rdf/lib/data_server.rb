@@ -3,6 +3,7 @@ module Xplain::RDF
     include Xplain::RDF::RelationMapper
     include Xplain::RDF::ResultSetMapper
     include Xplain::RDF::SessionMapper
+    include Xplain::GraphConverter
   
     attr_accessor :graph, :items_limit, :content_type, :api_key, :cache, :filter_intepreter
   
@@ -116,7 +117,7 @@ module Xplain::RDF
         limited_query << "limit #{limit} offset #{offset}"
       end
   
-      
+      # puts limited_query
       rs = @graph.query("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> " << limited_query, options)      
       rs_a = rs.to_a
       
@@ -128,33 +129,6 @@ module Xplain::RDF
     ### return: the nodes grouped by the image items of the relation. 
     ### The relation returned is the inverse of _relation arg 
     ###
-    def group_by(nodes, relation)
-      
-      if nodes.empty?
-        return []
-      end
-      if relation.nil?
-        raise MissingRelationException
-      end
-      result_hash = {}
-      images_hash = restricted_image(relation: relation, restriction: nodes)
-      inverse_relation = relation.reverse
-      images_hash.each do |key, values|
-        values.each do |value|
-          if !result_hash.has_key? value
-            result_hash[value] = {}
-            result_hash[value][inverse_relation] = 
-              if key.is_a? Xplain::Literal
-                []
-              else
-                Set.new
-              end
-          end        
-          result_hash[value][inverse_relation] << key
-        end
-      end
-      result_hash
-    end
     
     def aggregate(nodes, relation, aggregate_function, restriction = [])
       if nodes.empty?
@@ -198,9 +172,9 @@ module Xplain::RDF
     def execute_update(query, options = {})
       
       begin
+        # puts query
         rs = @graph.update(query, options)
-      rescue RDF::ReaderError => e
-         
+      rescue Exception => e
       end  
       
     end

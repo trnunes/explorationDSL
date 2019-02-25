@@ -5,9 +5,9 @@ class Xplain::SetOperation < Xplain::Operation
   
   def get_results()
     parent = Xplain::Node.new()
-    
-    input = @inputs[0]
-    target = @inputs[1]
+    input_sets_copy = inputs_working_copy
+    input = input_sets_copy[0]
+    target = input_sets_copy[1]
     if !(input || target)
       return []
     end

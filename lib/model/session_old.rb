@@ -2,7 +2,7 @@ module Xplain
   #TODO implement a save method tracking updates and also result-set updates
   class Session
     include Xplain::SessionWritable
-    include Xplain::SessionReadable
+    extend Xplain::SessionReadable
     
     attr_accessor :id, :title, :result_sets
     
@@ -20,30 +20,23 @@ module Xplain
       while !resulted_from_array.empty?
         resulted_from_array.each do |r_from|
           
-          add_result_set(r_from)
+          if r_from.id.nil?
+            r_from.save
+          end
           
+          add_result_set(r_from)
+          # @result_sets << r_from
         end
         resulted_from_array = resulted_from_array.map{|r| r.resulted_from}.flatten(1)
       end
+      
     end
-    
     def empty?
       Xplain::ResultSet.find_by_session(self).empty?
     end
-    
+
     def each_result_set_tsorted(options={}, &block)
-      iterable = @result_sets
-      if @result_sets.empty?
-        @result_sets = Xplain::ResultSet.find_by_session(self, options)
-        iterable = @result_sets
-      else
-        if options[:exploration_only]
-          iterable = @result_sets.select{|s| !s.intention.visual?}
-        end
-      end
-      
-      Xplain::ResultSet.topological_sort(iterable).each &block
-      
+      Xplain::ResultSet.find_by_session(self, options).each &block
     end
     
   end

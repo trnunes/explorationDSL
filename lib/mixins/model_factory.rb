@@ -17,13 +17,25 @@ module Xplain
   module RelationFactory
     attr_accessor :relation
     
-    def relation(*relations)
-      @relation ||= new_relation(*relations)
+    def relation(*relations_specs)
+      relation_objects = relations_specs.select{|r| r.is_a? Xplain::Relation}
+      if relation_objects.size > 0 && relation_objects.size != relations_specs.size
+        raise "Relation specs should be of the same type!"
+      else
+        if relation_objects.size > 1 
+          @relation = Xplain::PathRelation.new(relations: relation_objects)
+        elsif relation_objects.size == 1  
+          @relation = relation_objects.first
+        end
+      end
+      
+      @relation ||= new_relation(*relations_specs)
+      
       @relation
     end
     
-    def new_relation(*relations)
-      relations = relations.select{|r| !r.to_s.empty? || r.is_a?(Xplain::Relation)}
+    def new_relation(*relations_specs)
+      relations = relations_specs.select{|r| !r.to_s.empty? || r.is_a?(Xplain::Relation)}
       if relations.empty?
         return nil
       end
@@ -47,7 +59,7 @@ module Xplain
         end
         relation_instance
       end
-      if relations.size > 1
+      if relations_specs.size > 1
         PathRelation.new(relations: relations)
       else
         relations.first

@@ -6,19 +6,17 @@ class ModelTest < XplainUnitTest
   def test_empty
     cite = Xplain::SchemaRelation.new(server: @papers_server, id: "_:cite")
     actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:paper2")])
-    assert_equal Set.new(), Set.new(actual_image)
+    assert_true actual_image.empty?
     
     actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p4")])
-    assert_equal Set.new(), Set.new(actual_image)
-    
+    assert_true actual_image.empty?    
 
-    res_dom = cite.restricted_domain(create_nodes [Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7")])
-    assert_equal Set.new(), Set.new(res_dom)
-    
+    actual_image = cite.restricted_domain(create_nodes [Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7")])
+    assert_true actual_image.empty?
+        
     cite = Xplain::SchemaRelation.new(server: @papers_server, id: "_:cite", inverse: true)
     actual_image = cite.restricted_image(create_nodes [Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7")])
-    assert_equal Set.new(), Set.new(actual_image)
-    
+    assert_true actual_image.empty?
   end
   
   def test_restricted_image
@@ -205,58 +203,58 @@ class ModelTest < XplainUnitTest
   end
   
   def test_has_type_image
-    expected_results = create_nodes [
+    expected_results = Xplain::ResultSet.new nodes: create_nodes([
         Xplain::Type.new("_:type1"),
         Xplain::Type.new("_:type2")         
-      ]
+      ])
       
     has_type = Xplain::SchemaRelation.new(server: @papers_server, id: "has_type")
-    assert_same_items_set expected_results, has_type.image  
+    assert_same_result_set_no_title expected_results, has_type.image  
   end
   
   def test_has_type_restricted_image
-    expected_results = create_nodes [
+    expected_results = Xplain::ResultSet.new nodes: create_nodes([
         Xplain::Type.new("_:type1")        
-    ]
+    ])
       
     has_type = Xplain::SchemaRelation.new(server: @papers_server, id: "has_type")
     actual_results = has_type.restricted_image(create_nodes [Xplain::Entity.new("_:p9")])
-    assert_same_items_set expected_results, actual_results
+    assert_same_result_set_no_title expected_results, actual_results
     
   end
   
   def test_relations_restricted_domain
-    expected_results = create_nodes [      
+    expected_results = Xplain::ResultSet.new nodes: create_nodes([      
       Xplain::Entity.new("_:paper1"),
       Xplain::Entity.new("_:p2"),
       Xplain::Entity.new("_:p3"),
       Xplain::Entity.new("_:p6"),
       Xplain::Entity.new("_:p5"),
       Xplain::Entity.new("_:p20")      
-     ]
+     ])
       
     relations = Xplain::SchemaRelation.new(server: @papers_server, id: "relations")
     actual_results = relations.restricted_domain(create_nodes [
       Xplain::SchemaRelation.new(id: "_:author")        
     ])
-    assert_same_items_set expected_results, actual_results
+    assert_same_result_set_no_title expected_results, actual_results
   end
   
   def test_has_type_restricted_domain
     expected_results = create_nodes [
-        Xplain::Type.new("_:p9")
+        Xplain::Entity.new("_:p9")
     ]
-      
+    expected_rs = Xplain::ResultSet.new nodes: expected_results
     has_type = Xplain::SchemaRelation.new(server: @papers_server, id: "has_type")
     actual_results = has_type.restricted_domain(create_nodes [Xplain::Entity.new("_:type1")])
-    assert_same_items_set expected_results, actual_results
+    assert_same_result_set_no_title expected_rs, actual_results
   end
   
   def test_result_set_uniq_items
     input = Xplain::ResultSet.new(nodes:  [Xplain::Node.new(item: Xplain::Entity.new("_:p1")), Xplain::Node.new(item: Xplain::Entity.new("_:p2")), Xplain::Node.new(item: Xplain::Entity.new("_:p2"))])
     assert_equal input.size, 3
     expected_result_set = Xplain::ResultSet.new(nodes:  [Xplain::Node.new(item: Xplain::Entity.new("_:p1")), Xplain::Node.new(item: Xplain::Entity.new("_:p2"))])
-    assert_same_result_set expected_result_set, input.uniq
+    assert_same_result_set_no_title expected_result_set, input.uniq
   end
   
   def test_result_set_sort

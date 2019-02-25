@@ -1,64 +1,75 @@
 module Xplain
   @@current_workflow = nil
-  @@cache_enabled = false  
   @@exploration_repository = MemoryRepository.new
+  @@lazy = false
+  @@memory_cache = MemoryRepository.new
   
-  def self.get_current_workflow
-    @@current_workflow ||= Workflow.new
-    @@current_workflow
-  end
-
-  def self.exploration_repository
-    @@exploration_repository
-  end 
-  
-  def self.new_workflow
-    @@current_workflow = Workflow.new
-    @@current_workflow
-  end
-
-  def self.reset_workflow
-    @@current_workflow = Workflow.new
-    @@current_workflow
-  end
-  
-  def self.set_default_server(server_params)
-    if server_params.is_a? Hash
-      klass = server_params[:class]
-      klass = eval(klass) if klass.is_a? String
-      @@default_server = klass.new(server_params)
-    else
-      @@default_server = server_params
+  class << self
+    def base_dir=(base_dir_path)
+      @@base_dir = base_dir_path
     end
-    @@default_server
-  end
-  
-  def self.set_exploration_repository(repository_params)
-    if repository_params.is_a? Hash
-      klass = repository_params[:class]
-      @@exploration_repository = klass.new(repository_params)
-    else
-      @@exploration_repository = repository_params
+    
+    def base_dir
+      @@base_dir
     end
-    @@exploration_repository
-  end
+    
+    def lazy?
+      @@lazy
+    end
+    
+    def lazy=(is_lazy)
+      @@lazy = is_lazy
+    end
+    
+    def memory_cache
+      @@memory_cache
+    end
+      
+    def get_current_workflow
+      @@current_workflow ||= Workflow.new
+      @@current_workflow
+    end
   
-  def self.default_server
-    @@default_server
+    def exploration_repository
+      @@exploration_repository
+    end 
+    
+    def new_workflow
+      @@current_workflow = Workflow.new
+      @@current_workflow
+    end
+  
+    def reset_workflow
+      @@current_workflow = Workflow.new
+      @@current_workflow
+    end
+    
+    def set_default_server(server_params)
+      if server_params.is_a? Hash
+        klass = server_params[:class]
+        klass = eval(klass) if klass.is_a? String
+        @@default_server = klass.new(server_params)
+      else
+        @@default_server = server_params
+      end
+      @@default_server
+    end
+    
+    def set_exploration_repository(repository_params)
+      if repository_params.is_a? Hash
+        klass = repository_params[:class]
+        @@exploration_repository = klass.new(repository_params)
+      else
+        @@exploration_repository = repository_params
+      end
+      @@exploration_repository
+    end
+    
+    def default_server
+      @@default_server
+    end
   end
     
-  def self.cache_enabled?
-    @@cache_enabled  
-  end
-  
-  def self.enable_cache
-    @@cache_enabled = true
-  end
-
-  def self.disable_cache
-    @@cache_enabled = false
-  end
-  
 
   #Config
   # 1 config data adapter

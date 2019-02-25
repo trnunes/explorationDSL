@@ -148,6 +148,7 @@ module Xplain
       level_items
     end
     
+    
     def find(item_to_find)
       if self.item == item_to_find
         return self
@@ -161,10 +162,9 @@ module Xplain
       return nil
     end
     
-    def leaves
+    def last_level
       each_level.last
     end
-    
     
     def <<(child)
       @children_edges << Edge.new(self, child)

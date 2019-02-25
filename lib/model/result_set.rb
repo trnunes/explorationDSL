@@ -9,20 +9,42 @@ module Xplain
     attr_accessor :intention, :inverse, :title
     def_delegators :children, :each, :map, :select, :empty?, :size, :uniq, :sort
     
+    class << self
+      def topological_sort(result_sets)
+        sorted_array = []
+        visited = Set.new
+        result_sets.each{|rs| visit(rs, sorted_array, visited)}
+        sorted_array
+      end
+      
+  
+      def visit(rs, sorted_array, visited)
+        if rs.intention && rs.intention.is_a?(Operation)
+          rs.intention.inputs.each{|input| visit(input, sorted_array, visited)}
+        end
+        if !visited.include? rs.id
+          sorted_array << rs
+          visited << rs.id
+        end
+      end       
+    end
+    
     def initialize(params = {})
       super(params)
       nodes_list = params[:nodes] || []
       input_is_list_of_items = !nodes_list.first.is_a?(Xplain::Node)
       
-      self.children = 
+      children_nodes = 
         if input_is_list_of_items
           nodes_list.map{|item| Xplain::Node.new(item: item)}          
         else
           nodes_list
         end
+      children_nodes.each{|c| c.parent_edges = []}
+      self.children = children_nodes
       @intention = params[:intention]
       @inverse = params[:inverse]
-      @title = params[:title] || "Set #{Xplain::ResultSet.count + 1}"
+      @title = params[:title] || "Set #{Xplain::SetSequence.next}"
     end
     
     def nodes
@@ -55,8 +77,7 @@ module Xplain
     def copy
       copied_root = super
       copied_root.children.each{|c| c.parent_edges = []}
-      #TODO Correct the "id" parameter. They cannot be the same!
-      Xplain::ResultSet.new(id: self.id, nodes: copied_root.children, intention: @intention, title: @title.dup, notes: @annotations.dup, inverse: @inverse)
+      Xplain::ResultSet.new(nodes: copied_root.children, intention: @intention, title: @title.dup, notes: @annotations.dup, inverse: @inverse)
     end
     
     def get_page(total_items_by_page, page_number)

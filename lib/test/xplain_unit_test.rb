@@ -23,6 +23,7 @@ require './exceptions/numeric_item_required_exception'
 require './mixins/graph_converter'
 require './model/node'
 require './model/edge'
+require './model/item'
 require './model/entity'
 require './model/type'
 require './model/session'
@@ -32,6 +33,7 @@ require './model/path_relation'
 require './model/namespace'
 require './model/result_set'
 require './model/relation_handler'
+require './model/sequence'
 
 require './mixins/model_factory'
 
@@ -48,6 +50,9 @@ require './execution/dsl_parser.rb'
 #TODO Duplicated code with xplain.rb!
 module Xplain
   @@base_dir = ""
+  @@lazy = false
+  @@memory_cache = MemoryRepository.new
+  
   class << self
     def base_dir=(base_dir_path)
       @@base_dir = base_dir_path
@@ -55,6 +60,18 @@ module Xplain
     
     def base_dir
       @@base_dir
+    end
+    
+    def lazy?
+      @@lazy
+    end
+    
+    def lazy=(is_lazy)
+      @@lazy = is_lazy
+    end
+    
+    def memory_cache
+      @@memory_cache
     end
     
     def const_missing(name)
@@ -125,6 +142,7 @@ end
 class XplainUnitTest < Test::Unit::TestCase
   def setup
     Xplain.base_dir = "./"
+    Xplain::SetSequence.reset
     load_papers_server
     load_simple_server
   end
@@ -282,6 +300,12 @@ class XplainUnitTest < Test::Unit::TestCase
     end
   end
   
+  def assert_same_result_set_no_title(rs1, rs2)
+    rs1.title = rs2.title
+    assert_same_result_set rs1, rs2
+    
+  end
+  
   def assert_same_result_set(rs1, rs2)
     assert_equal rs1.class, Xplain::ResultSet
     assert_equal rs1.class, rs2.class
@@ -306,10 +330,10 @@ class XplainUnitTest < Test::Unit::TestCase
     input3 = Xplain::ResultSet.new(id: "_:rs2", nodes:  [i3p1, i3p2])
     
     
-    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1, input3)}
-    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input2, input2)}
-    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2, input1)}
-    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2, input3)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set_no_title(input1, input3)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set_no_title(input2, input2)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set_no_title(input2, input1)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set_no_title(input2, input3)}
   end
 
   def test_assert_same_items_2_levels
@@ -334,10 +358,10 @@ class XplainUnitTest < Test::Unit::TestCase
     input3 = Xplain::ResultSet.new(nodes:  [i3p1, i3p2])
     
     
-    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1, input3)}
-    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input2, input2)}
-    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2, input1)}
-    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2, input3)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set_no_title(input1, input3)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set_no_title(input2, input2)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set_no_title(input2, input1)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set_no_title(input2, input3)}
   end
   
   def test_assert_same_items_different_levels
@@ -356,10 +380,10 @@ class XplainUnitTest < Test::Unit::TestCase
     input3 = Xplain::ResultSet.new(nodes:  [i3p1, i3p2])
     
     
-    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input1, input3)}
-    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set(input2, input2)}
-    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2, input1)}
-    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set(input2, input3)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set_no_title(input1, input3)}
+    assert_nothing_raised(Test::Unit::AssertionFailedError) {  assert_same_result_set_no_title(input2, input2)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set_no_title(input2, input1)}
+    assert_raise(Test::Unit::AssertionFailedError) {assert_same_result_set_no_title(input2, input3)}
   end
 
 end

@@ -7,22 +7,34 @@ module XmapAux
       if !@relation
         @relation = args.first
       end
-      @images_hash = {}
     end
     
     def prepare(nodes)
-      @images_hash = @relation.restricted_image(nodes).to_item_h
+      if @relation
+        pivot_relation = @relation
+        @pivoted_nodes = Xplain::ResultSet.new(nodes: nodes)
+          .pivot(group_by_domain: true){relation pivot_relation}.execute
+      end
     end
       
     def visit(node)
-      return [] if !@images_hash.has_key? node.item
-      node_images = @images_hash[node.item]
-      sum = node_images.map do |img| 
-        raise NumericItemRequiredException if !img.is_a?(Xplain::Literal)
-        img.value.to_f
-      end.inject(0, :+)
+      image = []
+      if @relation
+        image = @pivoted_nodes.restricted_image [node]
+      else
+        image = node.children
+      end
       
-      [Xplain::Node.new(item: Xplain::Literal.new(sum))]
+      if !image.empty?
+        sum = image.map do |img|
+          img_item = img.item 
+          raise NumericItemRequiredException if !img_item.is_a?(Xplain::Literal)
+          img.item.value.to_f
+        end.inject(0, :+)
+        [Xplain::Node.new(item: Xplain::Literal.new(sum))]
+      else
+        []
+      end
     end
   end
 end

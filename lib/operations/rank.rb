@@ -7,7 +7,7 @@ class Xplain::Rank < Xplain::Operation
   end
   
   def get_results()
-    set_to_rank = @inputs.first
+    set_to_rank = inputs_working_copy.first
     @level ||= set_to_rank.count_levels
     sorting_items_parents = set_to_rank.get_level(@level - 1)
     

@@ -31,7 +31,7 @@ class Xplain::KeywordSearchTest < XplainUnitTest
     @keyword_search_operation = Xplain::KeywordSearch.new(keyword_phrase:  'paper1_keyword')
     result_set =  @keyword_search_operation.execute
     
-    assert_same_items_set expected_results, result_set.leaves    
+    assert_same_items_set expected_results, result_set.last_level    
   end
   
   def test_keyword_search_restricted_scope
@@ -44,21 +44,21 @@ class Xplain::KeywordSearchTest < XplainUnitTest
     @keyword_search_operation = Xplain::KeywordSearch.new(inputs: input, keyword_phrase:  'common_keyword')
     result_set =  @keyword_search_operation.execute
     
-    assert_same_items_set input.leaves, result_set.leaves
+    assert_same_items_set input.last_level, result_set.last_level
   end
   
   def test_disjunctive_keyword_search
     expected_results = Set.new(create_nodes [ Xplain::Entity.new('_:p3'), Xplain::Entity.new('_:paper1')])
     @keyword_search_operation = Xplain::KeywordSearch.new(keyword_phrase:  'paper3_keyword|paper1_keyword')
     result_set =  @keyword_search_operation.execute
-    assert_same_items_set expected_results, result_set.leaves  
+    assert_same_items_set expected_results, result_set.last_level  
   end
   
   def test_conjunctive_keyword_search
     expected_results = Set.new(create_nodes [Xplain::Entity.new('_:p2')])
     @keyword_search_operation = Xplain::KeywordSearch.new(keyword_phrase:  'paper2_keyword1.*paper2_keyword2')
     result_set =  @keyword_search_operation.execute
-    assert_same_items_set expected_results, result_set.leaves
+    assert_same_items_set expected_results, result_set.last_level
 
   end
   
@@ -73,7 +73,7 @@ class Xplain::KeywordSearchTest < XplainUnitTest
     expected_results = Set.new(create_nodes [Xplain::Entity.new('_:p3')])
     @keyword_search_operation = Xplain::KeywordSearch.new(keyword_phrase:  'common_keyword.*paper3_keyword2')
     result_set =  @keyword_search_operation.execute
-    assert_same_items_set expected_results, result_set.leaves
+    assert_same_items_set expected_results, result_set.last_level
 
     
   end

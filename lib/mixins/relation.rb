@@ -9,7 +9,11 @@ module Xplain
         return Xplain::Namespace.colapse_uri(id)
       end
       @text
-    end    
+    end  
+    
+    def meta?
+      false
+    end  
 
     def domain(offset=0, limit=nil)
       []

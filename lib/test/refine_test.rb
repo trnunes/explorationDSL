@@ -449,7 +449,7 @@ class Xplain::RefineTest < XplainUnitTest
       end
     end.execute()
     actual_results.title = expected_results1.title
-    assert_same_result_set actual_results, expected_results1
+    assert_same_result_set_no_title actual_results, expected_results1
 
     actual_results = Xplain::Refine.new(inputs: input, level: 2) do
       equals do
@@ -458,7 +458,7 @@ class Xplain::RefineTest < XplainUnitTest
       end
     end.execute()
     actual_results.title = expected_results2.title
-    assert_same_result_set actual_results, expected_results2
+    assert_same_result_set_no_title actual_results, expected_results2
   end
 
   def test_refine_level_3_set
@@ -491,7 +491,7 @@ class Xplain::RefineTest < XplainUnitTest
         entity "_:a1"
       end
     end.execute()
-    assert_same_result_set expected_results1, actual_results
+    assert_same_result_set_no_title expected_results1, actual_results
 
     actual_results = Xplain::Refine.new(inputs: input, level: 3) do
       equals do
@@ -500,7 +500,7 @@ class Xplain::RefineTest < XplainUnitTest
       end
     end.execute()
 
-    assert_same_result_set expected_results2, actual_results
+    assert_same_result_set_no_title expected_results2, actual_results
   end
   
   def test_refine_level_3_set_repeated_children
@@ -533,7 +533,7 @@ class Xplain::RefineTest < XplainUnitTest
         relation "_:publishedOn"
         entity "_:journal2"
       end
-    end.execute()
-    assert_same_result_set actual_results, expected_results
+    end.execute() 
+    assert_same_result_set_no_title actual_results, expected_results
   end
 end

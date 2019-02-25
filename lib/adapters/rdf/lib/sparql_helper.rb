@@ -99,16 +99,11 @@ module SPARQLHelper
 
   def label_where_clause(var, label_relations)
     return "" if label_relations.empty?
-
-    label_relations.map do |l|
-      expanded_uri = Xplain::Namespace.expand_uri(l)
-      if var == "?s"
-        "{" + var + " <#{expanded_uri}> " + "?ls" + "}."
-      else
-        "{" + var + " <#{expanded_uri}> " + "?lo" + "}."
-      end
-      
-    end.join(" OPTIONAL")
+    label_properties_clause = label_relations.map{|l| "<" << Xplain::Namespace.expand_uri(l) << ">"}.join (" ")
+    var_suffix = var.gsub("?", "")
+    label_var = "?l" << var_suffix
+    
+    "{{" + var + " ?textProp#{var_suffix} " + label_var + "}. VALUES ?textProp#{var_suffix}{#{label_properties_clause}}}. "
   end
   
   def values_clause(var, iterable)
@@ -124,8 +119,6 @@ module SPARQLHelper
   
   def mount_label_clause(var, items, relation = nil)
     
-    
-     
     label_clause = ""
     label_relations = []
     
@@ -142,9 +135,13 @@ module SPARQLHelper
       end      
       label_relations = Xplain::Visualization.label_relations_for(type.id)  
     end
-    label_clause = label_where_clause(var, label_relations)    
-    label_clause = "OPTIONAL " + label_clause if !label_clause.empty?
-    label_clause
+    optional_label_where_clause var, label_relations
+  
+  end
+  
+  def optional_label_where_clause(var, label_relations)
+    return "" if label_relations.empty?
+    return "OPTIONAL " + label_where_clause(var, label_relations)
   end
   
   def try_label_relations_by_relation(relation)
@@ -257,6 +254,7 @@ module SPARQLHelper
       subject_id = Xplain::Namespace.colapse_uri(solution[:s].to_s)
       subject_item = Xplain::Entity.new(subject_id)
       subject_item.text = solution[:ls].to_s
+      subject_item.text_relation = Xplain::Namespace.colapse_uri(solution[:textProps].to_s)
       subject_item.add_server(@server)
       
       object_id = solution[:o]
@@ -269,6 +267,7 @@ module SPARQLHelper
             related_item = Xplain::Entity.new(Xplain::Namespace.colapse_uri(object_id.to_s))
             related_item.type = "rdfs:Resource"
             related_item.text = solution[:lo].to_s
+            related_item.text_relation = Xplain::Namespace.colapse_uri(solution[:textPropo].to_s)
             related_item.add_server @server
             related_item
           end        

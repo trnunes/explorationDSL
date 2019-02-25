@@ -16,7 +16,11 @@ class Xplain::NodesSelect < Xplain::Operation
         result_nodes += self.by_item_id(input_set, item_id)
       end
     end
-    result_nodes
+    result_nodes.map do |n|
+      n_copy = n.copy
+      n_copy.parent_edges = []
+      n_copy 
+    end
   end
   
   def by_node_id(result_set, node_id)

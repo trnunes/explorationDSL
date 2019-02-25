@@ -32,7 +32,7 @@ class Xplain::Refine < Xplain::Operation
       return []
     end
 
-    input_set = @inputs.first
+    input_set = inputs_working_copy.first
     if(input_set.children.empty?)
       return []
     end

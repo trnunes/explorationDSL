@@ -13,7 +13,7 @@ class Xplain::NodesSelectTest < XplainUnitTest
     result_set = input.nodes_select(ids: ["_:p3"]).execute()    
     
     expected_rs = Xplain::ResultSet.new(id: "rs", nodes:  [Xplain::Node.new(item: Xplain::Entity.new('_:p3'))])
-    assert_same_result_set expected_rs, result_set
+    assert_same_result_set_no_title expected_rs, result_set
   end
   
   def test_select_multiple_items
@@ -29,7 +29,7 @@ class Xplain::NodesSelectTest < XplainUnitTest
     
     result_set = input.nodes_select(ids: ["_:p3", "_:paper1", "_:p4"]).execute
     expected_nodes = [Xplain::Node.new(item: Xplain::Entity.new('_:p3')), Xplain::Node.new(item: Xplain::Entity.new('_:p4')), Xplain::Node.new(item: Xplain::Entity.new('_:paper1'))]
-    assert_same_result_set Xplain::ResultSet.new(id: "rs", nodes:  expected_nodes), result_set    
+    assert_same_result_set_no_title Xplain::ResultSet.new(id: "rs", nodes:  expected_nodes), result_set    
   end  
 
 end

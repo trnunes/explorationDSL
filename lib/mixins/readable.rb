@@ -14,11 +14,20 @@ module Xplain
 
   module ResultSetReadable
     def load(id)
-      Xplain::exploration_repository.result_set_load(id)      
+      result_set = Xplain::memory_cache.result_set_load(id)
+      if !result_set
+        result_set = Xplain::exploration_repository.result_set_load(id) 
+      end
+      result_set
     end
     
     def find_by_node_id(node_id)
-      Xplain::exploration_repository.result_set_find_by_node_id(node_id)
+      result_sets = Xplain::memory_cache.result_set_find_by_node_id(node_id)
+      
+      if result_sets.empty?
+        result_sets = Xplain::exploration_repository.result_set_find_by_node_id(node_id) 
+      end
+      result_sets
     end
    #TODO Document options
     def find_by_session(session, options = {})
@@ -33,50 +42,60 @@ module Xplain
       Xplain::exploration_repository.result_set_load_all
     end
     
-    def load_all_tsorted()
-      result_sets = Xplain::exploration_repository.result_set_load_all
-      topological_sort(result_sets)
-    end
-    
-    #TODO duplicated code with load_all_tsorted
-    def load_all_tsorted_exploration_only
-      result_sets = Xplain::exploration_repository.result_set_load_all(exploration_only: true)
-      topological_sort(result_sets)
+    def load_all_tsorted
+      Xplain::ResultSet.topological_sort Xplain::exploration_repository.result_set_load_all
     end
     
     def load_all_exploration_only
       Xplain::exploration_repository.result_set_load_all(exploration_only: true)
     end
     
-    #private
-    def topological_sort(result_sets)
-      sorted_array = []
-      visited = Set.new
-      result_sets.each{|rs| visit(rs, sorted_array, visited)}
-      sorted_array
+    def load_all_tsorted_exploration_only
+      Xplain::ResultSet.topological_sort Xplain::exploration_repository.result_set_load_all(exploration_only: true)
     end
     
 
-    def visit(rs, sorted_array, visited)
-      #TODO change the intention setup to always be an Operation
-      if rs.intention && rs.intention.is_a?(Operation)
-        rs.intention.inputs.each{|input| visit(input, sorted_array, visited)}
-      end
-      if !visited.include? rs.id
-        sorted_array << rs
-        visited << rs.id
-      end
-    end
   end
   
   module SessionReadable
-    def find_by_title(title)
-      Xplain::exploration_repository.session_find_by_title(title)
+    def self.included(klass)
+      klass.extend(ClassMethods)
     end
     
-    def list_titles
-      Xplain::exploration_repository.session_list_titles
+    #TODO refactor other readables and writables such this one
+    module ClassMethods
+      def load(id)
+        session = Xplain::memory_cache.session_load(id)
+        if !session
+          session = Xplain::exploration_repository.session_load(id)
+          if Xplain.lazy?
+            Xplain::memory_cache.session_save(session)
+          end
+        end
+        
+        session
+      end
+      
+      def find_by_title(title)
+        Xplain::exploration_repository.session_find_by_title(title)
+      end
+      
+      def list_titles
+        Xplain::exploration_repository.session_list_titles
+      end
     end
+    
+    # def load_result_sets
+      # should_load_from_rep = !Xplain.lazy? || @result_sets.empty?
+#       
+      # if should_load_from_rep
+        # @result_sets = Xplain::exploration_repository.result_set_find_by_session(self)
+      # end 
+#       
+      # return @result_sets
+    # end
+    
+
   end
 
 
