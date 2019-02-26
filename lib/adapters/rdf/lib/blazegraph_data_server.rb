@@ -20,6 +20,6 @@ class BlazegraphDataServer < Xplain::RDF::DataServer
       item.add_server(self)
       items << item
     end
-    items.sort{|i1, i2| i1.text <=> i2.text}
+    items.uniq.sort{|i1, i2| i1.text <=> i2.text}
   end
 end

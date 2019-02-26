@@ -45,7 +45,7 @@ module Xplain::RDF
         raise "Cannot compute restricted image of a null relation!"
       end
       
-      restriction_items = restriction.map{|node|node.item} || [] 
+      restriction_items = restriction.map{|node|node.item}.uniq || [] 
       
       image_filter_items = options[:image_filter] || []
       
@@ -73,7 +73,7 @@ module Xplain::RDF
         end
         query << " where{#{where_clause} }"
         query = insert_order_by_subject(query)
-      
+      # binding.pry
         results_hash.merge! get_results(query, relation)
         
       end
@@ -106,7 +106,7 @@ module Xplain::RDF
         return result_set          
       end
       
-      restriction_items = restriction.map{|node|node.item} || [] 
+      restriction_items = restriction.map{|node|node.item}.uniq || [] 
       
       domain_items = options[:domain_filter] || []
       results_hash = {}
@@ -215,7 +215,7 @@ module Xplain::RDF
     ##TODO implement
     def relations_restricted_domain(restriction, args)
       
-      restriction_items = restriction.map{|node|node.item} || []
+      restriction_items = restriction.map{|node|node.item}.uniq || []
       entities = []
       paginate(restriction_items, @items_limit).each do |page_items|
         query = "SELECT DISTINCT ?s WHERE { #{values_clause("?relation", page_items)} ?s ?relation ?o. }"
@@ -231,7 +231,7 @@ module Xplain::RDF
     end
     
     def has_type_restricted_image(restriction, args)
-      restriction_items = restriction.map{|node|node.item} || []
+      restriction_items = restriction.map{|node|node.item}.uniq || []
       classes = []
       paginate(restriction_items, @items_limit).each do |page_items|
         query = "SELECT DISTINCT ?class WHERE {#{values_clause("?s", page_items)} ?s a ?class.}"
@@ -246,14 +246,17 @@ module Xplain::RDF
     end  
     
     def has_type_restricted_domain(restriction, args)
-      restriction_items = restriction.map{|node|node.item} || []
+      restriction_items = restriction.map{|node|node.item}.uniq || []
       
       entities = []
+      label_relations = restriction_items.map{|type| Xplain::Visualization.label_relations_for(type.id)}.compact.flatten
+      label_relations = Xplain::Visualization.label_relations_for("rdfs:Resource")
       paginate(restriction_items, @items_limit).each do |page_items|
         query = "SELECT DISTINCT ?s WHERE {#{values_clause("?class", page_items)} ?s a ?class.}"
         execute(query).each do |s|
           entity = Xplain::Entity.new(Xplain::Namespace.colapse_uri(s[:s].to_s))
           entity.add_server(self)
+          entity.text_relation = label_relations.first
           entities << entity
         end
       end
