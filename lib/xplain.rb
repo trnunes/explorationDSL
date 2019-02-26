@@ -51,8 +51,10 @@ require 'execution/dsl_parser.rb'
 $BASE_DIR = $LOAD_PATH.grep(/xplain-/).first.to_s + "/"
 Dir[$BASE_DIR + "operations/*.rb"].each{|f| require f}
 
+
 (Dir[$BASE_DIR + "adapters/*/lib/*helper.rb"]).each {|file| require file }
-(Dir[$BASE_DIR + "adapters/*/lib/*.rb"] - Dir[$BASE_DIR + "adapters/*/lib/*data_server.rb"]).each {|file| require file }
+(Dir[$BASE_DIR + "adapters/*/lib/*.rb"] - Dir[$BASE_DIR + "adapters/*/lib/*data_server.rb"] - Dir[$BASE_DIR + "adapters/*/lib/data_server.rb"]).each {|file| require file }
+(Dir[$BASE_DIR + "adapters/*/lib/data_server.rb"]).each {|file| require file }
 Dir[$BASE_DIR + "adapters/*/lib/*data_server.rb"].each {|file| require file }
 
 module Xplain
