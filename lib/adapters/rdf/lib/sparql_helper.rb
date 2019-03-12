@@ -155,7 +155,8 @@ module SPARQLHelper
     label_relations
   end
   
-  def build_literal(literal)
+    
+  def build_literal(literal, datatype = "")
     xplain_literal = 
     if (literal.respond_to?(:datatype) && !literal.datatype.to_s.empty?)
       Xplain::Literal.new(literal.to_s, literal.datatype.to_s)
@@ -171,6 +172,9 @@ module SPARQLHelper
     end
     if xplain_literal.value.to_f.to_s == xplain_literal.value.to_s
       xplain_literal.value = xplain_literal.value.to_s.to_f
+    end
+    if !datatype.empty?
+      xplain_literal.datatype = datatype
     end
 
     xplain_literal

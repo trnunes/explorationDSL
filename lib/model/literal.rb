@@ -1,12 +1,13 @@
 module Xplain
   class Literal
   
-    attr_accessor :value, :datatype, :parent, :children
+    attr_accessor :value, :datatype, :parent, :children, :text_relation
   
     def initialize(value, type=nil)
       @value = value
       @datatype = type
       @children = []
+      @text_relation = "xplain:has_text"
     end
     
     def <=>(other_literal)

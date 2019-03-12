@@ -30,6 +30,7 @@ module Xplain::RDF
       index = 0
       result_set.each{|node| query << generate_insert(index += 1, node, result_set)}
       query << "}"
+      
       execute_update(query, content_type: content_type)
     end
     
@@ -111,24 +112,40 @@ module Xplain::RDF
       
       query = "prefix xsd: <#{@xsd_ns.uri}> 
       SELECT ?node ?nodeText ?nodeIndex ?item ?itemType ?child ?childIndex ?childText ?child_item ?childType ?nodeTextProp ?childTextProp
-      WHERE{OPTIONAL{?node <#{xplain_namespace}included_in> #{result_set_uri}.
+      WHERE{
+        ?node <#{xplain_namespace}included_in> #{result_set_uri}.
         ?node <#{@xplain_ns.uri}index> ?nodeIndex.
-        OPTIONAL{ ?node <#{@xplain_ns.uri}text_relation> ?nodeTextProp. ?item ?nodeTextProp ?nodeText}. ?node <#{xplain_namespace}has_item> ?item. OPTIONAL{?item <#{xplain_namespace}item_type> ?itemType}.}. 
-        OPTIONAL{?node <#{xplain_namespace}children> ?child. ?child <#{@xplain_ns.uri}index> ?childIndex.  
-        OPTIONAL{?child <#{@xplain_ns.uri}text_relation> ?childTextProp. ?child_item ?childTextProp ?childText}. ?child <#{xplain_namespace}has_item> ?child_item. OPTIONAL{?child_item <#{xplain_namespace}item_type> ?childType}.}.
+        OPTIONAL{?node <#{xplain_namespace}has_item> ?item. ?item <#{xplain_namespace}item_type> ?itemType}.
+        OPTIONAL{ ?node <#{@xplain_ns.uri}text_relation> ?nodeTextProp}.
+        OPTIONAL{ ?node <#{@xplain_ns.uri}has_text> ?nodeText}.
+        OPTIONAL{?node <#{xplain_namespace}children> ?child. ?child <#{@xplain_ns.uri}index> ?childIndex.
+                ?child <#{xplain_namespace}has_item> ?child_item.  
+                OPTIONAL{?child <#{@xplain_ns.uri}text_relation> ?childTextProp.}. OPTIONAL{?child_item <#{xplain_namespace}item_type> ?childType}.}.
       } ORDER BY xsd:integer(?nodeIndex) xsd:integer(?childIndex)"
       
       nodes = []
       nodes_hash = {}
+      
+      untitled_items = []
+      puts "-------RS QUERY---------"
+      puts query
+      # binding.pry
       @graph.query(query).each do |solution|
         next if !solution[:node] || !solution[:item]
         
         node_id = solution[:node].to_s.gsub(xplain_namespace, "")
-        item = build_item solution[:item], solution[:itemType]
+        if solution[:itemType].to_s.include? "Literal"
+          item = build_literal solution[:nodeText].to_s, solution[:datatype].to_s
+        else
+          item = build_item solution[:item], solution[:itemType]
+        end
+        
         
         if !item.is_a?(Xplain::Literal)
-          item.text = solution[:nodeText].to_s
           item.text_relation = Xplain::Namespace.colapse_uri solution[:nodeTextProp].to_s
+          if item.text_relation != "xplain:has_text" && solution[:nodeText].to_s.empty? && !item.is_a?(Xplain::Literal)
+            untitled_items << item
+          end
         end
         
         node = nodes_hash[node_id]
@@ -146,11 +163,18 @@ module Xplain::RDF
               if !solution[:child_item] 
                 raise "Inconsistent Result Set: node must point to an Item!"
               end
+              if solution[:childType].to_s.include? "Literal"
+                child_item = build_literal solution[:childText].to_s, solution[:child_datatype].to_s
+              else
+                child_item = build_item solution[:child_item], solution[:childType]
+              end
               
-              child_item = build_item solution[:child_item], solution[:childType]
               if !child_item.is_a?(Xplain::Literal)
                 child_item.text = solution[:childText].to_s
                 child_item.text_relation = Xplain::Namespace.colapse_uri solution[:childTextProp].to_s
+                if child_item.text_relation != "xplain:has_text" && solution[:childText].to_s.empty? && !child_item.is_a?(Xplain::Literal)
+                  untitled_items << child_item
+                end 
               end
               cnode = Xplain::Node.new(id: child_id, item: child_item)
               nodes_hash[child_id] = cnode
@@ -161,11 +185,36 @@ module Xplain::RDF
       end
       #TODO create an array if the elements are literals.
       first_level = Set.new(nodes.select{|n| !n.parent})
+      # binding.pry
+      #TODO when allowing multiple repositories, correct this
+      if !untitled_items.empty?
+        
+        Xplain::default_server.set_items_texts untitled_items
+      end
+      
       if !intention.to_s.empty?
         intention_desc = eval(intention)
       end
       Xplain::ResultSet.new(id: rs_id, nodes: first_level, intention: intention_desc, title: title, notes: notes.to_a)
       
+    end
+    def set_items_texts(items)
+      items_hash = {} 
+      items.each do |item|
+        if !items_hash.has_key? item.id
+          items_hash[item.id] = []
+        end
+        items_hash[item.id] << item
+      end  
+      values_s = "VALUES ?s{ " << items_hash.keys.map{|id| "<#{id}>"}.join(" ") << "}"
+      
+      values_p = "VALUES ?p{ " << items.map{|item| "<#{Xplain::Namespace.expand_uri(item.text_relation)}>"}.uniq.join(" ") << "}"
+      query = "SELECT * WHERE{?s ?p ?text. #{values_s}. #{values_p}}"
+      puts "-------TEXT QUERY---------"
+      puts query
+      @graph.query(query).each_solution do |solution|
+        items_hash[solution[:s].to_s].each{|item| item.text = solution[:text].to_s}
+      end
     end
     
     #TODO Document options: exploration_only
@@ -190,21 +239,30 @@ module Xplain::RDF
       end
       included_in_pred = "<#{@xplain_ns.uri}included_in>"
       result_set_uri = "<" + @xplain_ns.uri + result_set.id + ">"
-      item_uri = parse_item(node.item)
-      
       insert_stmt = "<#{@xplain_ns.uri + node.id}> #{included_in_pred} #{result_set_uri}. "
-      insert_stmt += "<#{@xplain_ns.uri + node.id}> <#{@xplain_ns.uri}has_item> #{item_uri}."
-      if [Xplain::SchemaRelation, Xplain::PathRelation, Xplain::Type, Xplain::Entity].include? node.item.class
-        insert_stmt += "#{item_uri} <#{@xplain_ns.uri}item_type> \"#{node.item.class.name}\"."
+      item_uri = ""
+      if node.item.is_a? Xplain::Literal
+        literal_id = SecureRandom.uuid
+        item_uri = "<#{@xplain_ns.uri}literal/#{literal_id}>"
+        insert_stmt += "#{item_uri} <#{@xplain_ns.uri}datatype> \"#{node.item.datatype}\"."
+      else
+        item_uri = parse_item(node.item)
       end
-      insert_stmt += "<#{@xplain_ns.uri + node.id}> <#{@xplain_ns.uri}item_type> #{item_uri}."
+      
+      
+      
+      insert_stmt += "<#{@xplain_ns.uri + node.id}> <#{@xplain_ns.uri}has_item> #{item_uri}."
+      
+      insert_stmt += "#{item_uri} <#{@xplain_ns.uri}item_type> \"#{node.item.class.name}\"."
+      
       if !node.item.is_a? Xplain::Literal 
         insert_stmt += "<#{@xplain_ns.uri + node.id}> <#{@xplain_ns.uri}text_relation>  <#{Xplain::Namespace.expand_uri node.item.text_relation}> ."
-        
-        if node.item.text_relation == "xplain:has_text"
-          insert_stmt += "#{item_uri} <#{@xplain_ns.uri}has_text>  \"#{node.item.text}\" ."
-        end
       end
+      
+      if node.item.text_relation == "xplain:has_text"
+        insert_stmt += "<#{@xplain_ns.uri + node.id}> <#{@xplain_ns.uri}has_text>  \"#{node.item.text}\" ."
+      end
+
       insert_stmt += "<#{@xplain_ns.uri + node.id}> <#{@xplain_ns.uri}index> #{index}."
       child_index = 0
       node.children.each do |child|

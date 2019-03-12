@@ -55,7 +55,7 @@ class Xplain::Group < Xplain::Operation
 
     # groups.each{|group| group.parent_edges = []}
     
-    groups
+    groups.sort{|g1, g2| g1.to_s <=> g2.to_s}
   end
   
 end

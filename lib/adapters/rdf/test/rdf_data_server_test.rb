@@ -43,12 +43,12 @@ class RDFDataServerTest < XplainUnitTest
     expected_triples << [ "#{@xplain_ns}np1", "#{@xplain_ns}included_in", "#{@xplain_ns}test_id"]
     expected_triples << [ "#{@xplain_ns}np1", "#{@xplain_ns}has_item", "_:p1"]
     expected_triples << [ "#{@xplain_ns}np1", "#{@xplain_ns}text_relation", "#{@xplain_ns}has_text"]
-    expected_triples << [ "_:p1", "#{@xplain_ns}has_text", "_:p1"]
+    expected_triples << [ "#{@xplain_ns}np1", "#{@xplain_ns}has_text", "_:p1"]
     expected_triples << [ "#{@xplain_ns}np1", "#{@xplain_ns}index", "1"]
     expected_triples << [ "#{@xplain_ns}np2", "#{@xplain_ns}included_in", "#{@xplain_ns}test_id"]
     expected_triples << [ "#{@xplain_ns}np2", "#{@xplain_ns}has_item", "_:p2"]
     expected_triples << [ "#{@xplain_ns}np2", "#{@xplain_ns}text_relation", "#{@xplain_ns}has_text"]
-    expected_triples << [ "_:p2", "#{@xplain_ns}has_text", "_:p2"]
+    expected_triples << [ "#{@xplain_ns}np2", "#{@xplain_ns}has_text", "_:p2"]
     expected_triples << [ "#{@xplain_ns}np2", "#{@xplain_ns}index", "2"]
     
     sparql_query = "SELECT ?s ?p ?o WHERE{?s ?p ?o. values ?p{<#{@xplain_ns}included_in> <#{@xplain_ns}index>  <#{@xplain_ns}has_item> <#{@xplain_ns}text_relation> <#{@xplain_ns}has_text> <#{@rdf_ns}type>}.}"
@@ -76,12 +76,12 @@ class RDFDataServerTest < XplainUnitTest
     expected_triples << [ "#{@xplain_ns}test_id", "#{@dcterms}title", "title_set"]
     expected_triples << [ "#{@xplain_ns}np1", "#{@xplain_ns}included_in", "#{@xplain_ns}test_id"]
     expected_triples << [ "#{@xplain_ns}np1", "#{@xplain_ns}text_relation", "#{@xplain_ns}has_text"]
-    expected_triples << [ "_:p1", "#{@xplain_ns}has_text", "_:p1"]
+    expected_triples << [ "#{@xplain_ns}np1", "#{@xplain_ns}has_text", "_:p1"]
     expected_triples << [ "#{@xplain_ns}np1", "#{@xplain_ns}index", "1"]
     expected_triples << [ "#{@xplain_ns}np1", "#{@xplain_ns}has_item", "_:p1"]
     expected_triples << [ "#{@xplain_ns}np2", "#{@xplain_ns}included_in", "#{@xplain_ns}test_id"]
     expected_triples << [ "#{@xplain_ns}np2", "#{@xplain_ns}text_relation", "#{@xplain_ns}has_text"]
-    expected_triples << [ "_:p2", "#{@xplain_ns}has_text", "_:p2"]
+    expected_triples << [ "#{@xplain_ns}np2", "#{@xplain_ns}has_text", "_:p2"]
     expected_triples << [ "#{@xplain_ns}np2", "#{@xplain_ns}index", "2"]
     expected_triples << [ "#{@xplain_ns}np2", "#{@xplain_ns}has_item", "_:p2"]
     
@@ -482,21 +482,25 @@ class RDFDataServerTest < XplainUnitTest
     items_triples = [
       ["http://tecweb.inf.puc-rio.br/xplain/np1", "http://tecweb.inf.puc-rio.br/xplain/included_in", "http://tecweb.inf.puc-rio.br/xplain/test_id"],
       [ "#{@xplain_ns}np1", "#{@xplain_ns}index", "1"],
-      [ "#{@xplain_ns}np1", "#{@dcterms}title", "_:p1"], 
+      [ "_:p1", "#{@dcterms}title", "_:p1"],
+      [ "_:p1", "#{@xplain_ns}item_type", "Xṕlain::Entity"], 
       ["http://tecweb.inf.puc-rio.br/xplain/np1", "http://tecweb.inf.puc-rio.br/xplain/has_item", "_:p1"],
       ["http://tecweb.inf.puc-rio.br/xplain/np1.1", "http://tecweb.inf.puc-rio.br/xplain/included_in", "http://tecweb.inf.puc-rio.br/xplain/test_id"],
       [ "#{@xplain_ns}np1.1", "#{@xplain_ns}index", "1"],
-      [ "#{@xplain_ns}np1.1", "#{@dcterms}title", "_:p1.1"], 
+      [ "_:p1.1", "#{@dcterms}title", "_:p1.1"], 
+      [ "_:p1.1", "#{@xplain_ns}item_type", "Xṕlain::Entity"],
       ["http://tecweb.inf.puc-rio.br/xplain/np1.1", "http://tecweb.inf.puc-rio.br/xplain/has_item", "_:p1.1"],
       ["http://tecweb.inf.puc-rio.br/xplain/np1", "http://tecweb.inf.puc-rio.br/xplain/children", "http://tecweb.inf.puc-rio.br/xplain/np1.1"], 
       ["http://tecweb.inf.puc-rio.br/xplain/np1.2", "http://tecweb.inf.puc-rio.br/xplain/included_in", "http://tecweb.inf.puc-rio.br/xplain/test_id"],
       [ "#{@xplain_ns}np1.2", "#{@xplain_ns}index", "2"],
-      [ "#{@xplain_ns}np1.2", "#{@dcterms}title", "_:p1.2"], 
+      [ "_:p1.2", "#{@dcterms}title", "_:p1.2"],
+      [ "_:p1.2", "#{@xplain_ns}item_type", "Xṕlain::Entity"], 
       ["http://tecweb.inf.puc-rio.br/xplain/np1.2", "http://tecweb.inf.puc-rio.br/xplain/has_item", "_:p1.2"],
       ["http://tecweb.inf.puc-rio.br/xplain/np1", "http://tecweb.inf.puc-rio.br/xplain/children", "http://tecweb.inf.puc-rio.br/xplain/np1.2"], 
       ["http://tecweb.inf.puc-rio.br/xplain/np2", "http://tecweb.inf.puc-rio.br/xplain/included_in", "http://tecweb.inf.puc-rio.br/xplain/test_id"],
       [ "#{@xplain_ns}np2", "#{@xplain_ns}index", "2"],
-      [ "#{@xplain_ns}np2", "#{@dcterms}title", "_:p2"], 
+      [ "_:p2", "#{@dcterms}title", "_:p2"],
+      [ "_:p2", "#{@xplain_ns}item_type", "Xṕlain::Entity"], 
       ["http://tecweb.inf.puc-rio.br/xplain/np2", "http://tecweb.inf.puc-rio.br/xplain/has_item", "_:p2"]
     ]
     
@@ -819,22 +823,26 @@ class RDFDataServerTest < XplainUnitTest
       ["http://tecweb.inf.puc-rio.br/xplain/test_id", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://tecweb.inf.puc-rio.br/xplain/ResultSet"],
       ["http://tecweb.inf.puc-rio.br/xplain/test_id", "http://purl.org/dc/terms/title", "Set 1"],
       ["http://tecweb.inf.puc-rio.br/xplain/np1", "http://tecweb.inf.puc-rio.br/xplain/included_in", "http://tecweb.inf.puc-rio.br/xplain/test_id"],
-      ["http://tecweb.inf.puc-rio.br/xplain/np1", "http://purl.org/dc/terms/title", "_:p1"],
+      ["_:p1", "http://purl.org/dc/terms/title", "_:p1"],
+      ["_:p1", "#{@xplain_ns}item_type", "Xplain::Entity"],
       [ "#{@xplain_ns}np1", "#{@xplain_ns}index", "1"], 
       ["http://tecweb.inf.puc-rio.br/xplain/np1", "http://tecweb.inf.puc-rio.br/xplain/has_item", "_:p1"],
       ["http://tecweb.inf.puc-rio.br/xplain/np1.1", "http://tecweb.inf.puc-rio.br/xplain/included_in", "http://tecweb.inf.puc-rio.br/xplain/test_id"],
       ["http://tecweb.inf.puc-rio.br/xplain/np1.1", "http://purl.org/dc/terms/title", "_:p1.1"],
+      ["_:p1.1", "#{@xplain_ns}item_type", "Xplain::Entity"],
       [ "#{@xplain_ns}np1.1", "#{@xplain_ns}index", "1"], 
       ["http://tecweb.inf.puc-rio.br/xplain/np1.1", "http://tecweb.inf.puc-rio.br/xplain/has_item", "_:p1.1"],
       ["http://tecweb.inf.puc-rio.br/xplain/np1", "http://tecweb.inf.puc-rio.br/xplain/children", "http://tecweb.inf.puc-rio.br/xplain/np1.1"], 
       ["http://tecweb.inf.puc-rio.br/xplain/np1.2", "http://tecweb.inf.puc-rio.br/xplain/included_in", "http://tecweb.inf.puc-rio.br/xplain/test_id"],
       ["http://tecweb.inf.puc-rio.br/xplain/np1.2", "http://purl.org/dc/terms/title", "_:p12"],
-      [ "#{@xplain_ns}np1.2", "#{@xplain_ns}index", "2"], 
+      [ "#{@xplain_ns}np1.2", "#{@xplain_ns}index", "2"],
+      ["_:p1.2", "#{@xplain_ns}item_type", "Xplain::Entity"], 
       ["http://tecweb.inf.puc-rio.br/xplain/np1.2", "http://tecweb.inf.puc-rio.br/xplain/has_item", "_:p1.2"],
       ["http://tecweb.inf.puc-rio.br/xplain/np1", "http://tecweb.inf.puc-rio.br/xplain/children", "http://tecweb.inf.puc-rio.br/xplain/np1.2"], 
       ["http://tecweb.inf.puc-rio.br/xplain/np2", "http://tecweb.inf.puc-rio.br/xplain/included_in", "http://tecweb.inf.puc-rio.br/xplain/test_id"],
       ["http://tecweb.inf.puc-rio.br/xplain/np2", "http://purl.org/dc/terms/title", "_:p2"],
-      [ "#{@xplain_ns}np2", "#{@xplain_ns}index", "2"], 
+      [ "#{@xplain_ns}np2", "#{@xplain_ns}index", "2"],
+      ["_:p2", "#{@xplain_ns}item_type", "Xplain::Entity"], 
       ["http://tecweb.inf.puc-rio.br/xplain/np2", "http://tecweb.inf.puc-rio.br/xplain/has_item", "_:p2"]
 
     ]
@@ -842,21 +850,25 @@ class RDFDataServerTest < XplainUnitTest
       ["http://tecweb.inf.puc-rio.br/xplain/test_id2", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://tecweb.inf.puc-rio.br/xplain/ResultSet"],
       ["http://tecweb.inf.puc-rio.br/xplain/test_id2", "http://purl.org/dc/terms/title", "Set 2"],
       ["http://tecweb.inf.puc-rio.br/xplain/npt1", "http://tecweb.inf.puc-rio.br/xplain/included_in", "http://tecweb.inf.puc-rio.br/xplain/test_id2"],
-      ["http://tecweb.inf.puc-rio.br/xplain/npt1", "http://purl.org/dc/terms/title", "_:p1"],
+      ["_:p1", "http://purl.org/dc/terms/title", "_:p1"],
+      ["_:p1", "#{@xplain_ns}item_type", "Xplain::Entity"],
       [ "#{@xplain_ns}npt1", "#{@xplain_ns}index", "1"], 
       ["http://tecweb.inf.puc-rio.br/xplain/npt1", "http://tecweb.inf.puc-rio.br/xplain/has_item", "_:p1"],
       ["http://tecweb.inf.puc-rio.br/xplain/npt1.1", "http://tecweb.inf.puc-rio.br/xplain/included_in", "http://tecweb.inf.puc-rio.br/xplain/test_id2"],
-      ["http://tecweb.inf.puc-rio.br/xplain/npt1.1", "http://purl.org/dc/terms/title", "_:p1.1"],
+      ["_:p1.1", "http://purl.org/dc/terms/title", "_:p1.1"],
+      ["_:p1.1", "#{@xplain_ns}item_type", "Xplain::Entity"],
       [ "#{@xplain_ns}npt1.1", "#{@xplain_ns}index", "1"], 
       ["http://tecweb.inf.puc-rio.br/xplain/npt1.1", "http://tecweb.inf.puc-rio.br/xplain/has_item", "_:p1.1"],
       ["http://tecweb.inf.puc-rio.br/xplain/npt1", "http://tecweb.inf.puc-rio.br/xplain/children", "http://tecweb.inf.puc-rio.br/xplain/npt1.1"],
       ["http://tecweb.inf.puc-rio.br/xplain/npt1.2", "http://tecweb.inf.puc-rio.br/xplain/included_in", "http://tecweb.inf.puc-rio.br/xplain/test_id2"],
-      ["http://tecweb.inf.puc-rio.br/xplain/npt1.2", "http://purl.org/dc/terms/title", "_:p1.2"],
+      ["_:p1.2", "http://purl.org/dc/terms/title", "_:p1.2"],
+      ["_:p1.2", "#{@xplain_ns}item_type", "Xplain::Entity"],
       [ "#{@xplain_ns}npt1.2", "#{@xplain_ns}index", "2"], 
       ["http://tecweb.inf.puc-rio.br/xplain/npt1.2", "http://tecweb.inf.puc-rio.br/xplain/has_item", "_:p1.2"],
       ["http://tecweb.inf.puc-rio.br/xplain/npt1", "http://tecweb.inf.puc-rio.br/xplain/children", "http://tecweb.inf.puc-rio.br/xplain/npt1.2"], 
       ["http://tecweb.inf.puc-rio.br/xplain/npt2", "http://tecweb.inf.puc-rio.br/xplain/included_in", "http://tecweb.inf.puc-rio.br/xplain/test_id2"],
-      ["http://tecweb.inf.puc-rio.br/xplain/npt2", "http://purl.org/dc/terms/title", "_:p2"],
+      ["_:p2", "http://purl.org/dc/terms/title", "_:p2"],
+      ["_:p2", "#{@xplain_ns}item_type", "Xplain::Entity"],
       [ "#{@xplain_ns}npt2", "#{@xplain_ns}index", "2"], 
       ["http://tecweb.inf.puc-rio.br/xplain/npt2", "http://tecweb.inf.puc-rio.br/xplain/has_item", "_:p2"]
     ]
@@ -872,13 +884,14 @@ class RDFDataServerTest < XplainUnitTest
       triple.map do |r|
         if r == triple.last && triple[1].include?("index") 
           r
-        elsif r == triple.last && triple[1].include?("title")
+        elsif r == triple.last && (triple[1].include?("title") || triple[1].include?("item_type")) && !(r == triple.first)
           "\"#{r}\""
         else
           "<#{r}>"
         end
       end.join(" ")
     end.join(".")} }"
+
     @sparql_client.update(sparql_insert)
     
     session_found = Xplain::Session.find_by_title("test session").first
