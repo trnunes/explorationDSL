@@ -12,9 +12,9 @@ module Xplain
     
     def <=>(other_literal)
       if other_literal.value.class == self.value.class
-        other_literal.value <=> self.value
+         self.value <=> other_literal.value
       else
-        other_literal.text <=> self.text
+        self.text <=> other_literal.text
       end
     end
 

@@ -14,7 +14,7 @@ module Xplain
     end
     
     def <=>(other_entity)
-      other_entity.text <=> self.text
+      self.text <=> other_entity.text 
     end
     
     def text

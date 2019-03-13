@@ -190,7 +190,8 @@ module Xplain::RDF
         query << parsed_query + "}"
         results += get_filter_results(query)
       end
-      results
+      items_h = input_items.map{|i| [i.id, i]}.to_h
+      results.map{|i| items_h[i.id]}
     end
     
     def validate_filters(filter_expr)
