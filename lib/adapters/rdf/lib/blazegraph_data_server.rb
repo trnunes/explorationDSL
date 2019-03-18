@@ -8,15 +8,24 @@ class BlazegraphDataServer < Xplain::RDF::DataServer
     unions = []
     items = []
     label_relations = Xplain::Visualization.label_relations_for("rdfs:Resource")
-    label_clause = label_where_clause("?s", label_relations)
-    label_clause = " OPTIONAL " + label_clause if !label_clause.empty?
-    query = "select ?s ?p ?o ?ls where {#{values_clause("?s", restriction_nodes.map{|n|n.item})} ?o <http://www.bigdata.com/rdf/search#search> \" #{keyword_pattern.join(" ")}\". ?o <http://www.bigdata.com/rdf/search#matchAllTerms> \"true\" . ?s ?p ?o . #{label_clause}}"
+    label_clause = ""
+    for i in 0..label_relations.size-1 do
+      var = "?ls" << i.to_s
+      l_relation = label_relations[i]
+      label_clause << "OPTIONAL{?s <#{l_relation}> #{var}}."
+    end
+    
+    query = "select * where {#{values_clause("?s", restriction_nodes.map{|n|n.item})} ?o <http://www.bigdata.com/rdf/search#search> \" #{keyword_pattern.join(" ")}\". ?o <http://www.bigdata.com/rdf/search#matchAllTerms> \"true\" . ?s ?p ?o . #{label_clause}}"
 
 
     execute(query,{content_type: content_type, offset: offset, limit: limit}).each do |s|
       item = Xplain::Entity.new(Xplain::Namespace.colapse_uri(s[:s].to_s),  "rdfs:Resource")
-      item.text = s[:ls].to_s
-      item.text_relation = label_relations.first
+      i = 0
+      for i in 0..label_relations.size-1 do
+        break if !s["ls#{i}".to_sym].nil?
+      end 
+      item.text = s["ls#{i}".to_sym].to_s
+      item.text_relation = label_relations[i] if i >= 0
       item.add_server(self)
       items << item
     end
