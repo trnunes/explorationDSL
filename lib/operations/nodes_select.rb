@@ -2,6 +2,7 @@ class Xplain::NodesSelect < Xplain::Operation
   def initialize(args={}, &block)    
     super(args, &block)
     @ids_list = args[:ids]
+    @children_select = args[:children_select]
   end
   
   
@@ -19,6 +20,9 @@ class Xplain::NodesSelect < Xplain::Operation
     result_nodes.map do |n|
       n_copy = n.copy
       n_copy.parent_edges = []
+      if !@children_select
+        n_copy.children_edges = []
+      end
       n_copy 
     end
   end
