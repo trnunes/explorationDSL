@@ -22,7 +22,7 @@ module Xplain
     end
     
     def <=>(other_node)
-      other_node.item <=> self.item
+      self.item <=> other_node.item
     end
   
     
