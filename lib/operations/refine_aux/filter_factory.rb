@@ -8,6 +8,10 @@ module Xplain
     def entity(entity_id)
       @values = [new_entity(entity_id)]
     end
+
+    def type(type_id)
+      @values = [new_type(type_id)]
+    end
   
     def literal(l_value)    
       @values = [new_literal(l_value)]

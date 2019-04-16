@@ -1,17 +1,22 @@
 class DSLParser
   
-  def parse_operation(operation)
+  def parse_data_server(server)
+    server.class.name + ".new#{parse_constructor_params(server.params)}"
+  end
+  
+  def parse_operation(operation, parse_recursive=true)
     operation_code = ""
     inputs = operation.inputs
     
+    parsed_inputs = []
     
     parsed_inputs = inputs.map do |input|
       if input.is_a? Xplain::Operation
-        parse_operation(input)
+        parse_operation(input) if parse_recursive
       else
         parse_result_set(input)
       end
-    end
+    end.compact
     #TODO implement the rule for more than one input and generalize the treatment of set operations
     if operation.is_a? Xplain::SetOperation
       operation_code = operation.class.name + ".new([#{parsed_inputs.join(", ")}])"
@@ -19,12 +24,12 @@ class DSLParser
     end
     
     if inputs.empty?
-      operation_code = operation.class.name + ".new#{parse_constructor_args(operation)}"
+      operation_code = operation.class.name + ".new#{parse_operation_constructor(operation)}"
       return operation_code
     end
-    operation_code << "#{parsed_inputs.first}."
+    operation_code << "#{parsed_inputs.first}." if parse_recursive
     operation_code << operation.class.name.gsub("Xplain::", "").to_underscore
-    operation_code << "#{parse_constructor_args(operation)}"
+    operation_code << "#{parse_operation_constructor(operation)}"
     
     if operation.auxiliar_function
       operation_code << " do\n"
@@ -44,18 +49,22 @@ class DSLParser
     operation_code
   end
   
-  def parse_constructor_args(operation)
+  def parse_operation_constructor(operation)
+    parse_constructor_params operation.args
+  end
+  
+  def parse_constructor_params(params)
     constructor_code = ""
     args_code = []
-    if operation.args.is_a? Hash
-      operation.args.each do |arg_name, arg_value|
+    if params.is_a? Hash
+      params.each do |arg_name, arg_value|
         next if arg_name == :inputs
         args_code << "#{arg_name.to_s}: #{parse_arg(arg_value)}"
       end
-    elsif operation.args.respond_to? :each
-      args_code += operation.args.map{|arg_value| parse_arg(arg_value)}
+    elsif params.respond_to? :each
+      args_code += params.map{|arg_value| parse_arg(arg_value)}
     else
-      args_code << parse_arg(operation.args)
+      args_code << parse_arg(params)
     end
     if !args_code.empty?
       constructor_code = "(#{args_code.join(", ")})"
@@ -73,7 +82,6 @@ class DSLParser
       else
         arg_value.to_s
       end 
-    
   end
   
   def parse_filter(filter, spaces_count=2)
@@ -145,7 +153,12 @@ class DSLParser
   end
   #private
   def parse_result_set(rs)
-    "Xplain::ResultSet.load(\"#{rs.id}\")"
+    if rs.intention
+      parse_operation rs.intention
+    else
+      "Xplain::ResultSet.load(\"#{rs.id}\")"
+    end
+    
   end
  
   def parse_auxiliary_function(aux_func, spaces_count=2)
@@ -153,7 +166,7 @@ class DSLParser
     spaces_count.times{aux_func_code << " "}
     aux_func_code << aux_func.class.name.split("::").last.to_underscore
     if aux_func.args && !aux_func.args.empty?
-      aux_func_code << parse_constructor_args(aux_func)
+      aux_func_code << parse_operation_constructor(aux_func)
     end
     #TODO for some functions the "do end" is not necessary. Eg. "set.xmap do count do end end" should be "set.xmap do count end" 
     aux_func_code << " do\n"
@@ -189,7 +202,7 @@ class DSLParser
     relation_code
   end
   
-  def to_ruby(input)
+  def to_ruby(input, parse_recursive=true)
     if input.is_a? String
       return input
     end
@@ -197,7 +210,7 @@ class DSLParser
     if input.is_a? Xplain::ResultSet
       ruby_code += parse_result_set input
     elsif input.is_a? Xplain::Operation
-      ruby_code += parse_operation input
+      ruby_code += parse_operation input, parse_recursive
     end
     ruby_code
   end

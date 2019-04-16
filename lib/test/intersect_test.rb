@@ -7,7 +7,7 @@ class Xplain::IntersectTest < XplainUnitTest
     origin = Xplain::ResultSet.new(nodes:  input_nodes)
     
     
-    actual_results = Xplain::Intersect.new([origin, origin]).execute()
+    actual_results = Xplain::Intersect.new([origin.intention, origin.intention]).execute()
     assert_true actual_results.children.empty?
   end
 
@@ -16,7 +16,7 @@ class Xplain::IntersectTest < XplainUnitTest
     origin = Xplain::ResultSet.new(nodes:  input_nodes)
     
     
-    actual_results = Xplain::Intersect.new([origin]).execute()
+    actual_results = Xplain::Intersect.new([origin.intention]).execute()
     origin.title =  actual_results.title
     assert_same_result_set origin, actual_results
   end
@@ -50,7 +50,7 @@ class Xplain::IntersectTest < XplainUnitTest
     
     expected_results = Xplain::ResultSet.new(nodes:  [Xplain::Entity.new("_:p2")])
 
-    actual_results = Xplain::Intersect.new([input_1, input_2]).execute()
+    actual_results = Xplain::Intersect.new([input_1.intention, input_2.intention]).execute()
     assert_false actual_results.children.empty?
     actual_results.title = expected_results.title
     assert_same_result_set actual_results, expected_results
@@ -79,7 +79,7 @@ class Xplain::IntersectTest < XplainUnitTest
     
     expected_output = Xplain::ResultSet.new(nodes:  [expected_p1, expected_p2])
 
-    actual_results = Xplain::Intersect.new([input1, input2]).execute()
+    actual_results = Xplain::Intersect.new([input1.intention, input2.intention]).execute()
     assert_false actual_results.children.empty?
     actual_results.title =  expected_output.title
     assert_same_result_set actual_results, expected_output 

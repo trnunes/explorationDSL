@@ -9,7 +9,7 @@ class Xplain::Htransform < Xplain::Operation
   end
   
   def get_results()
-    if @inputs.nil? || @inputs.empty? || @inputs.first.empty?
+    if @input_sets.nil? || @input_sets.empty? || @input_sets.first.empty?
       return []
     end
 

@@ -32,10 +32,10 @@ module Xplain
         else
           method_suffix.gsub("domain", "image")
         end
-      
       result_set =  
         if self.inverse?
           if restriction
+            
             @server.send((@id + inverse_method_suffix).to_sym, restriction, options)
           else
             @server.send((@id + inverse_method_suffix).to_sym, options)

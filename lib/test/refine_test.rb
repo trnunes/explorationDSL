@@ -13,7 +13,7 @@ class Xplain::RefineTest < XplainUnitTest
     input_nodes = []
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
-    actual_results = Xplain::Refine.new(inputs: root) do
+    actual_results = Xplain::Refine.new(inputs: root.intention) do
       equals do
         relation "_:cite"
         entity "_:p2"
@@ -27,7 +27,7 @@ class Xplain::RefineTest < XplainUnitTest
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
     begin
-      actual_results = Xplain::Refine.new(inputs: root) do
+      actual_results = Xplain::Refine.new(inputs: root.intention) do
         equals do
           entity "_:p2"
         end
@@ -44,7 +44,7 @@ class Xplain::RefineTest < XplainUnitTest
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
     begin
-      actual_results = Xplain::Refine.new(inputs: root) do
+      actual_results = Xplain::Refine.new(inputs: root.intention) do
         equals do
           relation nil
           entity "_:p2"
@@ -62,7 +62,7 @@ class Xplain::RefineTest < XplainUnitTest
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
     begin
-      actual_results = Xplain::Refine.new(inputs: root) do
+      actual_results = Xplain::Refine.new(inputs: root.intention) do
         equals do
           relation "_:cite"
         end
@@ -79,7 +79,7 @@ class Xplain::RefineTest < XplainUnitTest
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
     begin
-      actual_results = Xplain::Refine.new(inputs: root) do
+      actual_results = Xplain::Refine.new(inputs: root.intention) do
         equals do
           relation "_:cite"
           entity nil
@@ -98,7 +98,7 @@ class Xplain::RefineTest < XplainUnitTest
     
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
-    actual_results = Xplain::Refine.new(inputs: root) do
+    actual_results = Xplain::Refine.new(inputs: root.intention) do
       And do[
         equals do
           relation "_:cite"
@@ -116,7 +116,7 @@ class Xplain::RefineTest < XplainUnitTest
     
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
-    actual_results = Xplain::Refine.new(inputs: root) do
+    actual_results = Xplain::Refine.new(inputs: root.intention) do
       Or do[
         equals do
           relation "_:cite"
@@ -141,7 +141,7 @@ class Xplain::RefineTest < XplainUnitTest
     
     expected_results = Set.new([Xplain::Entity.new("_:paper1")])
 
-    actual_results = Xplain::Refine.new(inputs: root) do
+    actual_results = Xplain::Refine.new(inputs: root.intention) do
       equals do
         relation "_:cite"
         entity "_:p2"
@@ -162,7 +162,7 @@ class Xplain::RefineTest < XplainUnitTest
     
     expected_results = Set.new([Xplain::Entity.new("_:journal1")])
 
-    actual_results = Xplain::Refine.new(inputs: root) do
+    actual_results = Xplain::Refine.new(inputs: root.intention) do
       equals do
         relation "_:releaseYear"
         literal "2005"
@@ -182,7 +182,7 @@ class Xplain::RefineTest < XplainUnitTest
     
     expected_results = Set.new([Xplain::Entity.new("_:journal1"), Xplain::Entity.new("_:journal2")])
 
-    actual_results = Xplain::Refine.new(inputs: root) do
+    actual_results = Xplain::Refine.new(inputs: root.intention) do
       Or do [
         equals do
           relation "_:releaseYear"
@@ -214,7 +214,7 @@ class Xplain::RefineTest < XplainUnitTest
       Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6"), 
       Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p5")
     ]
-    actual_results = Xplain::Refine.new(inputs: root) do
+    actual_results = Xplain::Refine.new(inputs: root.intention) do
       Or do [
         equals do
           relation "_:cite"
@@ -244,7 +244,7 @@ class Xplain::RefineTest < XplainUnitTest
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
     expected_results = Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p5")])
-    actual_results = Xplain::Refine.new(inputs: root) do
+    actual_results = Xplain::Refine.new(inputs: root.intention) do
       And do
         [
           equals do
@@ -275,7 +275,7 @@ class Xplain::RefineTest < XplainUnitTest
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
     expected_results = Set.new([Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p8")])
-    actual_results = Xplain::Refine.new(inputs: root) do
+    actual_results = Xplain::Refine.new(inputs: root.intention) do
       And do [
         equals do
           relation "_:cite", "_:author"
@@ -305,7 +305,7 @@ class Xplain::RefineTest < XplainUnitTest
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
     expected_results = Set.new([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")])
-    actual_results = Xplain::Refine.new(inputs: root) do
+    actual_results = Xplain::Refine.new(inputs: root.intention) do
       equals do
         relation inverse("_:cite"), "_:submittedTo", "_:releaseYear"
         literal "2005"
@@ -326,7 +326,7 @@ class Xplain::RefineTest < XplainUnitTest
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
     expected_results = Set.new([Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")])
-    actual_results = Xplain::Refine.new(inputs: root) do 
+    actual_results = Xplain::Refine.new(inputs: root.intention) do 
       equals do
         relation inverse("_:author"), inverse("_:cite")
         entity "_:p10"
@@ -346,7 +346,7 @@ class Xplain::RefineTest < XplainUnitTest
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
     expected_results = Set.new([Xplain::Entity.new("_:a1")])
-    actual_results = Xplain::Refine.new(inputs: root) do
+    actual_results = Xplain::Refine.new(inputs: root.intention) do
       c_filter "|e| e.item.id == \"_:a1\""
     end.execute()
     assert_false actual_results.children.empty?
@@ -363,7 +363,7 @@ class Xplain::RefineTest < XplainUnitTest
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
     expected_results = Set.new([Xplain::Entity.new("_:a1")])
-    actual_results = Xplain::Refine.new(inputs: root) do
+    actual_results = Xplain::Refine.new(inputs: root.intention) do
       c_filter name: :by_id, code: "|e| e.item.id == \"_:a1\""
     end.execute()
     assert_false actual_results.children.empty?
@@ -380,7 +380,7 @@ class Xplain::RefineTest < XplainUnitTest
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
     expected_results = Set.new([Xplain::Entity.new("_:a1")])
-    actual_results = Xplain::Refine.new(inputs: root) do 
+    actual_results = Xplain::Refine.new(inputs: root.intention) do 
       And do 
         [
           c_filter(name: :by_id, code: '|e| e.item.text.include? "a1"')
@@ -404,7 +404,7 @@ class Xplain::RefineTest < XplainUnitTest
     root = Xplain::ResultSet.new(nodes:  input_nodes)
     
     expected_results = Set.new([Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p8")])
-    actual_results = Xplain::Refine.new(inputs: root) do
+    actual_results = Xplain::Refine.new(inputs: root.intention) do
       And do [
         equals do
           relation "_:cite", "_:author"
@@ -442,7 +442,7 @@ class Xplain::RefineTest < XplainUnitTest
     expected_journal2.children = [Xplain::Node.new(item: Xplain::Entity.new("_:p3")), Xplain::Node.new(item: Xplain::Entity.new("_:p4"))]    
     expected_results2 = Xplain::ResultSet.new(nodes:  [expected_journal2])
     
-    actual_results = Xplain::Refine.new(inputs: input, level: 2) do
+    actual_results = Xplain::Refine.new(inputs: input.intention, level: 2) do
       equals do
         relation "_:releaseYear"
         literal "2005"
@@ -451,7 +451,7 @@ class Xplain::RefineTest < XplainUnitTest
     actual_results.title = expected_results1.title
     assert_same_result_set_no_title actual_results, expected_results1
 
-    actual_results = Xplain::Refine.new(inputs: input, level: 2) do
+    actual_results = Xplain::Refine.new(inputs: input.intention, level: 2) do
       equals do
         relation "_:releaseYear"
         literal "2010"
@@ -485,7 +485,7 @@ class Xplain::RefineTest < XplainUnitTest
     expected_results1 = Xplain::ResultSet.new(id: "test_set", nodes: [expected_journal1])
     expected_results2 = Xplain::ResultSet.new(id: "test_set", nodes: [expected_journal2])
     
-    actual_results = Xplain::Refine.new(inputs: input, level: 3) do
+    actual_results = Xplain::Refine.new(inputs: input.intention, level: 3) do
       equals do
         relation "_:author"
         entity "_:a1"
@@ -493,7 +493,7 @@ class Xplain::RefineTest < XplainUnitTest
     end.execute()
     assert_same_result_set_no_title expected_results1, actual_results
 
-    actual_results = Xplain::Refine.new(inputs: input, level: 3) do
+    actual_results = Xplain::Refine.new(inputs: input.intention, level: 3) do
       equals do
         relation "_:publishedOn"
         entity "_:journal2"
@@ -528,7 +528,7 @@ class Xplain::RefineTest < XplainUnitTest
     
     expected_results = Xplain::ResultSet.new(id: "test_set", nodes: [expected_journal2, expected_journal1])
 
-    actual_results = Xplain::Refine.new(inputs: input, level: 3) do
+    actual_results = Xplain::Refine.new(inputs: input.intention, level: 3) do
       equals do
         relation "_:publishedOn"
         entity "_:journal2"

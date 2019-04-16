@@ -23,6 +23,7 @@ require './exceptions/numeric_item_required_exception'
 require './mixins/graph_converter'
 require './model/node'
 require './model/edge'
+require './model/item_factory'
 require './model/item'
 require './model/entity'
 require './model/type'
@@ -32,6 +33,7 @@ require './model/schema_relation'
 require './model/path_relation'
 require './model/namespace'
 require './model/result_set'
+require './model/remote_set'
 require './model/relation_handler'
 require './model/sequence'
 
@@ -45,29 +47,44 @@ require 'securerandom'
 require './operations/auxiliary_function'
 require './operations/operation'
 require './operations/set_operation'
+require './operations/group_aux/grouping_relation'
+
+require './operations/refine_aux/filter_factory'
+require './operations/refine_aux/generic_filter'
+require './operations/refine_aux/relation_filter'
+require './operations/refine_aux/composite_filter'
+require './operations/refine_aux/in_memory_filter_interpreter'
+
 require './execution/dsl_parser.rb'
 
 #TODO Duplicated code with xplain.rb!
 module Xplain
   @@base_dir = ""
-  @@lazy = false
+  @@cache_results = false
+  @@persist_extensions = true
   @@memory_cache = MemoryRepository.new
   
   class << self
     def base_dir=(base_dir_path)
       @@base_dir = base_dir_path
     end
-    
+    def persist_extensions=(bool)
+      @@persist_extensions = bool
+    end
+    def persist_extensions?
+      @@persist_extensions
+    end
+  
     def base_dir
       @@base_dir
     end
     
-    def lazy?
-      @@lazy
+    def cache_results?
+      @@cache_results
     end
     
-    def lazy=(is_lazy)
-      @@lazy = is_lazy
+    def cache_results=(bool)
+      @@cache_results = bool
     end
     
     def memory_cache
@@ -307,8 +324,8 @@ class XplainUnitTest < Test::Unit::TestCase
   end
   
   def assert_same_result_set(rs1, rs2)
-    assert_equal rs1.class, Xplain::ResultSet
-    assert_equal rs1.class, rs2.class
+    assert_true rs1.is_a? Xplain::ResultSet
+    assert_true rs2.is_a? Xplain::ResultSet
     assert_equal rs1.title, rs2.title, "Titles are not the same!"
     assert_equal rs1.annotations, rs2.annotations, "Annotations are not the same!"
     assert_same_items_tree_set_no_root rs1, rs2

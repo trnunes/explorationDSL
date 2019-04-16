@@ -9,7 +9,7 @@ class Xplain::Aggregate < Xplain::Operation
   end
   
   def get_results()
-    if @inputs.nil? || @inputs.empty? || @inputs.first.empty?
+    if @input_sets.nil? || @input_sets.empty? || @input_sets.first.empty?
       return []
     end
 
@@ -21,7 +21,7 @@ class Xplain::Aggregate < Xplain::Operation
     @level ||= input_set.count_levels
     nodes_to_map = input_set.get_level(@level)
     nodes_parents = nodes_to_map.map{|n| n.parent}.uniq.compact
-    # binding.pry
+    
     if @auxiliar_function.respond_to? :prepare
       @auxiliar_function.prepare(nodes_to_map)
     end

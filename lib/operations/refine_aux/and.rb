@@ -5,7 +5,7 @@ module RefineAux
       r = child_filters.inject(true) do |previous_boolean, filter|
         previous_boolean && filter.filter(node)
       end
-      # binding.pry
+      
       r
     end
   end

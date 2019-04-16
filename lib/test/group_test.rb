@@ -12,7 +12,7 @@ class Xplain::GroupTest < XplainUnitTest
     
     
     begin
-      rs = Xplain::Group.new(inputs: input){by_image nil}.execute
+      rs = Xplain::Group.new(inputs: input.intention){by_image nil}.execute
       assert false, rs.inspect
     rescue MissingRelationException => e
       assert true, e.to_s
@@ -24,7 +24,7 @@ class Xplain::GroupTest < XplainUnitTest
   def test_group_by_empty_input_set
     root = Xplain::ResultSet.new(nodes:  [])
 
-    rs = Xplain::Group.new(inputs: root).execute
+    rs = Xplain::Group.new(inputs: root.intention).execute
     
     assert_true rs.children.empty?, rs.inspect
   end
@@ -41,7 +41,7 @@ class Xplain::GroupTest < XplainUnitTest
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"),Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6") ]
     input_rs = Xplain::ResultSet.new(id: "rs", nodes:  input_nodes)
  
-    actual_rs = Xplain::Group.new(inputs: input_rs, grouping_relation: GroupAux::ByImage.new(Xplain::SchemaRelation.new(id: "_:author"))).execute
+    actual_rs = Xplain::Group.new(inputs: input_rs.intention, grouping_relation: GroupAux::ByImage.new(Xplain::SchemaRelation.new(id: "_:author"))).execute
     assert_same_result_set_no_title expected_rs, actual_rs
   end
   
@@ -51,7 +51,7 @@ class Xplain::GroupTest < XplainUnitTest
     
     
     keywords_relation = Xplain::SchemaRelation.new(id: "_:keywords")
-    actual_rs = Xplain::Group.new(inputs: input, grouping_relation: GroupAux::ByImage.new(Xplain::SchemaRelation.new(id: "_:keywords", inverse: true))).execute
+    actual_rs = Xplain::Group.new(inputs: input.intention, grouping_relation: GroupAux::ByImage.new(Xplain::SchemaRelation.new(id: "_:keywords", inverse: true))).execute
 
     p1,p2,p3,p5 = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5")]
     expected_rs = Xplain::ResultSet.new nodes: [p1,p2,p3,p5]
@@ -68,7 +68,7 @@ class Xplain::GroupTest < XplainUnitTest
     input_nodes = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
     path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:publishedOn"), Xplain::SchemaRelation.new(id: "_:releaseYear")])
     input = Xplain::ResultSet.new(nodes:  input_nodes)
-    actual_rs = Xplain::Group.new(inputs: input, grouping_relation: GroupAux::ByImage.new(path)).execute
+    actual_rs = Xplain::Group.new(inputs: input.intention, grouping_relation: GroupAux::ByImage.new(path)).execute
 
     expected_rs = create_nodes [Xplain::Literal.new(2005), Xplain::Literal.new(2010)]
     
@@ -82,7 +82,7 @@ class Xplain::GroupTest < XplainUnitTest
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     
 
-    actual_rs = Xplain::Group.new(inputs: input, grouping_relation: GroupAux::ByImage.new(path)).execute
+    actual_rs = Xplain::Group.new(inputs: input.intention, grouping_relation: GroupAux::ByImage.new(path)).execute
 
     p1,p6,p7,p8,p9,p10 = create_nodes [Xplain::Entity.new("_:p7"),Xplain::Entity.new("_:p8"), Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:paper1")]
     expected_rs = Xplain::ResultSet.new nodes: [p1,p6,p7,p8,p9,p10] 
@@ -102,7 +102,7 @@ class Xplain::GroupTest < XplainUnitTest
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     
 
-    actual_rs = Xplain::Group.new(inputs: input, grouping_relation: GroupAux::ByImage.new(path)).execute
+    actual_rs = Xplain::Group.new(inputs: input.intention, grouping_relation: GroupAux::ByImage.new(path)).execute
     
     a1,a2 = create_nodes [Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")]
     expected_rs = Xplain::ResultSet.new nodes: [a1,a2]
@@ -124,7 +124,7 @@ class Xplain::GroupTest < XplainUnitTest
     
 
     actual_rs = Xplain::Group.new(inputs: 
-      Xplain::Group.new(inputs: input, grouping_relation: GroupAux::ByImage.new(Xplain::SchemaRelation.new(id: "_:author"))).execute, 
+      Xplain::Group.new(inputs: input.intention, grouping_relation: GroupAux::ByImage.new(Xplain::SchemaRelation.new(id: "_:author"))), 
       grouping_relation: GroupAux::ByImage.new(Xplain::SchemaRelation.new(id: "_:publicationYear"))
     ).execute
     
@@ -146,7 +146,7 @@ class Xplain::GroupTest < XplainUnitTest
     
     author_relation = Xplain::SchemaRelation.new(id: "_:author", inverse: true)
     
-    actual_rs = input.group{by_image{relation "_:author"}}.execute
+    actual_rs = input.intention.group{by_image{relation "_:author"}}.execute
     
 
     a1,a2 = create_nodes [Xplain::Entity.new("_:a1"), Xplain::Entity.new("_:a2")]
@@ -162,7 +162,7 @@ class Xplain::GroupTest < XplainUnitTest
         
     keywords_relation = Xplain::SchemaRelation.new(id: "_:keywords")
 
-    actual_rs = input.group{ by_image{ relation inverse("_:keywords") }}.execute
+    actual_rs = input.intention.group{ by_image{ relation inverse("_:keywords") }}.execute
     p1, p2, p3, p5 = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5")]
     p1.children = create_nodes [Xplain::Entity.new("_:k1"), Xplain::Entity.new("_:k2"), Xplain::Entity.new("_:k3")]
     p2.children = create_nodes [Xplain::Entity.new("_:k3")]
@@ -178,7 +178,7 @@ class Xplain::GroupTest < XplainUnitTest
     path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:publishedOn"), Xplain::SchemaRelation.new(id: "_:releaseYear")])
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     
-    actual_rs = input.group{ by_image{relation "_:publishedOn", "_:releaseYear"}}.execute
+    actual_rs = input.intention.group{ by_image{relation "_:publishedOn", "_:releaseYear"}}.execute
 
     
     l2005, l2010 = create_nodes [Xplain::Literal.new(2005), Xplain::Literal.new(2010)]
@@ -194,7 +194,7 @@ class Xplain::GroupTest < XplainUnitTest
     path = Xplain::PathRelation.new(relations: [Xplain::SchemaRelation.new(id: "_:author", inverse: true), Xplain::SchemaRelation.new(id: "_:cite", inverse: true)])
     input = Xplain::ResultSet.new(nodes:  input_nodes)
 
-    actual_rs = input.group{ by_image{relation inverse("_:author"), inverse("_:cite")}}.execute
+    actual_rs = input.intention.group{ by_image{relation inverse("_:author"), inverse("_:cite")}}.execute
 
     p7,p8,p9,p10,p6,p1 = create_nodes [Xplain::Entity.new("_:p7"),Xplain::Entity.new("_:p8"), Xplain::Entity.new("_:p9"), Xplain::Entity.new("_:p10"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:paper1")]
     expected_rs = Xplain::ResultSet.new nodes: [p7,p8,p9,p10,p6,p1]

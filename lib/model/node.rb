@@ -11,6 +11,7 @@ module Xplain
       @item = params[:item]
       @id = params[:id]
       @parent_edges = Set.new
+      self.children = params[:children] if params[:children]
     end
     
     def result_set
@@ -69,7 +70,6 @@ module Xplain
     end
     
     def children=(children_set)
-      
       if children_set
         @children_edges = children_set.map do |child| 
           child.add_parent self

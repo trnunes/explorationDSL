@@ -1,9 +1,5 @@
 require './test/xplain_unit_test'
 
-
-
-
-
 class Xplain::KeywordSearchTest < XplainUnitTest
   module Xplain::Visualization
     label_for_type "http://www.w3.org/2000/01/rdf-schema#Resource", "http://www.w3.org/1999/02/22-rdf-syntax-ns#label"
@@ -41,7 +37,7 @@ class Xplain::KeywordSearchTest < XplainUnitTest
     ]
     input = Xplain::ResultSet.new(nodes:  restriction_input)
     
-    @keyword_search_operation = Xplain::KeywordSearch.new(inputs: input, keyword_phrase:  'common_keyword')
+    @keyword_search_operation = Xplain::KeywordSearch.new(inputs: input.intention, keyword_phrase:  'common_keyword')
     result_set =  @keyword_search_operation.execute
     
     assert_same_items_set input.last_level, result_set.last_level
@@ -51,7 +47,7 @@ class Xplain::KeywordSearchTest < XplainUnitTest
     expected_results = Set.new(create_nodes [ Xplain::Entity.new('_:p3'), Xplain::Entity.new('_:paper1')])
     @keyword_search_operation = Xplain::KeywordSearch.new(keyword_phrase:  'paper3_keyword|paper1_keyword')
     result_set =  @keyword_search_operation.execute
-    assert_same_items_set expected_results, result_set.last_level  
+    assert_same_items_set expected_results, result_set.last_level
   end
   
   def test_conjunctive_keyword_search
@@ -74,9 +70,5 @@ class Xplain::KeywordSearchTest < XplainUnitTest
     @keyword_search_operation = Xplain::KeywordSearch.new(keyword_phrase:  'common_keyword.*paper3_keyword2')
     result_set =  @keyword_search_operation.execute
     assert_same_items_set expected_results, result_set.last_level
-
-    
   end
-  
-
 end

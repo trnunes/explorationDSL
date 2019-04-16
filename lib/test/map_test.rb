@@ -6,7 +6,7 @@ class MapTest < XplainUnitTest
   def test_map_by_empty_input_set
     root = Xplain::ResultSet.new(nodes:  [])
 
-    rs = Xplain::Aggregate.new(inputs: root, mapping_relation: AggregateAux::Sum.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute
+    rs = Xplain::Aggregate.new(inputs: root.intention, mapping_relation: AggregateAux::Sum.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute
 
     assert_true rs.children.empty?, rs.inspect
   end
@@ -15,8 +15,8 @@ class MapTest < XplainUnitTest
     input_nodes = create_nodes [Xplain::Entity.new("_:p5"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:p7")]
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     
-    rs = Xplain::Aggregate.new(inputs: input, mapping_relation: AggregateAux::Sum.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
-    # binding.pry
+    rs = Xplain::Aggregate.new(inputs: input.intention, mapping_relation: AggregateAux::Sum.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
+    
     assert_same_items_set rs.children, input_nodes
     assert_true rs.children.map{|n| n.children}.flatten.empty?
   end
@@ -26,7 +26,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     
     assert_raise NumericItemRequiredException do
-      rs = Xplain::Aggregate.new(inputs: input, mapping_relation: AggregateAux::Sum.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute()
+      rs = Xplain::Aggregate.new(inputs: input.intention, mapping_relation: AggregateAux::Sum.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute()
     end
   end
   
@@ -35,7 +35,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     
     
-    rs = Xplain::Aggregate.new(inputs: input, mapping_relation: AggregateAux::Sum.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
+    rs = Xplain::Aggregate.new(inputs: [input.intention], mapping_relation: AggregateAux::Sum.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
     
     assert_equal 3, rs.children.size
     assert_same_items_set input_nodes, rs.children
@@ -56,8 +56,8 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     
     
-    rs = Xplain::Aggregate.new(inputs: input, mapping_relation: AggregateAux::Count.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute()
-    # binding.pry
+    rs = Xplain::Aggregate.new(inputs: input.intention, mapping_relation: AggregateAux::Count.new(Xplain::SchemaRelation.new(id: "_:cite"))).execute()
+    
     assert_equal 3, rs.children.size
     assert_same_items_set input_nodes, rs.children
     
@@ -76,7 +76,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     
     
-    rs = Xplain::Aggregate.new(inputs: input, mapping_relation: AggregateAux::Count.new(Xplain::SchemaRelation.new(id: "_:cite", inverse: true))).execute()
+    rs = Xplain::Aggregate.new(inputs: input.intention, mapping_relation: AggregateAux::Count.new(Xplain::SchemaRelation.new(id: "_:cite", inverse: true))).execute()
     
     assert_equal 3, rs.children.size
     assert_same_items_set input_nodes, rs.children
@@ -96,8 +96,8 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     
     
-    rs = Xplain::Aggregate.new(inputs: input, mapping_relation: AggregateAux::Avg.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
-    # binding.pry
+    rs = Xplain::Aggregate.new(inputs: input.intention, mapping_relation: AggregateAux::Avg.new(Xplain::SchemaRelation.new(id: "_:relevance"))).execute()
+    
     assert_equal 3, rs.children.size
     assert_same_items_set input_nodes, rs.children
     
@@ -115,8 +115,8 @@ class MapTest < XplainUnitTest
     input_nodes = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     computed_relation = input.get_level_relation(1)
-    rs = Xplain::Aggregate.new(inputs: input, level: 2, mapping_relation: AggregateAux::Count.new()).execute()
-    # binding.pry
+    rs = Xplain::Aggregate.new(inputs: input.intention, level: 2, mapping_relation: AggregateAux::Count.new()).execute()
+    
     assert_equal 1, rs.children.size
     assert_same_items_set create_nodes([Xplain::Literal.new(3)]), rs.children
     
@@ -129,8 +129,7 @@ class MapTest < XplainUnitTest
     input_nodes[2].children = create_nodes [Xplain::Entity.new("_:p4.1")]
     
     input = Xplain::ResultSet.new(nodes:  input_nodes)
-    
-    rs = Xplain::Aggregate.new(inputs: input, level: 3, mapping_relation: AggregateAux::Count.new()).execute()
+    rs = Xplain::Aggregate.new(inputs: input.intention, level: 3, mapping_relation: AggregateAux::Count.new()).execute()
     assert_equal 3, rs.children.size
 
     p2 = rs.children.select{|node| node.item.id == "_:p2"}.first
@@ -154,7 +153,7 @@ class MapTest < XplainUnitTest
     
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     
-    rs = input.aggregate(level: 3){count}.execute()
+    rs = input.intention.aggregate(level: 3){count}.execute()
     assert_equal 3, rs.children.size
 
     p2 = rs.children.select{|node| node.item.id == "_:p2"}.first
@@ -173,7 +172,7 @@ class MapTest < XplainUnitTest
     input_nodes = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p4")]
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     
-    rs = input.xmap do
+    rs = input.intention.aggregate do
       sum{relation "_:relevance"}      
     end.execute
     
@@ -194,7 +193,7 @@ class MapTest < XplainUnitTest
     input_nodes = create_nodes [Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p6"), Xplain::Entity.new("_:paper1")]
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     
-    rs = input.aggregate do
+    rs = input.intention.aggregate do
       count{relation "_:cite"}      
     end.execute
     
@@ -215,7 +214,7 @@ class MapTest < XplainUnitTest
     input_nodes = create_nodes [Xplain::Entity.new("_:paper1"), Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3")]
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     
-    rs = input.aggregate do
+    rs = input.intention.aggregate do
       count{relation inverse("_:cite")}      
     end.execute
     
@@ -239,7 +238,7 @@ class MapTest < XplainUnitTest
     input = Xplain::ResultSet.new(nodes:  input_nodes)
     
     
-    rs = input.xmap do
+    rs = input.intention.aggregate do
       avg{relation "_:relevance"}      
     end.execute
     

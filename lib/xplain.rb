@@ -20,6 +20,7 @@ require 'exceptions/numeric_item_required_exception'
 
 require 'model/node'
 require 'model/edge'
+require 'model/item_factory'
 require 'model/item'
 require 'model/entity'
 require 'model/type'
@@ -29,6 +30,8 @@ require 'model/path_relation'
 require 'model/session'
 require 'model/namespace'
 require 'model/result_set'
+require 'model/remote_set'
+
 require 'model/relation_handler'
 require 'model/sequence'
 

@@ -13,10 +13,18 @@ module Xplain
   end
 
   module ResultSetReadable
+    def load_intention(id)
+      rs = load(id)
+      rs.intention if rs
+    end
+    
     def load(id)
       result_set = Xplain::memory_cache.result_set_load(id)
       if !result_set
-        result_set = Xplain::exploration_repository.result_set_load(id) 
+        result_set = Xplain::exploration_repository.result_set_load(id)
+        if Xplain.cache_results?
+          Xplain::memory_cache.result_set_save(result_set)
+        end 
       end
       result_set
     end
@@ -31,7 +39,10 @@ module Xplain
     end
    #TODO Document options
     def find_by_session(session, options = {})
-      Xplain::exploration_repository.result_set_find_by_session(session, options)
+      sets = Xplain::exploration_repository.result_set_find_by_session(session, options)
+      sets.each{|set| set.intention.setup_session(session); Xplain::memory_cache.session_add_resultset(session, set)}
+      
+      sets
     end
     
     def count
@@ -51,7 +62,8 @@ module Xplain
     end
     
     def load_all_tsorted_exploration_only
-      Xplain::ResultSet.topological_sort Xplain::exploration_repository.result_set_load_all(exploration_only: true)
+      all_rs = Xplain::exploration_repository.result_set_load_all(exploration_only: true)
+      Xplain::ResultSet.topological_sort all_rs 
     end
     
 
@@ -68,7 +80,7 @@ module Xplain
         session = Xplain::memory_cache.session_load(id)
         if !session
           session = Xplain::exploration_repository.session_load(id)
-          if Xplain.lazy?
+          if session && Xplain.cache_results?
             Xplain::memory_cache.session_save(session)
           end
         end
@@ -84,17 +96,6 @@ module Xplain
         Xplain::exploration_repository.session_list_titles
       end
     end
-    
-    # def load_result_sets
-      # should_load_from_rep = !Xplain.lazy? || @result_sets.empty?
-#       
-      # if should_load_from_rep
-        # @result_sets = Xplain::exploration_repository.result_set_find_by_session(self)
-      # end 
-#       
-      # return @result_sets
-    # end
-    
 
   end
 

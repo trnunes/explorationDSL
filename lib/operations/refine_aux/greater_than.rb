@@ -1,3 +1,3 @@
 
-  class GreaterThan < RelationFilter
+  class RefineAux::GreaterThan < RelationFilter
   end

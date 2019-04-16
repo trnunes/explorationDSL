@@ -5,7 +5,7 @@ class Xplain::Operation
   include Xplain::GraphConverter
   include Xplain::DslCallable
   
-  attr_accessor :params, :server, :inputs, :id, :auxiliar_function, :definition_block, :args
+  attr_accessor :params, :server, :input_sets, :inputs, :id, :auxiliar_function, :definition_block, :args, :session, :result_set
   @base_dir = ""
   class << self
     attr_accessor :base_dir
@@ -15,6 +15,7 @@ class Xplain::Operation
     if !args.is_a? Hash
       args = {inputs: args}
     end
+    @session = args[:session]
     @args = args
     @id = args[:id] || SecureRandom.uuid
     setup_input args
@@ -23,6 +24,7 @@ class Xplain::Operation
     @limit = args[:limit] || 0
     @debug = args[:debug] || false
     @relation = args[:relation]
+    @result_set = nil
     @visual = args[:visual] || false
     if block_given?
       @definition_block = block 
@@ -35,6 +37,12 @@ class Xplain::Operation
   def self.operation_class?(klass)
     operation_subclasses = ObjectSpace.each_object(Class).select {|space_klass| space_klass < Xplain::Operation }
     operation_subclasses.include? klass
+  end
+  
+  def setup_session(session)
+    @session = session
+    @server = session.server
+    @inputs.each{|input| input.setup_session(session)}
   end
   
   def setup_input(args)
@@ -58,33 +66,89 @@ class Xplain::Operation
     self.class.to_s.downcase.gsub("xplain::", "")
   end
   
+  
   def input=(operation_input)
     setup_input operation_input
   end
   
+  def to_ruby_dsl
+    intention_parser = DSLParser.new
+    
+    inputs_codes = @inputs.map do |i|
+      if i.is_a? Xplain::ResultSet
+        if i.intention.is_a? Xplain::Operation
+          i.intention.to_ruby_dsl
+        else
+          i.intention.to_s
+        end
+      elsif i.is_a? Xplain::Operation
+        i.to_ruby_dsl
+      else
+        i.intention.to_s
+      end
+    end
+    
+    ruby_code = intention_parser.to_ruby(self, false)
+    constructor_regexp = @inputs.map{|i| "(.*)"}.join(",")
+    constructor_replacements = ruby_code.scan(/\.new\(\[#{constructor_regexp}\]\)/)
+    if !constructor_replacements.empty?
+      for i in (0..inputs_codes.size-1) 
+        ruby_code.gsub!(constructor_replacements[0].to_a[i].to_s, inputs_codes[i])
+      end
+    elsif !inputs_codes.compact.empty?
+      ruby_code = inputs_codes.first.to_s + "."+ ruby_code 
+    end
+    # binding.pry
+    ruby_code.gsub(/(Xplain::Load\.new\([^.]*\))\./, "")
+  end
+  
+  def to_ruby_dsl_sum
+    to_ruby_dsl.gsub(" ", "").gsub("\n", "").gsub(";", "")
+    
+  end
+  
   def execute()
+    session_cached_set = Xplain::memory_cache.session_get_resultset(session, self.to_ruby_dsl_sum)
+    if session_cached_set
+      @result_set = session_cached_set
+      if @result_set.fetched?
+        return @result_set
+      end
+    end
+    puts "#######FETCHING IN EXECUTE: " + self.to_ruby_dsl
+  
+
+    resolve_dependencies
+    cached_resultset = Xplain::memory_cache.result_set_load_by_intention(self)
     validate()
-    resolve_dependencies()
-    result_nodes = get_results()
+    result_nodes = []    
+    if cached_resultset
+      result_nodes = cached_resultset.children.map{|c| c.copy}
+    else
+      result_nodes = get_results()
+    end
+    
     result_nodes.each{|node| node.parent_edges = []}
-    Xplain::ResultSet.new( nodes: result_nodes, intention: self)        
+    
+    if !result_set
+      @result_set = Xplain::RemoteSet.new(intention: self)
+      Xplain::memory_cache.result_set_save(result_set)
+    end
+    
+    result_set.children = result_nodes
+    result_set.fetched = true
+    if session && !session_cached_set
+      Xplain::memory_cache.session_add_resultset(session, result_set)
+    end
+
+    result_set
   end
   
   def resolve_dependencies
-    @inputs.map! do |input|
-      input_set = 
-        if input.is_a? Xplain::Operation
-          input.execute()
-        else
-          input
-        end
-      if input_set.id.nil?
-        input_set.save
-      end
-      input_set
-    end
+    @input_sets = @inputs.map{|input| input.execute}
+    @input_sets
   end
-  
+    
   def parse_item_specs(item_spec)
     return if item_spec.nil?
     if item_spec.is_a?(Xplain::Item) || item_spec.is_a?(Xplain::Node)
@@ -108,7 +172,8 @@ class Xplain::Operation
   end
   
   def inputs_working_copy
-    @inputs.map{|i|i.copy}
+    resolve_dependencies
+    @input_sets.map{|i|i.copy}
   end
   
   def validate

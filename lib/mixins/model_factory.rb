@@ -1,12 +1,18 @@
 module Xplain
   module EntityFactory
   
-  
+    def new_type(type_id)
+      if type_id.to_s.empty?
+        return nil
+      end
+      Type.create(type_id)
+    end
+    
     def new_entity(entity_id)
       if entity_id.to_s.empty?
         return nil
       end
-      Entity.new(entity_id)
+      Entity.create(entity_id)
     end
   
     def new_literal(l_value)

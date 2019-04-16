@@ -9,7 +9,7 @@ class Xplain::Group < Xplain::Operation
   end
   
   def get_results()
-    if @inputs.nil? || @inputs.empty? || @inputs.first.empty?
+    if @input_sets.nil? || @input_sets.empty? || @input_sets.first.empty?
       return []
     end
 
@@ -29,7 +29,7 @@ class Xplain::Group < Xplain::Operation
     new_groups = []
     @auxiliar_function.prepare(nodes_to_group, new_groups)
     new_groups = @auxiliar_function.group(nodes_to_group)
-    # binding.pry
+    
     next_to_last_level.each do |node|
       children = node.children
       node.children_edges = []

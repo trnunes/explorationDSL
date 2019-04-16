@@ -6,12 +6,13 @@ module Xplain::RDF
     end
     
     #TODO preventing saving sets already save and unmodified
-    def result_set_save(result_set)
+    def result_set_save(result_set, flush_extension=false)
+      
       #TODO save title
       #TODO save annotations
       namespace = "http://tecweb.inf.puc-rio.br/xplain/"
       result_set_uri = "<#{namespace + result_set.id}>"
-      result_set_type_uri = "<#{namespace + "ResultSet"}>"
+      result_set_type_uri = "<#{namespace + result_set.class.to_s.split("::").last}>"
       insert_rs_query = "INSERT DATA{ " + result_set_uri + " <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> " + result_set_type_uri + "."
       insert_rs_query << "#{result_set_uri} <http://purl.org/dc/terms/title> \"#{result_set.title}\". "
       
@@ -26,12 +27,15 @@ module Xplain::RDF
        
       insert_rs_query << "}"
       execute_update(insert_rs_query, content_type: content_type)
-      query = "INSERT DATA{ "  
-      index = 0
-      result_set.each{|node| query << generate_insert(index += 1, node, result_set)}
-      query << "}"
       
-      execute_update(query, content_type: content_type)
+      if !result_set.is_a? Xplain::RemoteSet
+        query = "INSERT DATA{ "  
+        index = 0
+        result_set.each{|node| query << generate_insert(index += 1, node, result_set)}
+        query << "}"
+        
+        execute_update(query, content_type: content_type)
+      end
     end
     
     def result_set_find_by_node_id(node_id)
@@ -93,111 +97,121 @@ module Xplain::RDF
       set_id_list.map{|id| result_set_load(id)}
     end
       
-    def result_set_load(rs_id)
+    def result_set_load(rs_id, load_extension=true, alternative_server = nil)
       #TODO implement for literal items
       xplain_namespace = "http://tecweb.inf.puc-rio.br/xplain/"
       result_set_uri = "<#{xplain_namespace + rs_id}>"
       
-      result_set_query = "SELECT ?title ?note ?intention where{#{result_set_uri} <http://purl.org/dc/terms/title> ?title. OPTIONAL{#{result_set_uri} <#{xplain_namespace}note> ?note}. OPTIONAL{#{result_set_uri} <#{xplain_namespace}intention> ?intention }.}"
+      result_set_query = "SELECT ?title ?note ?intention ?class where{#{result_set_uri} <http://purl.org/dc/terms/title> ?title. #{result_set_uri} <#{@rdf_ns.uri}type> ?class. OPTIONAL{#{result_set_uri} <#{xplain_namespace}note> ?note}. OPTIONAL{#{result_set_uri} <#{xplain_namespace}intention> ?intention }.}"
       title = ""
       intention = ""
       notes = Set.new
+      klass = "Xplain::ResultSet"
       @graph.query(result_set_query).each do |solution|
         title = solution[:title].to_s
         if solution[:note]
           notes << solution[:note].to_s
         end
         intention = solution[:intention].to_s
+        klass = "Xplain::" + solution[:class].to_s.split("/").last
       end
-      
-      query = "prefix xsd: <#{@xsd_ns.uri}> 
-      SELECT ?node ?nodeText ?nodeIndex ?item ?itemType ?child ?childIndex ?childText ?child_item ?childType ?nodeTextProp ?childTextProp
-      WHERE{
-        ?node <#{xplain_namespace}included_in> #{result_set_uri}.
-        ?node <#{@xplain_ns.uri}index> ?nodeIndex.
-        OPTIONAL{?node <#{xplain_namespace}has_item> ?item. ?item <#{xplain_namespace}item_type> ?itemType}.
-        OPTIONAL{ ?node <#{@xplain_ns.uri}text_relation> ?nodeTextProp}.
-        OPTIONAL{ ?node <#{@xplain_ns.uri}has_text> ?nodeText}.
-        OPTIONAL{?node <#{xplain_namespace}children> ?child. ?child <#{@xplain_ns.uri}index> ?childIndex.
-                ?child <#{xplain_namespace}has_item> ?child_item.  
-                OPTIONAL{?child <#{@xplain_ns.uri}text_relation> ?childTextProp.}. OPTIONAL{?child_item <#{xplain_namespace}item_type> ?childType}.}.
-      } ORDER BY xsd:integer(?nodeIndex) xsd:integer(?childIndex)"
-      
-      nodes = []
-      nodes_hash = {}
-      
       untitled_items = []
-      puts "-------RS QUERY---------"
-      puts query
-      # binding.pry
-      @graph.query(query).each do |solution|
-        next if !solution[:node] || !solution[:item]
+      if !(klass == "Xplain::RemoteSet") 
+        query = "prefix xsd: <#{@xsd_ns.uri}> 
+        SELECT ?node ?nodeText ?nodeIndex ?item ?itemType ?child ?childIndex ?childText ?child_item ?childType ?nodeTextProp ?childTextProp
+        WHERE{
+          ?node <#{xplain_namespace}included_in> #{result_set_uri}.
+          ?node <#{@xplain_ns.uri}index> ?nodeIndex.
+          OPTIONAL{?node <#{xplain_namespace}has_item> ?item. ?item <#{xplain_namespace}item_type> ?itemType}.
+          OPTIONAL{ ?node <#{@xplain_ns.uri}text_relation> ?nodeTextProp}.
+          OPTIONAL{ ?node <#{@xplain_ns.uri}has_text> ?nodeText}.
+          OPTIONAL{?node <#{xplain_namespace}children> ?child. ?child <#{@xplain_ns.uri}index> ?childIndex.
+                  ?child <#{xplain_namespace}has_item> ?child_item.  
+                  OPTIONAL{?child <#{@xplain_ns.uri}text_relation> ?childTextProp.}. OPTIONAL{?child_item <#{xplain_namespace}item_type> ?childType}.}.
+        } ORDER BY xsd:integer(?nodeIndex) xsd:integer(?childIndex)"
         
-        node_id = solution[:node].to_s.gsub(xplain_namespace, "")
-        if solution[:itemType].to_s.include? "Literal"
-          item = build_literal solution[:nodeText].to_s, solution[:datatype].to_s
-        else
-          item = build_item solution[:item], solution[:itemType]
-        end
+        nodes = []
+        nodes_hash = {}
         
         
-        if !item.is_a?(Xplain::Literal)
-          item.text_relation = Xplain::Namespace.colapse_uri solution[:nodeTextProp].to_s
-          if item.text_relation != "xplain:has_text" && solution[:nodeText].to_s.empty? && !item.is_a?(Xplain::Literal)
-            untitled_items << item
+        puts "-------RS QUERY---------"
+        puts query
+        
+        @graph.query(query).each do |solution|
+          next if !solution[:node] || !solution[:item]
+          
+          node_id = solution[:node].to_s.gsub(xplain_namespace, "")
+          if solution[:itemType].to_s.include? "Literal"
+            item = build_literal solution[:nodeText].to_s, solution[:datatype].to_s
+          else
+            item = Xplain::memory_cache.get_item(solution[:item].to_s)
+            item ||= build_item solution[:item], solution[:itemType]
+            Xplain::memory_cache.save_item(item)
           end
-        end
-        
-        node = nodes_hash[node_id]
-        if !node
+          item.server = self
           
-          node = Xplain::Node.new(id: node_id, item: item)
-          
-          nodes_hash[node_id] = node
-        end
-        
-        if solution[:child]
-          child_id = solution[:child].to_s.gsub(xplain_namespace, "")
-            cnode = nodes_hash[child_id]
-            if !cnode
-              if !solution[:child_item] 
-                raise "Inconsistent Result Set: node must point to an Item!"
-              end
-              if solution[:childType].to_s.include? "Literal"
-                child_item = build_literal solution[:childText].to_s, solution[:child_datatype].to_s
-              else
-                child_item = build_item solution[:child_item], solution[:childType]
-              end
-              
-              if !child_item.is_a?(Xplain::Literal)
-                child_item.text = solution[:childText].to_s
-                child_item.text_relation = Xplain::Namespace.colapse_uri solution[:childTextProp].to_s
-                if child_item.text_relation != "xplain:has_text" && solution[:childText].to_s.empty? && !child_item.is_a?(Xplain::Literal)
-                  untitled_items << child_item
-                end 
-              end
-              cnode = Xplain::Node.new(id: child_id, item: child_item)
-              nodes_hash[child_id] = cnode
+          if !item.is_a?(Xplain::Literal)
+            item.text_relation = Xplain::Namespace.colapse_uri solution[:nodeTextProp].to_s
+            if item.text_relation != "xplain:has_text" && solution[:nodeText].to_s.empty? && !item.is_a?(Xplain::Literal)
+              untitled_items << item
             end
-            node << cnode
+          end
+          
+          node = nodes_hash[node_id]
+          if !node
+            
+            node = Xplain::Node.new(id: node_id, item: item)
+            
+            nodes_hash[node_id] = node
+          end
+          
+          if solution[:child]
+            child_id = solution[:child].to_s.gsub(xplain_namespace, "")
+              cnode = nodes_hash[child_id]
+              if !cnode
+                if !solution[:child_item] 
+                  raise "Inconsistent Result Set: node must point to an Item!"
+                end
+                if solution[:childType].to_s.include? "Literal"
+                  child_item = build_literal solution[:childText].to_s, solution[:child_datatype].to_s
+                else
+                  child_item = Xplain::memory_cache.get_item(solution[:child_item].to_s)
+                  child_item ||= build_item solution[:child_item], solution[:childType]
+                  Xplain::memory_cache.save_item(child_item)
+                end
+                child_item.server = self
+                if !child_item.is_a?(Xplain::Literal)
+                  child_item.text = solution[:childText].to_s
+                  child_item.text_relation = Xplain::Namespace.colapse_uri solution[:childTextProp].to_s
+                  if child_item.text_relation != "xplain:has_text" && solution[:childText].to_s.empty? && !child_item.is_a?(Xplain::Literal)
+                    untitled_items << child_item
+                  end 
+                end
+                cnode = Xplain::Node.new(id: child_id, item: child_item)
+                nodes_hash[child_id] = cnode
+              end
+              node << cnode
+          end
+          nodes << node
         end
-        nodes << node
-      end
-      #TODO create an array if the elements are literals.
-      first_level = Set.new(nodes.select{|n| !n.parent})
-      # binding.pry
-      #TODO when allowing multiple repositories, correct this
-      if !untitled_items.empty?
+        #TODO create an array if the elements are literals.
+        first_level = Set.new(nodes.select{|n| !n.parent})
         
-        Xplain::default_server.set_items_texts untitled_items
       end
-      
       if !intention.to_s.empty?
         intention_desc = eval(intention)
+        intention_desc.server = alternative_server if alternative_server
       end
-      Xplain::ResultSet.new(id: rs_id, nodes: first_level, intention: intention_desc, title: title, notes: notes.to_a)
+              #TODO when allowing multiple repositories, correct this
+      if !untitled_items.empty? && intention_desc.is_a?(Xplain::Operation)
+        #TODO correct this when changing the endpoint
+        intention_desc.server.set_items_texts untitled_items
+      end
+      eval(klass).new(id: rs_id, nodes: first_level, intention: intention_desc, title: title, notes: notes.to_a)
       
     end
+    
+    
     def set_items_texts(items)
       items_hash = {} 
       items.each do |item|
@@ -229,7 +243,16 @@ module Xplain::RDF
       @graph.query(rs_uri_query).each_solution do |solution|
         result_set_ids << solution[:o].to_s.gsub(@xplain_ns.uri, "")
       end
-      result_set_ids.map{|id| result_set_load(id)}
+      
+      results = result_set_ids.map do |id| 
+        rs = result_set_load(id)
+        
+        if rs.intention
+          rs.intention.session = session
+        end
+        rs 
+      end
+      results
     end
     
     #private

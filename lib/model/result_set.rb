@@ -6,8 +6,8 @@ module Xplain
     include Xplain::DslCallable
     include Xplain::Relation
     
-    attr_accessor :intention, :inverse, :title
-    def_delegators :children, :each, :map, :select, :empty?, :size, :uniq, :sort
+    attr_accessor :intention, :inverse, :title, :fetched
+    def_delegators :children, :each, :map, :select, :empty?, :size, :sort
     
     class << self
       def topological_sort(result_sets)
@@ -20,7 +20,7 @@ module Xplain
   
       def visit(rs, sorted_array, visited)
         if rs.intention && rs.intention.is_a?(Operation)
-          rs.intention.inputs.each{|input| visit(input, sorted_array, visited)}
+          rs.intention.inputs.each{|input| visit(input.execute, sorted_array, visited)}
         end
         if !visited.include? rs.id
           sorted_array << rs
@@ -42,23 +42,63 @@ module Xplain
         end
       children_nodes.each{|c| c.parent_edges = []}
       self.children = children_nodes
+      @fetched = false
       @intention = params[:intention]
+      @intention.result_set = self if @intention
       @inverse = params[:inverse]
       @title = params[:title] || "Set #{Xplain::SetSequence.next}"
+    end
+    
+    def intention
+      
+      if !@intention
+        intention_str = "Xplain::ExecuteRuby.new(code: '"
+        intention_str << "Xplain::ResultSet.new("
+        intention_str << "id: \"#{id}\", title: \"#{title}\""
+        intention_str << ", nodes: "
+        intention_str << parse_nodes(children)
+        intention_str << ")')"
+        @intention = eval(intention_str)
+      end
+      @intention
+      
+    end
+    
+    def parse_nodes(nodes)
+      
+      nodes_str = "[" << nodes.map do |node|
+        item = node.item
+        item_str = "#{item.class.name}.new(id: \"#{item.id}\", title: \"#{item.text}\")"
+        "Xplain::Node.new(item: #{item_str}, children: #{parse_nodes(node.children)})"
+      end.join(", ") << "]"
+      
+      nodes_str        
+    end
+    
+    def intention=(operation)
+      @intention = operation
+      operation.result_set = self
     end
     
     def nodes
       self.children
     end
+    
+    def fetched?
+      true
+    end
         
     def inverse?
       @inverse
     end
+    
         
     def resulted_from
+      
       inputs = []
-      if @intention && !@intention.is_a?(String)
-        inputs = @intention.inputs
+      if @intention && @intention.is_a?(Xplain::Operation)
+        @intention.resolve_dependencies
+        inputs = @intention.input_sets
       end
       inputs || []
     end
@@ -77,7 +117,7 @@ module Xplain
     def copy
       copied_root = super
       copied_root.children.each{|c| c.parent_edges = []}
-      Xplain::ResultSet.new(nodes: copied_root.children, intention: @intention, title: @title.dup, notes: @annotations.dup, inverse: @inverse)
+      self.class.new(nodes: copied_root.children, intention: @intention, title: @title.dup, notes: @annotations.dup, inverse: @inverse)
     end
     
     def get_page(total_items_by_page, page_number)
@@ -116,26 +156,7 @@ module Xplain
       !breadth_first_search(false){|node| node.id == node_id}.empty?
     end
    
-   #TODO find a better place for uniq and sort operations
-    def uniq
-      items_hash = {}
-      children.each do |node|
-        #TODO IMPLEMENT A SHALLOW CLONE METHOD
-        items_hash[node.item] = Xplain::Node.new item: node.item
-      end
-      Xplain::ResultSet.new(nodes: items_hash.values)
-    end
-    
-    def uniq!
-      items_hash = {}
-      children.each do |node|        
-        items_hash[node.item] = node
-      end
-
-      self.children = items_hash.values
-      self
-    end
-    
+       
     def sort(desc=true)
       Xplain::ResultSet.new(nodes: children.sort do|n1, n2|
         comparator = 

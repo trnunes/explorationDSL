@@ -5,20 +5,25 @@ module Xplain::RDF
     include Xplain::RDF::SessionMapper
     include Xplain::GraphConverter
   
-    attr_accessor :graph, :items_limit, :content_type, :api_key, :cache, :filter_intepreter
+    attr_accessor :graph, :url, :items_limit, :content_type, :api_key, :cache, :filter_intepreter, :record_intention_only, :params
   
   
-    def initialize(options = {})
-      setup options    
+    def initialize(params = {})
+      @params = params
+      setup params    
     end
     
     def setup(options)
+      
       @graph = SPARQL::Client.new options[:graph], options
+      @url = options[:graph]
       @content_type = options[:content_type] || "application/sparql-results+xml"
       @api_key = options[:api_key]
       @cache_max_size = (options[:cache_limit] || 20000).to_i
       @items_limit = (options[:items_limit] || 0).to_i
       @results_limit = (options[:limit] || 5000).to_i
+      @record_intention_only = options[:record_intention_only]
+      @record_intention_only ||= false
       
       #Default Namespaces
       Xplain::Namespace.new("owl", "http://www.w3.org/2002/07/owl#")
@@ -83,7 +88,7 @@ module Xplain::RDF
       end
       
       execute(query, {content_type: content_type, offset: offset, limit: limit}).each do |s|
-        item = Xplain::Entity.new(Xplain::Namespace.colapse_uri(s[:s].to_s), s[:ls].to_s)
+        item = Xplain::Entity.create(Xplain::Namespace.colapse_uri(s[:s].to_s), s[:ls].to_s)
         item.add_server(self)
         retrieved_items << item
       end
@@ -96,7 +101,7 @@ module Xplain::RDF
       items = []
       query = @graph.query("SELECT ?s WHERE{?s ?p ?o.}")
       query.each_solution do |solution|
-        item = Xplain::Entity.new(solution[:s].to_s)
+        item = Xplain::Entity.create(solution[:s].to_s)
         item.add_server(self)  
         items << item      
         block.call(item) if !block.nil?
@@ -220,7 +225,11 @@ module Xplain::RDF
         offset += page_size
       end
       pages
-    end 
-  
+    end
+    
+    def to_ruby
+      DSLParser.new.parse_data_server(self) 
+    end
+    
   end
 end

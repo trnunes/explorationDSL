@@ -9,8 +9,8 @@ class Xplain::KeywordSearch < Xplain::Operation
   def get_results()
     restriction_nodes = []
     result_nodes = []
-    if !(@inputs.nil? || @inputs.empty? || @inputs.first.empty?)
-      input_set = @inputs.first
+    if !(@input_sets.nil? || @input_sets.empty? || @input_sets.first.empty?)
+      input_set = @input_sets.first
       restriction_nodes= input_set.nodes
       result_nodes = input_set.breadth_first_search(true){|node| node.item.text.downcase.include?(@keyword_phrase.to_s.downcase)} 
     end

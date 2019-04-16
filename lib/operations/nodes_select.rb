@@ -8,11 +8,11 @@ class Xplain::NodesSelect < Xplain::Operation
   
   def get_results()
     result_nodes = []
-    if !@inputs || @inputs.empty?
+    if !@input_sets || @input_sets.empty?
       return []
     end
     
-    @inputs.each do |input_set|
+    @input_sets.each do |input_set|
       @ids_list.each do |item_id|
         result_nodes += self.by_item_id(input_set, item_id)
       end

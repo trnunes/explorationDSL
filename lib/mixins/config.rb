@@ -1,7 +1,8 @@
 module Xplain
   @@current_workflow = nil
   @@exploration_repository = MemoryRepository.new
-  @@lazy = false
+  @@cache_results= false
+  @@persist_extensions = false
   @@memory_cache = MemoryRepository.new
   
   class << self
@@ -9,16 +10,23 @@ module Xplain
       @@base_dir = base_dir_path
     end
     
+    def persist_extensions=(bool)
+      @@persist_extensions = bool
+    end
+    def persist_extensions?
+      @@persist_extensions
+    end
+    
     def base_dir
       @@base_dir
     end
     
-    def lazy?
-      @@lazy
+    def cache_results?
+      @@cache_results
     end
     
-    def lazy=(is_lazy)
-      @@lazy = is_lazy
+    def cache_results=(bool)
+      @@cache_results = bool
     end
     
     def memory_cache

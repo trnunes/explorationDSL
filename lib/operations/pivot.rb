@@ -8,6 +8,7 @@ class Xplain::Pivot < Xplain::Operation
     end
 
     @group_by_domain = args[:group_by_domain] || false
+    @uniq = args[:uniq]
   end
   
   def get_relation
@@ -19,7 +20,7 @@ class Xplain::Pivot < Xplain::Operation
   end
   
   def get_results()
-    if @inputs.nil? || @inputs.empty? || @inputs.first.empty?
+    if @input_sets.nil? || @input_sets.empty? || @input_sets.first.empty?
       return []
     end
     
@@ -44,10 +45,14 @@ class Xplain::Pivot < Xplain::Operation
       binding.pry if @debug
       nodes_to_return = input_set.get_level(2)
     else
-      result_set.uniq! if result_set.contain_literals?
+      
       nodes_to_return = result_set.nodes
+      if !result_set.contain_literals?
+        nodes_to_return.uniq!
+      end
     end
-    nodes_to_return
+    nodes_to_return.sort
+    
   end
   
   def validate

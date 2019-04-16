@@ -1,7 +1,13 @@
 module Xplain
   class Item
+    extend ItemFactory
     #TODO Analyze the possibility of moving text and text_relation to nodes
     attr_accessor :id, :text, :server, :type, :text_relation
+
+    #TODO standardize all initializers to receive hashes
+    def self.create(id, text="")
+      super(id: id, text: text)
+    end
     
     def initialize(params = {})
       @id = params[:id]
@@ -12,9 +18,16 @@ module Xplain
       @text_relation = "xplain:has_text" if @text_relation.to_s.empty?
        
     end
-    
     def <=>(other_entity)
       self.text <=> other_entity.text 
+    end
+    
+    def text=(t)
+      @text = t if !t.to_s.strip.empty?
+    end
+    
+    def text_relation=(r)
+      @text_relation = r if !r.to_s.strip.empty?
     end
     
     def text

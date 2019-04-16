@@ -73,7 +73,7 @@ module Xplain::RDF
         end
         query << " where{#{where_clause} }"
         query = insert_order_by_subject(query)
-      # binding.pry
+      
         results_hash.merge! get_results(query, relation)
         
       end
@@ -176,8 +176,9 @@ module Xplain::RDF
       
       query = "SELECT DISTINCT ?class WHERE { ?s a ?class.}"
       classes = []
+      
       execute(query, options).each do |s|
-        type = Xplain::Type.new(Xplain::Namespace.colapse_uri(s[:class].to_s))
+        type = Xplain::Type.create(Xplain::Namespace.colapse_uri(s[:class].to_s))
         type.add_server(self)
         classes << type
       end
@@ -221,7 +222,7 @@ module Xplain::RDF
         query = "SELECT DISTINCT ?s WHERE { #{values_clause("?relation", page_items)} ?s ?relation ?o. }"
         
         execute(query).each do |s|
-          entity = Xplain::Entity.new(Xplain::Namespace.colapse_uri(s[:s].to_s))
+          entity = Xplain::Entity.create(Xplain::Namespace.colapse_uri(s[:s].to_s))
           # relation.text = s[:label].to_s if !s[:label].to_s.empty?
           entity.server = self
           entities << entity
@@ -254,12 +255,14 @@ module Xplain::RDF
       paginate(restriction_items, @items_limit).each do |page_items|
         query = "SELECT DISTINCT ?s WHERE {#{values_clause("?class", page_items)} ?s a ?class.}"
         execute(query).each do |s|
-          entity = Xplain::Entity.new(Xplain::Namespace.colapse_uri(s[:s].to_s))
+          entity = Xplain::Entity.create(Xplain::Namespace.colapse_uri(s[:s].to_s))
           entity.add_server(self)
           entity.text_relation = label_relations.first
           entities << entity
         end
       end
+      
+      set_items_texts(entities)
       
       Xplain::ResultSet.new nodes: to_nodes(entities.sort{|r1, r2| r1.to_s <=> r2.to_s})
     end

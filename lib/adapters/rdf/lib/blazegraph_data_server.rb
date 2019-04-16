@@ -19,7 +19,7 @@ class BlazegraphDataServer < Xplain::RDF::DataServer
 
 
     execute(query,{content_type: content_type, offset: offset, limit: limit}).each do |s|
-      item = Xplain::Entity.new(Xplain::Namespace.colapse_uri(s[:s].to_s),  "rdfs:Resource")
+      item = Xplain::Entity.create(Xplain::Namespace.colapse_uri(s[:s].to_s),  "rdfs:Resource")
       i = 0
       for i in 0..label_relations.size-1 do
         break if !s["ls#{i}".to_sym].nil?

@@ -17,7 +17,6 @@ module SPARQLHelper
   end
   
   def convert_item(item)
-    
     "<#{Xplain::Namespace.expand_uri(item.id)}>"
   end
   
@@ -215,8 +214,8 @@ module SPARQLHelper
       next if(solution.to_a.empty?)
       subject_id = Xplain::Namespace.colapse_uri(solution[:s].to_s)
       if !items.has_key? subject_id
-        item = Xplain::Entity.new(subject_id)
-        item.text = solution[:ls].to_s
+        item = Xplain::Entity.create(subject_id)
+        
         items[subject_id] = item
       end      
     end
@@ -240,12 +239,12 @@ module SPARQLHelper
       elsif item_class == "Xplain::SchemaRelation"
         item = Xplain::SchemaRelation.new(id: Xplain::Namespace.colapse_uri(server_item.to_s))
       elsif item_class == "Xplain::Type"
-        item = Xplain::Type.new(Xplain::Namespace.colapse_uri(server_item.to_s))
+        item = Xplain::Type.create(Xplain::Namespace.colapse_uri(server_item.to_s))
       else
-        item = Xplain::Entity.new(Xplain::Namespace.colapse_uri(server_item.to_s))
+        item = Xplain::Entity.create(Xplain::Namespace.colapse_uri(server_item.to_s))
         item.type = "rdfs:Resource"
       end
-      item.server = @server
+      item.server = self
     end
     item
   end
@@ -256,10 +255,10 @@ module SPARQLHelper
     execute(query).each do |solution|
       next if(solution.to_a.empty?)
       subject_id = Xplain::Namespace.colapse_uri(solution[:s].to_s)
-      subject_item = Xplain::Entity.new(subject_id)
+      subject_item = Xplain::Entity.create(subject_id)
       subject_item.text = solution[:ls].to_s
       subject_item.text_relation = Xplain::Namespace.colapse_uri(solution[:textProps].to_s)
-      subject_item.add_server(@server)
+      subject_item.add_server(self)
       
       object_id = solution[:o]
       related_item = nil
@@ -268,11 +267,11 @@ module SPARQLHelper
           if(object_id.literal?)
             build_literal(object_id)
           else
-            related_item = Xplain::Entity.new(Xplain::Namespace.colapse_uri(object_id.to_s))
+            related_item = Xplain::Entity.create(Xplain::Namespace.colapse_uri(object_id.to_s))
             related_item.type = "rdfs:Resource"
-            related_item.text = solution[:lo].to_s
+            related_item.text = solution[:lo].to_s 
             related_item.text_relation = Xplain::Namespace.colapse_uri(solution[:textPropo].to_s)
-            related_item.add_server @server
+            related_item.add_server self
             related_item
           end        
       end
