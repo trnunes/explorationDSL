@@ -95,7 +95,7 @@ module Xplain
           input_expressions.include? s1.intention.to_ruby_dsl_sum 
         end.empty?
       end
-      leaves.map{|leaf| self.execute(leaf.intention)}
+      # leaves.map{|leaf| self.execute(leaf.intention)}
 
       iterable = @result_sets
       if options[:exploration_only]

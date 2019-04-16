@@ -256,7 +256,7 @@ class RDFDataServerTest < XplainUnitTest
     
     assert_same_result_set input_rs, expected_rs
     dsl_parser = DSLParser.new
-    assert_equal dsl_parser.to_ruby(expected_rs.intention), "Xplain::ExecuteRuby.new(code: 'Xplain::ResultSet.new(id: \"resulted_from_set\", title: \"Set 1\", nodes: [Xplain::Node.new(item: Xplain::Entity.new(id: \"_:p1\", title: \"_:p1\"), children: [])])').keyword_search(keyword_phrase: 'test_keyword')"
+    assert_equal dsl_parser.to_ruby(expected_rs.intention), "Xplain::ExecuteRuby.new(code: 'Xplain::ResultSet.new(id: \"resulted_from_set\", title: \"Set 1\", nodes: [Xplain::Node.new(item: Xplain::Entity.new(id: \"_:p1\", text: \"_:p1\"), children: [])])').keyword_search(keyword_phrase: 'test_keyword')"
     assert_same_result_set_no_title expected_rs.intention.inputs.first.execute, resulted_from
 
   end

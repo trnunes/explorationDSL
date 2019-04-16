@@ -68,7 +68,12 @@ module Xplain
       
       nodes_str = "[" << nodes.map do |node|
         item = node.item
-        item_str = "#{item.class.name}.new(id: \"#{item.id}\", title: \"#{item.text}\")"
+        if item.is_a? Xplain::Literal
+          item_str = "#{item.class.name}.new(value: \"#{item.value.to_s}\", datatype: \"#{item.datatype.to_s}\")"
+        else
+          item_str = "#{item.class.name}.new(id: \"#{item.id}\", text: \"#{item.text}\")"
+        end
+        
         "Xplain::Node.new(item: #{item_str}, children: #{parse_nodes(node.children)})"
       end.join(", ") << "]"
       
