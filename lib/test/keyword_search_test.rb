@@ -37,7 +37,7 @@ class Xplain::KeywordSearchTest < XplainUnitTest
     ]
     input = Xplain::ResultSet.new(nodes:  restriction_input)
     
-    @keyword_search_operation = Xplain::KeywordSearch.new(inputs: input.intention, keyword_phrase:  'common_keyword')
+    @keyword_search_operation = Xplain::KeywordSearch.new(inputs: input, keyword_phrase:  'common_keyword')
     result_set =  @keyword_search_operation.execute
     
     assert_same_items_set input.last_level, result_set.last_level

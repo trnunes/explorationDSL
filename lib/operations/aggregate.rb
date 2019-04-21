@@ -9,7 +9,7 @@ class Xplain::Aggregate < Xplain::Operation
   end
   
   def get_results()
-    if @input_sets.nil? || @input_sets.empty? || @input_sets.first.empty?
+    if @inputs.nil? || @inputs.empty? || @inputs.first.empty?
       return []
     end
 
@@ -27,6 +27,7 @@ class Xplain::Aggregate < Xplain::Operation
     end
     nodes_parents.each do |node|
       current_value = nil
+      
       node.children.each{|child| current_value = @auxiliar_function.map(child, current_value)}
       if @auxiliar_function.respond_to? :post_map
         current_value = @auxiliar_function.post_map(current_value)
@@ -34,7 +35,6 @@ class Xplain::Aggregate < Xplain::Operation
       if !current_value.respond_to? :each
         current_value = [current_value]
       end
-      
       mapped_nodes = current_value.compact.map do |value_spec|
         parsed_item = parse_item_specs(value_spec)
         if parsed_item.is_a? Xplain::Node
@@ -47,6 +47,16 @@ class Xplain::Aggregate < Xplain::Operation
       node.children_edges = []
       
       node.children = mapped_nodes
+    end
+    if @auxiliar_function.respond_to? :default_value
+      if @level > 1
+        candidates_to_append_default_value = input_set.get_level(@level - 1)
+        candidates_to_append_default_value.each do |n|
+          if n.children.empty? 
+            n.children = [Xplain::Node.new(item: parse_item_specs(@auxiliar_function.default_value))]
+          end
+        end
+      end
     end
     input_set.children
   end

@@ -7,7 +7,7 @@ class Xplain::DiffTest < XplainUnitTest
     origin = Xplain::ResultSet.new(nodes:  input_nodes)
     
     
-    actual_results = Xplain::Diff.new([origin.intention, origin.intention]).execute()
+    actual_results = Xplain::Diff.new([origin, origin]).execute()
     assert_true actual_results.children.empty?
   end
 
@@ -16,7 +16,7 @@ class Xplain::DiffTest < XplainUnitTest
     origin = Xplain::ResultSet.new(nodes:  input_nodes)
     
     
-    actual_results = Xplain::Diff.new([origin.intention]).execute()
+    actual_results = Xplain::Diff.new([origin]).execute()
     origin.title = actual_results.title
     assert_same_result_set origin, actual_results
   end
@@ -46,7 +46,7 @@ class Xplain::DiffTest < XplainUnitTest
     
     expected_results = Xplain::ResultSet.new(nodes:  [Xplain::Entity.new("_:p1")])
 
-    actual_results = Xplain::Diff.new([input_1.intention, input_2.intention]).execute()
+    actual_results = Xplain::Diff.new([input_1, input_2]).execute()
     assert_false actual_results.children.empty?
     actual_results.title = expected_results.title
     assert_same_result_set expected_results, actual_results
@@ -77,7 +77,7 @@ class Xplain::DiffTest < XplainUnitTest
     
     expected_output = Xplain::ResultSet.new(nodes:  [expected_p1, expected_p2])
 
-    actual_results = Xplain::Diff.new([input1.intention, input2.intention]).execute()
+    actual_results = Xplain::Diff.new([input1, input2]).execute()
     assert_false actual_results.children.empty?
      expected_output.title = actual_results.title
     assert_same_result_set expected_output, actual_results

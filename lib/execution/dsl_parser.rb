@@ -4,7 +4,7 @@ class DSLParser
     server.class.name + ".new#{parse_constructor_params(server.params)}"
   end
   
-  def parse_operation(operation, parse_recursive=true)
+  def parse_operation(operation, parse_recursive=false)
     operation_code = ""
     inputs = operation.inputs
     
@@ -12,7 +12,7 @@ class DSLParser
     
     parsed_inputs = inputs.map do |input|
       if input.is_a? Xplain::Operation
-        parse_operation(input) if parse_recursive
+        parse_operation(input)
       else
         parse_result_set(input)
       end
@@ -27,7 +27,7 @@ class DSLParser
       operation_code = operation.class.name + ".new#{parse_operation_constructor(operation)}"
       return operation_code
     end
-    operation_code << "#{parsed_inputs.first}." if parse_recursive
+    operation_code << "#{parsed_inputs.first}." 
     operation_code << operation.class.name.gsub("Xplain::", "").to_underscore
     operation_code << "#{parse_operation_constructor(operation)}"
     
@@ -153,12 +153,7 @@ class DSLParser
   end
   #private
   def parse_result_set(rs)
-    if rs.intention
-      parse_operation rs.intention
-    else
-      "Xplain::ResultSet.load(\"#{rs.id}\")"
-    end
-    
+    "Xplain::ResultSet.load(\"#{rs.id}\")"
   end
  
   def parse_auxiliary_function(aux_func, spaces_count=2)

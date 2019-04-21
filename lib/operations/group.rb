@@ -5,14 +5,14 @@ class Xplain::Group < Xplain::Operation
     if args[:grouping_relation]
       @auxiliar_function = args[:grouping_relation]
       @level = args[:level]
+      args.delete(:grouping_relation)
     end
   end
   
   def get_results()
-    if @input_sets.nil? || @input_sets.empty? || @input_sets.first.empty?
+    if @inputs.nil? || @inputs.empty? || @inputs.first.empty?
       return []
     end
-
     input_set = inputs_working_copy.first
     
     if input_set.nil? || input_set.children.empty?

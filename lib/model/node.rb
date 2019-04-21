@@ -1,6 +1,12 @@
 module Xplain
   class Node
     attr_accessor :id, :item, :parent_edges, :children_edges, :annotations
+    class << self
+      def uniq_by_item(nodes)
+        nodes.map{|n| [n.item, n]}.to_h.values
+      end
+    end
+    
     def initialize(params = {})
       @children_edges = Set.new
       

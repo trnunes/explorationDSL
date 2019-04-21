@@ -28,7 +28,7 @@ class Xplain::Refine < Xplain::Operation
   def get_results()
     
     #TODO duplicated code. Generalize this validation!
-    if @input_sets.nil? || @input_sets.empty? || @input_sets.first.empty?
+    if @inputs.nil? || @inputs.empty? || @inputs.first.empty?
       return []
     end
 

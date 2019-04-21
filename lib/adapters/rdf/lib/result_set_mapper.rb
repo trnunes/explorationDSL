@@ -199,6 +199,8 @@ module Xplain::RDF
         
       end
       if !intention.to_s.empty?
+        puts "------LOADED INTENTION------"
+        puts intention.to_s
         intention_desc = eval(intention)
         intention_desc.server = alternative_server if alternative_server
       end

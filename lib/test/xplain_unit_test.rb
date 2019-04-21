@@ -91,6 +91,10 @@ module Xplain
       @@memory_cache
     end
     
+    def clear_cache
+      @@memory_cache = MemoryRepository.new
+    end
+    
     def const_missing(name)
       
   
@@ -162,6 +166,9 @@ class XplainUnitTest < Test::Unit::TestCase
     Xplain::SetSequence.reset
     load_papers_server
     load_simple_server
+    @papers_session = Xplain::Session.new "sid"
+    @papers_session.server = @papers_server
+    Xplain::clear_cache
   end
 
   def load_papers_server
@@ -289,9 +296,10 @@ class XplainUnitTest < Test::Unit::TestCase
     assert_same_items(Set.new(node_list1), Set.new(node_list2))
   end
   
-  def assert_same_items_tree_set(root1, root2)
+  def assert_same_items_tree_set(root1, root2, debug=false)
     item1 = root1.item if root1.is_a? Xplain::Node
     item2 = root2.item if root2.is_a? Xplain::Node
+    binding.pry if debug
     assert_equal item1, item2
     assert_same_items_set root1.children, root2.children
     
@@ -305,14 +313,14 @@ class XplainUnitTest < Test::Unit::TestCase
     end
   end
   
-  def assert_same_items_tree_set_no_root(root1, root2)
+  def assert_same_items_tree_set_no_root(root1, root2, debug=false)
     root2.children.each{|child| child.parent_edges.each{|parent_edge| parent_edge.origin = root1 if parent_edge.origin == root2} }
     
     assert_equal root1.children.size, root2.children.size, "Children sets do no have the same size: #{root1.children.size} <> #{root2.children.size}"
     for child_root1 in root1.children
        child_root2 = root2.children.select{|node| node.item == child_root1.item}.first
        
-       assert_same_items_tree_set(child_root1, child_root2)
+       assert_same_items_tree_set(child_root1, child_root2, debug)
        
     end
   end
@@ -323,12 +331,12 @@ class XplainUnitTest < Test::Unit::TestCase
     
   end
   
-  def assert_same_result_set(rs1, rs2)
+  def assert_same_result_set(rs1, rs2, debug=false)
     assert_true rs1.is_a? Xplain::ResultSet
     assert_true rs2.is_a? Xplain::ResultSet
     assert_equal rs1.title, rs2.title, "Titles are not the same!"
     assert_equal rs1.annotations, rs2.annotations, "Annotations are not the same!"
-    assert_same_items_tree_set_no_root rs1, rs2
+    assert_same_items_tree_set_no_root rs1, rs2, debug
   end
     
 

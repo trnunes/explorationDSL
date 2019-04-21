@@ -10,7 +10,7 @@ module Xplain
       @id = session_id
       @title = title
       @title ||= session_id.gsub("_", " ")
-      @result_sets = []
+      @result_sets_hash = {}
       @server = Xplain.default_server
     end
     
@@ -26,54 +26,68 @@ module Xplain
     end
     
     def <<(result_set)
-      add_set(result_set)
-    end
-    
-    def add_set(result_set, recursive=true)
-      
-      resulted_from_array = [result_set]
-      #TODO Keep cached in memory
-      while !resulted_from_array.empty?
-        resulted_from_array.each do |r_from|  
-          
-          if !@result_sets.map{|r| r.intention.to_ruby_dsl_sum}.include? r_from.intention.to_ruby_dsl_sum
-            r_from.save if r_from.id.nil?            
-            add_result_set(r_from)
-            @result_sets.unshift r_from
-            Xplain::memory_cache.session_add_resultset(self, r_from)
-          end
-        end
-        break if !recursive
-        resulted_from_array = resulted_from_array.map{|r| r.resulted_from}.flatten(1)
-      end
-    end
-    def empty?
-      Xplain::ResultSet.find_by_session(self).empty?
+      @result_sets_hash[result_set.intention.to_ruby_dsl_sum] = result_set
+      add_result_set(result_set)
     end
     
     def execute(operation)
-      operation.setup_session(self)
-      rs = operation.execute()
+      cached_rs = @result_sets_hash[operation.to_ruby_dsl_sum]
+      puts "--------------EXECUTING IN SESSION---------"
+      puts DSLParser.new.to_ruby(operation)
+      if cached_rs
+        return cached_rs
+      end
+      
+      input_resultsets = operation.inputs.map do |input|
+        input_intention = nil        
+        if input.is_a? Xplain::Operation
+          input_intention = input
+        else
+          input_intention = input.intention
+        end
+        
+        cached_input = @result_sets_hash[input_intention.to_ruby_dsl_sum]
+        cached_input || self.execute(input_intention)
+      end
+      operation.inputs = input_resultsets
+      operation.server = @server
+      rs = operation.execute
+      @result_sets_hash[operation.to_ruby_dsl_sum] = rs
+      rs.save
+      
       self << rs
       rs
     end
     
-    def deep_copy
-      copied_session = Session.create(title: @title.dup)
-      leaves = @result_sets.select do |s1|
-        @result_sets.select do |s2|
-          input_expressions = s2.intention.inputs.map{|input| input.to_ruby_dsl_sum}
-          input_expressions.include? s1.intention.to_ruby_dsl_sum 
+    def find_leaves
+      result_sets = @result_sets_hash.values
+      result_sets.select do |rs1|
+        result_sets.select do |rs2|
+          rs2.intention.inputs.include?(rs1)
         end.empty?
       end
-      intention_parser = DSLParser.new
-      leaf_operations = leaves.map do |l|
-        
-         operation = eval(intention_parser.to_ruby(l.intention))
-         operation
-      end
-      leaf_operations.map{|operation| copied_session.execute(operation)}
+    end
+    
+    def copy_graph(result_set, copied_sets_hash = {} )
       
+      copied_inputs = result_set.intention.inputs.map{|input| copy_graph(input, copied_sets_hash)[input]}
+      return copied_sets_hash if copied_sets_hash.has_key? result_set
+      copied_set = result_set.copy
+      copied_set.intention.inputs = copied_inputs
+      copied_set.save
+      copied_sets_hash[result_set] = copied_set
+      copied_sets_hash
+    end
+    
+    def deep_copy
+      copied_session = Session.create(title: @title.dup)
+      copied_session.server = @server
+      result_sets = @result_sets_hash.values
+      leaves = find_leaves
+      copied_sets_hash = {}
+      
+      leaves.each{|leaf| copy_graph(leaf, copied_sets_hash) }
+      copied_sets_hash.values.each{|r| copied_session << r}
       copied_session
     end
     
@@ -81,30 +95,29 @@ module Xplain
       
     end
     
+    def eval_graph(graph_nodes)
+      ordered_resultsets = Xplain::ResultSet.topological_sort(graph_nodes)
+      
+      ordered_resultsets.each do |rs| 
+        rs.intention.server = @server
+        rs.fetch 
+        @result_sets_hash[rs.intention.to_ruby_dsl_sum] = rs
+      end
+    end
     
     
     def each_result_set_tsorted(options={}, &block)
-      if @result_sets.empty?
-        @result_sets = Xplain::ResultSet.find_by_session(self, options)
+      
+      if @result_sets_hash.empty?
+        result_sets = Xplain::ResultSet.find_by_session(self, options)
+        self.eval_graph(result_sets)
       end
-      leaves = @result_sets.select do |s1|
-        @result_sets.select do |s2|
-          
-          input_expressions = s2.intention.inputs.map{|input| input.to_ruby_dsl_sum}
-          
-          input_expressions.include? s1.intention.to_ruby_dsl_sum 
-        end.empty?
-      end
-      # leaves.map{|leaf| self.execute(leaf.intention)}
-
-      iterable = @result_sets
+      result_sets = @result_sets_hash.values
       if options[:exploration_only]
-        iterable = @result_sets.select{|s| !s.intention.visual?}
+        result_sets.select!{|s| !s.intention.visual?}
       end
-      results = Xplain::ResultSet.topological_sort(iterable)
-      
-      results.each &block
-      
+      result_sets = Xplain::ResultSet.topological_sort(result_sets)
+      result_sets.each &block
     end
     
   end

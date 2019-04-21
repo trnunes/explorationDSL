@@ -40,9 +40,8 @@ module Xplain
    #TODO Document options
     def find_by_session(session, options = {})
       sets = Xplain::exploration_repository.result_set_find_by_session(session, options)
-      sets.each{|set| set.intention.setup_session(session); Xplain::memory_cache.session_add_resultset(session, set)}
+      sets.map{|set| Xplain::memory_cache.result_set_load(set.id) || Xplain::memory_cache.result_set_save(set)}
       
-      sets
     end
     
     def count
@@ -80,16 +79,15 @@ module Xplain
         session = Xplain::memory_cache.session_load(id)
         if !session
           session = Xplain::exploration_repository.session_load(id)
-          if session && Xplain.cache_results?
-            Xplain::memory_cache.session_save(session)
-          end
+          Xplain::memory_cache.session_save(session)
         end
-        
         session
       end
       
       def find_by_title(title)
-        Xplain::exploration_repository.session_find_by_title(title)
+        sessions = Xplain::exploration_repository.session_find_by_title(title)
+        sessions.each{|s| Xplain::memory_cache.session_save(s)}
+        sessions
       end
       
       def list_titles

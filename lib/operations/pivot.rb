@@ -20,7 +20,7 @@ class Xplain::Pivot < Xplain::Operation
   end
   
   def get_results()
-    if @input_sets.nil? || @input_sets.empty? || @input_sets.first.empty?
+    if @inputs.nil? || @inputs.empty? || @inputs.first.empty?
       return []
     end
     
@@ -48,7 +48,7 @@ class Xplain::Pivot < Xplain::Operation
       
       nodes_to_return = result_set.nodes
       if !result_set.contain_literals?
-        nodes_to_return.uniq!
+        nodes_to_return = Xplain::Node.uniq_by_item nodes_to_return 
       end
     end
     nodes_to_return.sort

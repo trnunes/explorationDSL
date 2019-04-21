@@ -53,14 +53,14 @@ class CompositionsTest < XplainUnitTest
      
      expected_results = Set.new([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p5")])
      
-     op = Xplain::Pivot.new(inputs: root.intention){relation "_:cite"}.refine do
+     op = Xplain::Pivot.new(inputs: root){relation "_:cite"}.refine do
          equals do
            relation "_:author"
            entity "_:a1"
          end
      end
      
-      rs = op.execute
+      rs = @papers_session.execute op
       assert_false rs.children.empty?
       assert_equal expected_results, Set.new(rs.children.map{|node| node.item})
   
@@ -68,13 +68,13 @@ class CompositionsTest < XplainUnitTest
   
   def test_chain_intersect
 
-    ref = Xplain::Refine.new(inputs: Xplain::ResultSet.new(id: 'root').intention) do
+    ref = Xplain::Refine.new(inputs: Xplain::ResultSet.new(id: 'root')) do
       equals do
         relation "_:author"
         entity "_:p2"
       end
     end
-    pivot = Xplain::Pivot.new(inputs: Xplain::ResultSet.new(id: 'root').intention){relation "_:author"}
+    pivot = Xplain::Pivot.new(inputs: Xplain::ResultSet.new(id: 'root')){relation "_:author"}
     intersect = pivot.intersect ref
     
     
@@ -84,25 +84,25 @@ class CompositionsTest < XplainUnitTest
   
   def test_chain_unite
 
-    ref = Xplain::Refine.new(inputs: Xplain::ResultSet.new(id: 'root').intention) do
+    ref = Xplain::Refine.new(inputs: Xplain::ResultSet.new(id: 'root')) do
       equals do
         relation "_:author"
         entity "_:p2"
       end
     end
-    pivot = Xplain::Pivot.new(inputs: Xplain::ResultSet.new(id: 'root').intention){relation "_:author"}
+    pivot = Xplain::Pivot.new(inputs: Xplain::ResultSet.new(id: 'root')){relation "_:author"}
     unite = pivot.unite ref
     assert_equal Set.new([pivot, ref]), Set.new(unite.inputs)    
   end
   
   def test_chain_diff
-    ref = Xplain::Refine.new(inputs: Xplain::ResultSet.new(id: 'root').intention) do
+    ref = Xplain::Refine.new(inputs: Xplain::ResultSet.new(id: 'root')) do
       equals do
         relation "_:author"
         entity "_:p2"
       end
     end
-    pivot = Xplain::Pivot.new(inputs: Xplain::ResultSet.new(id: 'root').intention){relation "_:author"}
+    pivot = Xplain::Pivot.new(inputs: Xplain::ResultSet.new(id: 'root')){relation "_:author"}
     diff = pivot.diff ref
     assert_equal Set.new([pivot, ref]), Set.new(diff.inputs)
   end
@@ -122,7 +122,7 @@ class CompositionsTest < XplainUnitTest
     
     expected_results = Set.new([Xplain::Entity.new("_:p5")])
     
-    op = Xplain::Pivot.new(inputs: root.intention){relation "_:cite"}.refine do
+    op = Xplain::Pivot.new(inputs: root){relation "_:cite"}.refine do
       And do [
         equals do
           relation "_:author"
@@ -135,7 +135,7 @@ class CompositionsTest < XplainUnitTest
       ]
       end
     end
-    assert_equal expected_results, Set.new(op.execute.children.map{|n|n.item})
+    assert_equal expected_results, Set.new(@papers_session.execute(op).children.map{|n|n.item})
    end
    
    def test_pivot_refine_intersect
@@ -152,13 +152,13 @@ class CompositionsTest < XplainUnitTest
      root = Xplain::ResultSet.new(nodes:  input_nodes)
      
      expected_results = Set.new([Xplain::Entity.new("_:p5")])
-     op = Xplain::Pivot.new(inputs: root.intention){relation "_:cite"}.refine do
+     op = Xplain::Pivot.new(inputs: root){relation "_:cite"}.refine do
          equals do
            relation "_:author"
            entity "_:a1"
          end
      end.intersect( 
-       Xplain::Pivot.new(inputs: root.intention){relation "_:cite"}.refine do
+       Xplain::Pivot.new(inputs: root){relation "_:cite"}.refine do
          equals do
            relation "_:author"
            entity "_:a2"
@@ -166,7 +166,7 @@ class CompositionsTest < XplainUnitTest
        end
       )
     
-      rs = op.execute
+      rs = @papers_session.execute op
       assert_false rs.children.empty?
       assert_equal expected_results, Set.new(rs.children.map{|node| node.item})
      
@@ -186,13 +186,13 @@ class CompositionsTest < XplainUnitTest
      root = Xplain::ResultSet.new(nodes:  input_nodes)
      
      expected_results = Set.new([Xplain::Entity.new("_:p2"), Xplain::Entity.new("_:p3"), Xplain::Entity.new("_:p5")])
-     op = Xplain::Pivot.new(inputs: root.intention){relation "_:cite"}.refine do
+     op = Xplain::Pivot.new(inputs: root){relation "_:cite"}.refine do
          equals do
            relation "_:author"
            entity "_:a1"
          end
      end.unite( 
-       Xplain::Pivot.new(inputs: root.intention){relation "_:cite"}.refine do
+       Xplain::Pivot.new(inputs: root){relation "_:cite"}.refine do
          equals do
            relation "_:author"
            entity "_:a2"
@@ -200,7 +200,7 @@ class CompositionsTest < XplainUnitTest
        end
       )
     
-      rs = op.execute
+      rs = @papers_session.execute op
       assert_false rs.children.empty?
       assert_equal expected_results, Set.new(rs.children.map{|node| node.item})
      

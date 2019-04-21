@@ -72,7 +72,7 @@ class RDFDataServerTest < XplainUnitTest
     
     expected_triples = Set.new
     expected_triples << [ "#{@xplain_ns}test_id", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "#{@xplain_ns}ResultSet"]
-    expected_triples << [ "#{@xplain_ns}test_id", "#{@xplain_ns}intention", "Xplain::ExecuteRuby.new(code: 'Xplain::ResultSet.new(id: \"resulted_from_set\", title: \"Set 1\", nodes: [])').keyword_search(keyword_phrase: 'test_keyword')"]
+    expected_triples << [ "#{@xplain_ns}test_id", "#{@xplain_ns}intention", "Xplain::ResultSet.load(\"resulted_from_set\").keyword_search(keyword_phrase: 'test_keyword')"]
     expected_triples << [ "#{@xplain_ns}test_id", "#{@dcterms}title", "title_set"]
     expected_triples << [ "#{@xplain_ns}np1", "#{@xplain_ns}included_in", "#{@xplain_ns}test_id"]
     expected_triples << [ "#{@xplain_ns}np1", "#{@xplain_ns}text_relation", "#{@xplain_ns}has_text"]
@@ -256,8 +256,8 @@ class RDFDataServerTest < XplainUnitTest
     
     assert_same_result_set input_rs, expected_rs
     dsl_parser = DSLParser.new
-    assert_equal dsl_parser.to_ruby(expected_rs.intention), "Xplain::ExecuteRuby.new(code: 'Xplain::ResultSet.new(id: \"resulted_from_set\", title: \"Set 1\", nodes: [Xplain::Node.new(item: Xplain::Entity.new(id: \"_:p1\", text: \"_:p1\"), children: [])])').keyword_search(keyword_phrase: 'test_keyword')"
-    assert_same_result_set_no_title expected_rs.intention.inputs.first.execute, resulted_from
+    assert_equal dsl_parser.to_ruby(expected_rs.intention), "Xplain::ResultSet.load(\"resulted_from_set\").keyword_search(keyword_phrase: 'test_keyword')"
+    assert_same_result_set_no_title expected_rs.intention.inputs.first, resulted_from
 
   end
 
@@ -550,19 +550,19 @@ class RDFDataServerTest < XplainUnitTest
     
     <http://tecweb.inf.puc-rio.br/xplain/test_id2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tecweb.inf.puc-rio.br/xplain/ResultSet>.
     <http://tecweb.inf.puc-rio.br/xplain/test_id2> <http://purl.org/dc/terms/title> \"Set 2\". \n\n
-    <http://tecweb.inf.puc-rio.br/xplain/test_id2> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id').intention.keyword_search(keyword_phrase: 'test')\".\n\n
+    <http://tecweb.inf.puc-rio.br/xplain/test_id2> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id').keyword_search(keyword_phrase: 'test')\".\n\n
     
     <http://tecweb.inf.puc-rio.br/xplain/test_id3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tecweb.inf.puc-rio.br/xplain/ResultSet>.
     <http://tecweb.inf.puc-rio.br/xplain/test_id3> <http://purl.org/dc/terms/title> \"Set 3\".\n\n
-    <http://tecweb.inf.puc-rio.br/xplain/test_id3> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id2').intention.keyword_search(keyword_phrase: 'test')\".\n\n
+    <http://tecweb.inf.puc-rio.br/xplain/test_id3> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id2').keyword_search(keyword_phrase: 'test')\".\n\n
     
     <http://tecweb.inf.puc-rio.br/xplain/test_id3.1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tecweb.inf.puc-rio.br/xplain/ResultSet>.
     <http://tecweb.inf.puc-rio.br/xplain/test_id3.1> <http://purl.org/dc/terms/title> \"Set 3.1\".\n\n
-    <http://tecweb.inf.puc-rio.br/xplain/test_id3.1> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id3').intention.keyword_search(keyword_phrase: 'test')\".\n\n
+    <http://tecweb.inf.puc-rio.br/xplain/test_id3.1> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id3').keyword_search(keyword_phrase: 'test')\".\n\n
     
     <http://tecweb.inf.puc-rio.br/xplain/test_id3.2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tecweb.inf.puc-rio.br/xplain/ResultSet>.
     <http://tecweb.inf.puc-rio.br/xplain/test_id3.2> <http://purl.org/dc/terms/title> \"Set 3.2\".\n\n
-    <http://tecweb.inf.puc-rio.br/xplain/test_id3.2> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id3').intention.keyword_search(keyword_phrase: 'test')\".\n\n
+    <http://tecweb.inf.puc-rio.br/xplain/test_id3.2> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id3').keyword_search(keyword_phrase: 'test')\".\n\n
     }"
     
     @sparql_client.update(insert_stmt)
@@ -584,19 +584,19 @@ class RDFDataServerTest < XplainUnitTest
     
     <http://tecweb.inf.puc-rio.br/xplain/test_id2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tecweb.inf.puc-rio.br/xplain/ResultSet>.
     <http://tecweb.inf.puc-rio.br/xplain/test_id2> <http://purl.org/dc/terms/title> \"Set 2\". \n\n
-    <http://tecweb.inf.puc-rio.br/xplain/test_id2> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id').intention.keyword_search(keyword_phrase: 'test')\".\n\n
+    <http://tecweb.inf.puc-rio.br/xplain/test_id2> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id').keyword_search(keyword_phrase: 'test')\".\n\n
     
     <http://tecweb.inf.puc-rio.br/xplain/test_id3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tecweb.inf.puc-rio.br/xplain/ResultSet>.
     <http://tecweb.inf.puc-rio.br/xplain/test_id3> <http://purl.org/dc/terms/title> \"Set 3\".\n\n
-    <http://tecweb.inf.puc-rio.br/xplain/test_id3> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id2').intention.keyword_search(keyword_phrase: 'test')\".\n\n
+    <http://tecweb.inf.puc-rio.br/xplain/test_id3> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id2').keyword_search(keyword_phrase: 'test')\".\n\n
     
     <http://tecweb.inf.puc-rio.br/xplain/test_id3.1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tecweb.inf.puc-rio.br/xplain/ResultSet>.
     <http://tecweb.inf.puc-rio.br/xplain/test_id3.1> <http://purl.org/dc/terms/title> \"Set 3.1\".\n\n
-    <http://tecweb.inf.puc-rio.br/xplain/test_id3.1> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id3').intention.keyword_search(visual:    true, keyword_phrase: 'test')\".\n\n
+    <http://tecweb.inf.puc-rio.br/xplain/test_id3.1> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id3').keyword_search(visual:    true, keyword_phrase: 'test')\".\n\n
     
     <http://tecweb.inf.puc-rio.br/xplain/test_id3.2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tecweb.inf.puc-rio.br/xplain/ResultSet>.
     <http://tecweb.inf.puc-rio.br/xplain/test_id3.2> <http://purl.org/dc/terms/title> \"Set 3.2\".\n\n
-    <http://tecweb.inf.puc-rio.br/xplain/test_id3.2> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id3').intention.keyword_search(keyword_phrase: 'test')\".\n\n
+    <http://tecweb.inf.puc-rio.br/xplain/test_id3.2> <#{@xplain_ns}intention> \"Xplain::ResultSet.load('test_id3').keyword_search(keyword_phrase: 'test')\".\n\n
     }"
     
     @sparql_client.update(insert_stmt)
@@ -829,7 +829,6 @@ class RDFDataServerTest < XplainUnitTest
     
     rs1 = session_found.each_result_set_tsorted.select{|rs| rs.id == "test_id"}.first
     rs2 = session_found.each_result_set_tsorted.select{|rs| rs.id == "test_id2"}.first
-    
     assert_same_result_set expected_rs1, rs1
     assert_same_result_set expected_rs2, rs2
      

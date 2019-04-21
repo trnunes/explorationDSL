@@ -5,7 +5,8 @@ class Xplain::Operation
   include Xplain::GraphConverter
   include Xplain::DslCallable
   
-  attr_accessor :params, :server, :input_sets, :inputs, :id, :auxiliar_function, :definition_block, :args, :session, :result_set
+  attr_accessor :params, :server, :inputs, :id, :auxiliar_function, :definition_block, :args, :session
+
   @base_dir = ""
   class << self
     attr_accessor :base_dir
@@ -24,25 +25,16 @@ class Xplain::Operation
     @limit = args[:limit] || 0
     @debug = args[:debug] || false
     @relation = args[:relation]
-    @result_set = nil
     @visual = args[:visual] || false
     if block_given?
       @definition_block = block 
       self.instance_eval &@definition_block
     end
   end
-  
-  
 
   def self.operation_class?(klass)
     operation_subclasses = ObjectSpace.each_object(Class).select {|space_klass| space_klass < Xplain::Operation }
     operation_subclasses.include? klass
-  end
-  
-  def setup_session(session)
-    @session = session
-    @server = session.server
-    @inputs.each{|input| input.setup_session(session)}
   end
   
   def setup_input(args)
@@ -55,6 +47,13 @@ class Xplain::Operation
       @inputs = inputs
     end
     @inputs ||= []
+  end
+  
+  def server=(server)
+    @server = server
+    if @auxiliar_function && @auxiliar_function.respond_to?(:server)
+      @auxiliar_function.server = @server
+    end
   end
   
   #TODO implement this operation to express the operation and its parameters  
@@ -107,47 +106,20 @@ class Xplain::Operation
     
   end
   
-  def execute()
-    session_cached_set = Xplain::memory_cache.session_get_resultset(session, self.to_ruby_dsl_sum)
-    if session_cached_set
-      @result_set = session_cached_set
-      if @result_set.fetched?
-        return @result_set
-      end
+  def execute
+     
+    if @auxiliar_function && @auxiliar_function.respond_to?(:server)
+      @auxiliar_function.server = @server
     end
-    puts "#######FETCHING IN EXECUTE: " + self.to_ruby_dsl
-  
-
-    resolve_dependencies
-    cached_resultset = Xplain::memory_cache.result_set_load_by_intention(self)
     validate()
-    result_nodes = []    
-    if cached_resultset
-      result_nodes = cached_resultset.children.map{|c| c.copy}
-    else
-      result_nodes = get_results()
-    end
-    
+    resultset = Xplain::RemoteSet.new(intention: self)
+    result_nodes = get_results()
     result_nodes.each{|node| node.parent_edges = []}
-    
-    if !result_set
-      @result_set = Xplain::RemoteSet.new(intention: self)
-      Xplain::memory_cache.result_set_save(result_set)
-    end
-    
-    result_set.children = result_nodes
-    result_set.fetched = true
-    if session && !session_cached_set
-      Xplain::memory_cache.session_add_resultset(session, result_set)
-    end
-
-    result_set
+    resultset.children = result_nodes
+    resultset.fetched = true
+    resultset
   end
   
-  def resolve_dependencies
-    @input_sets = @inputs.map{|input| input.execute}
-    @input_sets
-  end
     
   def parse_item_specs(item_spec)
     return if item_spec.nil?
@@ -172,8 +144,7 @@ class Xplain::Operation
   end
   
   def inputs_working_copy
-    resolve_dependencies
-    @input_sets.map{|i|i.copy}
+    inputs.map{|i|i.copy}
   end
   
   def validate

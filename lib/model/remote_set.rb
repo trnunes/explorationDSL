@@ -10,7 +10,7 @@ module Xplain
     def fetch
       if !fetched?
         puts
-        puts "FETCHING in REMOTE SET: " + @intention.to_ruby_dsl
+        puts "FETCHING in REMOTE SET: " + self.id + " : " + @intention.to_ruby_dsl
         puts
         rs_nodes = @intention.get_results()
         
@@ -28,7 +28,7 @@ module Xplain
     
     def copy
       mycopy = super
-      mycopy.fetched = true
+      mycopy.fetched = @fetched
       mycopy
     end
     

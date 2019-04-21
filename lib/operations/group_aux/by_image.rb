@@ -20,6 +20,7 @@ module GroupAux
       end
 
       result_hash = {}
+      @relation.server = @server
       result_set = @relation.restricted_image(nodes, group_by_domain: true)
       result_set.last_level.each do |leaf|
         if !result_hash.has_key? leaf.item

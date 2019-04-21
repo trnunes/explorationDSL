@@ -1,18 +1,21 @@
 module AggregateAux
   class Count < AuxiliaryFunction
     include Xplain::RelationFactory
+    attr_accessor :default_value
     
     def initialize(*args, &block)
       super
       if !@relation
         @relation = args.first
       end
+      @default_value = 0
     end
     
     def prepare(nodes)
       if @relation
         pivot_relation = @relation
-        @pivoted_nodes = Xplain::ResultSet.new(nodes: nodes).intention
+        @relation.server = @server
+        @pivoted_nodes = Xplain::ResultSet.new(nodes: nodes)
           .pivot(group_by_domain: true){relation pivot_relation}.execute
         
       end

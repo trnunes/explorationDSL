@@ -6,7 +6,7 @@ module Xplain
     include Xplain::DslCallable
     include Xplain::Relation
     
-    attr_accessor :intention, :inverse, :title, :fetched
+    attr_accessor :intention, :inverse, :title, :fetched, :input_sets
     def_delegators :children, :each, :map, :select, :empty?, :size, :sort
     
     class << self
@@ -19,9 +19,9 @@ module Xplain
       
   
       def visit(rs, sorted_array, visited)
-        if rs.intention && rs.intention.is_a?(Operation)
-          rs.intention.inputs.each{|input| visit(input.execute, sorted_array, visited)}
-        end
+        
+        rs.intention.inputs.each{|input| visit(input, sorted_array, visited)}
+        
         if !visited.include? rs.id
           sorted_array << rs
           visited << rs.id
@@ -44,11 +44,14 @@ module Xplain
       self.children = children_nodes
       @fetched = false
       @intention = params[:intention]
-      @intention.result_set = self if @intention
       @inverse = params[:inverse]
       @title = params[:title] || "Set #{Xplain::SetSequence.next}"
     end
-    
+    #TODO remove
+    def fetch
+      
+    end
+        
     def intention
       
       if !@intention
@@ -82,7 +85,6 @@ module Xplain
     
     def intention=(operation)
       @intention = operation
-      operation.result_set = self
     end
     
     def nodes
@@ -99,12 +101,8 @@ module Xplain
     
         
     def resulted_from
+      inputs = intention.inputs
       
-      inputs = []
-      if @intention && @intention.is_a?(Xplain::Operation)
-        @intention.resolve_dependencies
-        inputs = @intention.input_sets
-      end
       inputs || []
     end
     
@@ -122,7 +120,9 @@ module Xplain
     def copy
       copied_root = super
       copied_root.children.each{|c| c.parent_edges = []}
-      self.class.new(nodes: copied_root.children, intention: @intention, title: @title.dup, notes: @annotations.dup, inverse: @inverse)
+      intention_copy =  eval(DSLParser.new.to_ruby(@intention))
+ 
+      self.class.new(nodes: copied_root.children, intention: intention_copy, title: @title.dup, notes: @annotations.dup, inverse: @inverse)
     end
     
     def get_page(total_items_by_page, page_number)

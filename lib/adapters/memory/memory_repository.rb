@@ -71,15 +71,9 @@ class MemoryRepository
     @workflow_hash[workflow_id]
   end
   
-  def result_set_save(resultset, flush_extension = @record_intention_only)    
-    intention_parser = DSLParser.new
-    intention_key = resultset.intention
-    if(intention_key.is_a? Xplain::Operation)
-      intention_index = get_server_cache(intention_key.server)[:intention_index]
-      intention_key = intention_key.to_ruby_dsl_sum
-      
-      intention_index[intention_key] = resultset
-    end
+  def result_set_save(resultset, flush_extension = @record_intention_only)
+    @results_hash[resultset.id] = resultset
+    resultset    
   end
   
   
@@ -88,6 +82,10 @@ class MemoryRepository
       raise ArgumentError.new("The result set id must be a non-empty string!")
     end
     @results_hash[resultset_id]
+  end
+  
+  def session_add_result_set(session, result_set)
+    
   end
   
   #TODO remove
