@@ -24,6 +24,7 @@ module Xplain
     
       def colapse_uri(uri)
         @@namespace_map.values.each do |namespace|
+          
           if(uri.include?(namespace.uri))
             prefix = namespace.prefix 
             if uri.split(namespace.uri).size > 1

@@ -44,6 +44,9 @@ module Xplain::RDF
       if relation.nil?
         raise "Cannot compute restricted image of a null relation!"
       end
+      if @ignore_literal_queries
+        return Xplain::ResultSet.new() if restriction.first.item.is_a? Xplain::Literal
+      end
       
       restriction_items = restriction.map{|node|node.item}.uniq || [] 
       
@@ -52,7 +55,6 @@ module Xplain::RDF
       results_hash = {}      
       where_clause = ""
       relation_uri = parse_relation(relation)
-      
       paginate(restriction_items, @items_limit).each do |page_items|
         
         if(relation.is_a?(Xplain::PathRelation) && relation.size > 1)
@@ -94,6 +96,9 @@ module Xplain::RDF
       if relation.nil?
         raise "Cannot compute restricted domain of a null relation!"
       end
+      if @ignore_literal_queries
+        return Xplain::ResultSet.new() if restriction.first.item.is_a? Xplain::Literal
+      end
       
       if relation.meta?
         result_set =  
@@ -131,6 +136,7 @@ module Xplain::RDF
       
     def find_relations(items)
       results = Set.new
+      
       paginate(items, @items_limit).each do |page_items|
         are_literals = !page_items.empty? && page_items[0].is_a?(Xplain::Literal)    
         if(are_literals)
@@ -188,7 +194,10 @@ module Xplain::RDF
     
       
     def relations_restricted_image(restriction, args)
-      
+      if @ignore_literal_queries
+        return Xplain::ResultSet.new() if restriction.first.item.is_a? Xplain::Literal
+      end
+    
       restriction_items = restriction.map{|node|node.item} || []
       results = Set.new
       are_literals = !restriction_items.empty? && restriction_items[0].is_a?(Xplain::Literal)
@@ -215,6 +224,9 @@ module Xplain::RDF
     
     ##TODO implement
     def relations_restricted_domain(restriction, args)
+      if @ignore_literal_queries
+        return Xplain::ResultSet.new() if restriction.first.item.is_a? Xplain::Literal
+      end
       
       restriction_items = restriction.map{|node|node.item}.uniq || []
       entities = []
@@ -232,6 +244,10 @@ module Xplain::RDF
     end
     
     def has_type_restricted_image(restriction, args)
+      if @ignore_literal_queries
+        return Xplain::ResultSet.new() if restriction.first.item.is_a? Xplain::Literal
+      end
+
       restriction_items = restriction.map{|node|node.item}.uniq || []
       classes = []
       paginate(restriction_items, @items_limit).each do |page_items|
@@ -247,6 +263,10 @@ module Xplain::RDF
     end  
     
     def has_type_restricted_domain(restriction, args)
+      if @ignore_literal_queries
+        return Xplain::ResultSet.new() if restriction.first.item.is_a? Xplain::Literal
+      end
+
       restriction_items = restriction.map{|node|node.item}.uniq || []
       
       entities = []

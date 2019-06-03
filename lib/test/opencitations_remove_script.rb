@@ -1,3 +1,6 @@
+require 'forwardable'
+
+require 'linkeddata'
 require 'xplain'
 require 'pry'
 
@@ -34,38 +37,10 @@ end
 ### dataset running at localhost, port 3001.
 ###
 
-graph_url = "http://localhost:3001/blazegraph/namespace/kb/sparql"
-Xplain.set_default_server class: BlazegraphDataServer, graph: graph_url
+graph_url = "http://localhost:3002/blazegraph/namespace/kb/sparql"
 
-###
-### Uncoment the following two lines to setup the remote opencitations endpoint
-###
-# graph_url = "http://opencitations.net/sparql"
-# Xplain.set_default_server class: BlazegraphDataServer, graph: graph_url, method: "get",  results_limit: 10000, items_limit: 100 
+# setting the blazegraph server as the default data server for the exploration tasks
+Xplain.set_default_server class: BlazegraphDataServer, graph: graph_url, method: 'post', results_limit: 10000, items_limit: 0, read_timeout: 3000
 
-# instantiating the metarelation "has_type" that maps instances to their respective types 
-has_type_relation = Xplain::SchemaRelation.new(id: "has_type")
-
-# retrieving the image of the "has_type" metarelation which is the set of all types of the open citations dataset
-all_types = has_type_relation.image
-
-book_types = all_types.select{|type| type.item.id == "fabio:BookSeries"}.first
-
-#Selecting a node from the book_types result set
-book_series_type = all_types.nodes_select(["fabio:BookSeries"]).execute() 
-
-#pivoting to the instances of the book series type
-book_series = book_series_type.pivot do
-  relation inverse "rdf:type"
-end.execute()
-
-puts "RESULTS"
-puts "----------BOOK SERIES----------------"
-book_series.each{|book_node| puts book_node.item.text}; puts
-puts
-
-# Pivoting to the relations of the book series
-book_series_relations = book_series.pivot{relation "relations"}.execute()
-
-puts "------------BOOK SERIES RELATIONS----------------"
-book_series_relations.each{|relation| puts relation.item.text}; puts
+adapter = Xplain.default_server
+adapter.insert_ibge

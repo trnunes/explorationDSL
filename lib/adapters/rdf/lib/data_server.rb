@@ -24,7 +24,7 @@ module Xplain::RDF
       @results_limit = (options[:limit] || 5000).to_i
       @record_intention_only = options[:record_intention_only]
       @record_intention_only ||= false
-      
+      @ignore_literal_queries = options[:ignore_literal_queries]      
       #Default Namespaces
       Xplain::Namespace.new("owl", "http://www.w3.org/2002/07/owl#")
       Xplain::Namespace.new("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
@@ -65,6 +65,7 @@ module Xplain::RDF
         execute(query, content_type: content_type).each do |s|
           retrieved_types << Xplain::Namespace.expand_uri(s[:t].to_s)
         end
+       
       end
       
       types_with_vis_properties = (retrieved_types & types)
@@ -172,6 +173,41 @@ module Xplain::RDF
       dataset_filter(input_items, filter_expr)
     end
     
+    def insert_ibge
+      
+      insert_stmt = File.open("insert.txt", "r").readlines[0]
+      execute_update(insert_stmt, content_type: content_type)
+    end
+    
+    def remove_document_contexts
+      offset = 0
+      count = 0
+      while count < 100
+        query = "select ?s ?p ?p2 ?o ?o2 where{?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/pro/RoleInTime>. ?s <http://purl.org/spar/pro/withRole> <http://purl.org/spar/pro/publisher>.  ?s ?p ?o. ?o2 ?p2 ?s} limit 1000 offset #{offset}"
+        
+        rs = @graph.query(query)
+        delete_data = "delete data{"
+        rs.each_solution do |s|
+          delete_data << "<#{s[:s].to_s}> <#{s[:p].to_s}> "
+          if s[:o].literal?
+            delete_data << "\"#{s[:o].to_s}\""
+          else
+            delete_data << "<#{s[:o].to_s}>"
+          end
+          
+          delete_data << " . <#{s[:o2].to_s}> <#{s[:p2].to_s}> <#{s[:s].to_s}>"
+          delete_data << ". "
+        end
+        delete_data << "}"
+        ur = execute_update(delete_data, content_type: content_type)
+        
+        puts "Offset: #{offset}"
+        puts "Delete results: #{ur.to_s}"
+        offset += 1000 - 1
+        count += 1
+      end
+      
+    end
     
     
     def execute_update(query, options = {})
@@ -181,7 +217,7 @@ module Xplain::RDF
         rs = @graph.update(query, options)
       rescue Exception => e
       end  
-      
+      rs
     end
     
     def dataset_filter(input_items = [], filter_expr)

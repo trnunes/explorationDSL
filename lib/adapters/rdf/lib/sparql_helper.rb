@@ -134,7 +134,9 @@ module SPARQLHelper
       end      
       label_relations = Xplain::Visualization.label_relations_for(type.id)  
     end
-    optional_label_where_clause var, label_relations
+    
+    clause = optional_label_where_clause var, label_relations
+    clause
   
   end
   

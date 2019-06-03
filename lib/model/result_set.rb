@@ -181,6 +181,23 @@ module Xplain
       
     end
     
+    def project(relation)
+      relation.server = self.intention.server
+      items_to_project_hash = {}
+      levels = each_level
+      levels[1..levels.size].each do |level_nodes|
+        level_nodes.each{|n| items_to_project_hash[n.item.id] = n if !n.item.is_a?(Xplain::Literal)}        
+      end
+      rs = relation.restricted_image(items_to_project_hash.values, group_by_domain: true)
+      
+      rs.nodes.each do |projected_node|
+        item_to_project = items_to_project_hash[projected_node.item.id]
+        item_to_project.item.text = projected_node.children.first.item.text if !projected_node.children.empty?
+      end
+      self
+    end
+    
+    
     def sort_asc
       rs = sort(false)
       rs

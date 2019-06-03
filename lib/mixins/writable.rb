@@ -61,7 +61,7 @@ module Xplain
     
     def remove_result_set(result_set)
       Xplain::exploration_repository.session_remove_result_set(self, result_set)
-      @result_sets.delete(result_set)
+      @result_sets_hash.delete result_set.intention.to_ruby_dsl_sum
     end
     
     def remove_result_set_permanently(result_set)

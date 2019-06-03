@@ -34,7 +34,6 @@ module Xplain
           @relation = relation_objects.first
         end
       end
-      
       @relation ||= new_relation(*relations_specs)
       
       @relation

@@ -53,7 +53,7 @@ module Xplain::RDF
       result_set_load_all.each{|rs| result_set_delete rs}
     end
     
-    def result_set_delete(result_set)
+    def result_set_delete(result_set, options={:cascade => false})
       #TODO the index triples may not be removed if the ordering of the items change for some reason. Remove all oh them!
       namespace = "http://tecweb.inf.puc-rio.br/xplain/"
       result_set_uri = "<#{namespace + result_set.id}>"
@@ -76,9 +76,57 @@ module Xplain::RDF
       result_set.each do |node|
          
         query << generate_insert(index += 1, node, result_set)
-      end
+      end      
       query << "}"
       execute_update(query, content_type: content_type)
+      
+      if options[:cascade]
+        select = "select ?s ?p ?o where{?s ?p ?o. VALUES ?s{"
+        server = result_set.intention.server
+        result_set.each do |n|
+          item_uri = Xplain::Namespace.expand_uri n.item.id
+          select << "<#{item_uri}> "
+        end
+        select << "}}"
+        
+        delete_data = ""        
+        s_array = server.execute(select)
+        
+        s_array.each do |s|
+          delete_data << "<#{s[:s].to_s}> <#{s[:p].to_s}> "
+          
+          if s[:o].literal?
+            delete_data << "\"#{s[:o].to_s}\""
+          else
+            delete_data << "<#{s[:o].to_s}>"
+          end
+          delete_data << ". "
+        end
+        
+        delete_data =  "delete data{#{delete_data}}"
+        server.execute_update(delete_data, content_type: content_type)
+        
+        select = "select ?s ?p ?o where{?s ?p ?o. VALUES ?o{"
+        server = result_set.intention.server
+        result_set.each do |n|
+          item_uri = Xplain::Namespace.expand_uri n.item.id
+          select << "<#{item_uri}> "
+        end
+        select << "}}"
+        
+        delete_data = ""
+        s_array = server.execute(select)
+         
+        s_array.each do |s|
+          delete_data << "<#{s[:s].to_s}> <#{s[:p].to_s}> "
+          delete_data << "<#{s[:o].to_s}>"
+          delete_data << ". "
+        end
+        
+        delete_data =  "delete data{#{delete_data}}"
+        
+        server.execute_update(delete_data, content_type: content_type)
+      end
     end
     
     #TODO document options
