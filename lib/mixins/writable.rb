@@ -54,8 +54,6 @@ module Xplain
     end
     
     def add_result_set(result_set)
-      
-      
       Xplain::exploration_repository.session_add_result_set(self, result_set)
     end
     

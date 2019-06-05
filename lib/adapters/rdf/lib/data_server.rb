@@ -14,7 +14,6 @@ module Xplain::RDF
     end
     
     def setup(options)
-      
       @graph = SPARQL::Client.new options[:graph], options
       @url = options[:graph]
       @content_type = options[:content_type] || "application/sparql-results+xml"
@@ -34,6 +33,16 @@ module Xplain::RDF
       Xplain::Namespace.new("foaf", "http://xmlns.com/foaf/0.1/")
       Xplain::Namespace.new("rss", "http://purl.org/rss/1.0/")
       @xplain_ns = Xplain::Namespace.new("xplain", "http://tecweb.inf.puc-rio.br/xplain/")
+      
+      begin
+        @graph.query("select * where{ ?s ?p ?o }limit 1")
+      rescue Net::HTTP::Persistent::Error => e         
+        raise RepositoryConnectionError.new("cannot connect to the repository: " << e.message)
+      rescue SocketError => e
+        raise RepositoryConnectionError.new("cannot connect to the repository: " << e.message)
+      rescue Net::OpenTimeout => e
+        raise RepositoryConnectionError.new("Repository timeout: " << e.message)
+      end
     end
     
     def size

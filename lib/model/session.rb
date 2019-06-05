@@ -18,7 +18,11 @@ module Xplain
       if params.is_a? Hash
         klass = params[:class]
         klass = eval(klass) if klass.is_a? String
-        @server = klass.new(params)
+        begin
+          @server = klass.new(params)
+        rescue RepositoryConnectionError => e
+          raise RepositoryConnectionError.new("Session repository connection error: " << e.message)
+        end
       else
         @server = params
       end
