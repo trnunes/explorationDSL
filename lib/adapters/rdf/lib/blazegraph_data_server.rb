@@ -8,7 +8,7 @@ class BlazegraphDataServer < Xplain::RDF::DataServer
     unions = []
     items = []
     
-    label_relations = Xplain::Visualization.label_relations_for("rdfs:Resource")
+    label_relations = Xplain::Visualization.current_profile.label_relations_for("rdfs:Resource")
     label_clause = ""
     for i in 0..label_relations.size-1 do
       var = "?ls" << i.to_s

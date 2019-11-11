@@ -55,7 +55,7 @@ module Xplain::RDF
     end
     
     def sample_type(items, relation_uri = "", inverse = false)
-      types = Xplain::Visualization.types
+      types = Xplain::Visualization.current_profile.types
       types.delete("http://www.w3.org/2000/01/rdf-schema#Resource")
       
       retrieved_types = []
@@ -83,13 +83,13 @@ module Xplain::RDF
   
     def match_all(keyword_pattern, restriction_nodes=[], offset = 0, limit = 0)
       retrieved_items = Set.new
-      label_relations = Xplain::Visualization.label_relations_for("rdfs:Resource")    
+      label_relations = Xplain::Visualization.current_profile.label_relations_for("rdfs:Resource")    
       values_p = values_clause("?p", label_relations.map{|id| "<#{id}>"})
       
       filter_clause = "regex(str(?ls), \".*#{keyword_pattern.join(' ')}.*\")" 
       query = "SELECT distinct ?s ?ls WHERE{
         #{values_clause("?s", restriction_nodes.map{|n|n.item})} 
-        #{values_p} {?s ?p ?ls}. FILTER(#{filter_clause}).}"
+        {?s ?p ?ls}. FILTER(#{filter_clause}).}"
       
   
       if Xplain::Namespace.expand_uri(keyword_pattern.join('').strip) =~ URI::regexp
@@ -97,6 +97,7 @@ module Xplain::RDF
         query = "SELECT distinct ?s ?ls WHERE{ VALUES ?s{<#{url}>} #{values_p} {?s ?p ?ls}.}"
       end
       
+      puts("KEYWORD QUERY: " + query)
       execute(query, {content_type: content_type, offset: offset, limit: limit}).each do |s|
         item = Xplain::Entity.create(Xplain::Namespace.colapse_uri(s[:s].to_s), s[:ls].to_s)
         item.add_server(self)

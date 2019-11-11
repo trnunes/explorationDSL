@@ -207,7 +207,8 @@ module Xplain::RDF
         else
           query = "SELECT distinct ?pf ?pb WHERE{ {{#{values_clause("?o", page_items)}}. ?s ?pf ?o.} UNION {{#{values_clause("?s", page_items)}}. ?s ?pb ?o.}}"
         end
-      
+        #puts "ITEMS SIZE: #{page_items.size}"
+        #File.open("query_logs.txt", "a"){|f| f.write("BEGIN\n" + query + "\nEND")}
         execute(query).each do |s|
           if(!s[:pf].nil?)
             results << Xplain::SchemaRelation.new(id: Xplain::Namespace.colapse_uri(s[:pf].to_s), inverse: true)
@@ -231,6 +232,7 @@ module Xplain::RDF
       restriction_items = restriction.map{|node|node.item}.uniq || []
       entities = []
       paginate(restriction_items, @items_limit).each do |page_items|
+
         query = "SELECT DISTINCT ?s WHERE { #{values_clause("?relation", page_items)} ?s ?relation ?o. }"
         
         execute(query).each do |s|
@@ -270,8 +272,8 @@ module Xplain::RDF
       restriction_items = restriction.map{|node|node.item}.uniq || []
       
       entities = []
-      label_relations = restriction_items.map{|type| Xplain::Visualization.label_relations_for(type.id)}.compact.flatten
-      label_relations = Xplain::Visualization.label_relations_for("rdfs:Resource")
+      label_relations = restriction_items.map{|type| Xplain::Visualization.current_profile.label_relations_for(type.id)}.compact.flatten
+      label_relations = Xplain::Visualization.current_profile.label_relations_for("rdfs:Resource")
       paginate(restriction_items, @items_limit).each do |page_items|
         query = "SELECT DISTINCT ?s WHERE {#{values_clause("?class", page_items)} ?s a ?class.}"
         execute(query).each do |s|

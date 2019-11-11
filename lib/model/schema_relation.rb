@@ -3,8 +3,13 @@ module Xplain
     include Xplain::GraphConverter
     include Xplain::Relation
     attr_accessor :inverse
+    @@inverse_suffix = "of"
     @@meta_relations = [:relations, :has_type, :relations_domain, :relations_image]
     
+    def self.inverse_suffix=(suffix)
+      @@inverse_suffix = suffix
+    end
+      
     def initialize(params={})
       super(params)
       @inverse = params[:inverse] || false
@@ -17,7 +22,11 @@ module Xplain
     def text
       text_to_return = @text.to_s
       text_to_return = @id.dup.to_s if text_to_return.empty?
-      text_to_return << " of" if inverse?
+      
+      if inverse?
+        inverse_view_text = Xplain::Visualization.current_profile.inverse_relation_text(@id)
+        text_to_return  = inverse_view_text || text_to_return + " " + @@inverse_suffix
+      end
       text_to_return      
     end
     

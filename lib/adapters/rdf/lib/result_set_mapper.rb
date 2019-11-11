@@ -243,6 +243,7 @@ module Xplain::RDF
           nodes << node
         end
         #TODO create an array if the elements are literals.
+        Xplain::Visualization.current_profile.set_view_properties(nodes)
         first_level = Set.new(nodes.select{|n| !n.parent})
         
       end

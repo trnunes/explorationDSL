@@ -2,7 +2,7 @@ require './test/xplain_unit_test'
 
 class Xplain::KeywordSearchTest < XplainUnitTest
   module Xplain::Visualization
-    label_for_type "http://www.w3.org/2000/01/rdf-schema#Resource", "http://www.w3.org/1999/02/22-rdf-syntax-ns#label"
+    current_profile.label_for_type "http://www.w3.org/2000/01/rdf-schema#Resource", "http://www.w3.org/1999/02/22-rdf-syntax-ns#label"
   end
   
   def test_empty_keyword_phrase_nil
@@ -59,7 +59,7 @@ class Xplain::KeywordSearchTest < XplainUnitTest
   end
   
   def test_conjunctive_keyword_search_two_label_properties
-    Xplain::Visualization.label_for_type( 
+    Xplain::Visualization.current_profile.label_for_type( 
       "http://www.w3.org/2000/01/rdf-schema#Resource",
       "http://www.w3.org/1999/02/22-rdf-syntax-ns#label", 
       "_:alternative_label_property" 

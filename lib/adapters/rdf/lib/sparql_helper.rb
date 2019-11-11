@@ -132,7 +132,7 @@ module SPARQLHelper
       else
         type = sample_type(items)
       end      
-      label_relations = Xplain::Visualization.label_relations_for(type.id)  
+      label_relations = Xplain::Visualization.current_profile.label_relations_for(type.id)  
     end
     
     clause = optional_label_where_clause var, label_relations
@@ -148,10 +148,10 @@ module SPARQLHelper
   def try_label_relations_by_relation(relation)
     label_relations = []
     if relation.inverse?
-      label_relations = Xplain::Visualization.domain_label_relations(relation)
+      label_relations = Xplain::Visualization.current_profile.domain_label_relations(relation)
     else
 
-      label_relations = Xplain::Visualization.image_label_relations(relation)
+      label_relations = Xplain::Visualization.current_profile.image_label_relations(relation)
     end
     label_relations
   end
@@ -271,7 +271,7 @@ module SPARQLHelper
           else
             related_item = Xplain::Entity.create(Xplain::Namespace.colapse_uri(object_id.to_s))
             related_item.type = "rdfs:Resource"
-            related_item.text = solution[:lo].to_s 
+            related_item.text = solution[:lo].to_s.gsub('"', '\"')
             related_item.text_relation = Xplain::Namespace.colapse_uri(solution[:textPropo].to_s)
             related_item.add_server self
             related_item

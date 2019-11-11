@@ -57,7 +57,7 @@ module Xplain
       if !@intention
         intention_str = "Xplain::ExecuteRuby.new(code: '"
         intention_str << "Xplain::ResultSet.new("
-        intention_str << "id: \"#{id}\", title: \"#{title}\""
+        intention_str << "id: \"#{id}\", title: \"#{title.gsub('"', "")}\""
         intention_str << ", nodes: "
         intention_str << parse_nodes(children)
         intention_str << ")')"
@@ -74,7 +74,7 @@ module Xplain
         if item.is_a? Xplain::Literal
           item_str = "#{item.class.name}.new(value: \"#{item.value.to_s}\", datatype: \"#{item.datatype.to_s}\")"
         else
-          item_str = "#{item.class.name}.new(id: \"#{item.id}\", text: \"#{item.text}\")"
+          item_str = "#{item.class.name}.new(id: \"#{item.id}\", text: \"#{item.text.gsub('"', "")}\")"
         end
         
         "Xplain::Node.new(item: #{item_str}, children: #{parse_nodes(node.children)})"
