@@ -5,8 +5,8 @@ module Xplain
     attr_accessor :id, :text, :server, :type, :text_relation
 
     #TODO standardize all initializers to receive hashes
-    def self.create(id, text="")
-      super(id: id, text: text)
+    def self.create(id, text="", server=Xplain.default_server)
+      super(id: id, text: text, server: server)
     end
     
     def initialize(params = {})

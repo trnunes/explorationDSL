@@ -56,8 +56,11 @@ module Xplain
             @server.send((@id + method_suffix).to_sym, options)
           end
         end
+
       return result_set          
     end
+
+
     
     def reverse
       Xplain::SchemaRelation.new(id: id, inverse: !inverse?)
@@ -65,10 +68,16 @@ module Xplain
     
     def image(offset=0, limit=nil)
       if self.meta?
-        return delegate_meta_relation("_image", nil, {offset: offset, limit: limit})
+        result_set = delegate_meta_relation("_image", nil, {offset: offset, limit: limit})
+        if @id.to_sym == :relations
+          result_set.children += Xplain::PathRelation.find_all.map{|p| Xplain::Node.new(item: p)}
+          
+        end
+        return result_set
       end
 
       @server.image(self, offset.to_i, limit.to_i)
+      
     end
   
     def domain(offset=0, limit=-1)
@@ -81,7 +90,18 @@ module Xplain
   
     def restricted_image(restriction, options= {})
       if self.meta?
-        return delegate_meta_relation("_restricted_image", restriction, options)
+        result_set = delegate_meta_relation("_restricted_image", restriction, options)
+        if @id.to_sym == :relations
+          path_relations = Xplain::PathRelation.find_all
+          applied_path_relations = path_relations.select do |prelation| 
+            result_set.children.map{|c| c.item}.include? prelation.relations.first
+          end
+          result_set.children += applied_path_relations.map{|p| Xplain::Node.new(item: p)}
+        end
+
+
+        return result_set
+
       end
 
       @server.restricted_image(self, restriction, options)

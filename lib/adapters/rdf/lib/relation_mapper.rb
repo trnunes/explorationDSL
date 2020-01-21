@@ -8,6 +8,51 @@ module Xplain::RDF
          include SPARQLHelper
        end
     end
+
+    def path_relation_save(path_relation)
+=begin      
+INSERT DATA{        
+      <http://tecweb.inf.puc-rio.br/xplain/path_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tecweb.inf.puc-rio.br/xplain/PathRelation>.
+      <http://tecweb.inf.puc-rio.br/xplain/path_1> <http://purl.org/dc/terms/title> "path test 1".
+      <http://tecweb.inf.puc-rio.br/xplain/path_1> <http://tecweb.inf.puc-rio.br/xplain/intention> "Xplain::PathRelation.new(text: \"path test 1\", relations: [Xplain::SchemaRelation.new(id: \"cito:cites\", inverse: true), Xplain::SchemaRelation.new(id: \"prismstandard:publicationDate\")])"
+
+
+}
+=end  
+      text = path_relation.text
+      uri = "<#{@xplain_ns.uri + text.gsub(" ", "_")}>"
+      type_triple = "#{uri} <#{@rdf_ns.uri}type> <#{@xplain_ns.uri}PathRelation>"
+      name_triple = "#{uri} <http://purl.org/dc/terms/title> \"#{text}\""
+      #TODO move the intention generation to Xplain::PathRelation.to_ruby
+      intention = "\"Xplain::PathRelation.new(text: \\\"#{text}\\\", relations: [#{path_relation.map{|relation| parse_schema_relation relation}.join(", ")}])\""
+      eval(eval(intention))
+      intention_triple = "#{uri} <#{@xplain_ns.uri}intention> #{intention}"
+      insert_query = "INSERT DATA{"
+      insert_query << type_triple
+      insert_query << ". #{name_triple}"
+      insert_query << ". #{intention_triple}"       
+      insert_query << "}"
+      rs = execute_update(insert_query, content_type: content_type)
+    end    
+
+    def path_relation_load_all
+      query = "SELECT ?s ?p ?o where{?s ?p ?o. ?s <#{@rdf_ns.uri}type> <http://tecweb.inf.puc-rio.br/xplain/PathRelation>}"
+      path_relation_list = []
+      execute(query).each do |sol| 
+        if sol[:p].to_s.include? "intention"
+
+          path_relation_list << eval(sol[:o].to_s)          
+        end
+      end
+
+      path_relation_list
+    end
+
+    #TODO very similar code with DSLParser#parse_schema_relation
+    def parse_schema_relation(schema_relation)
+      "Xplain::SchemaRelation.new(id: \\\"#{schema_relation.id}\\\", inverse: #{schema_relation.inverse})"
+    end
+
   
   
     def image(relation, offset = 0, limit = -1, crossed=false, &block)

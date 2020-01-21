@@ -13,10 +13,22 @@ class MemoryRepository
     @operations_cache = {}
     @items_cache_limit = 20000
     @server_cache = {}
+    @path_relation_cache = {}
   end
   
   def save_node(node)
     @nodes_hash[node.id] = node
+  end
+
+  def path_relation_save(path_relation)
+    @path_relation_cache[path_relation.id] = path_relation
+  end
+
+  def path_relation_load(path_relation_id)
+    @path_relation_cache[path_relation_id]
+  end
+  def path_relation_load_all()
+    @path_relation_cache.values
   end
   
   def self.set_items_cache_limit(limit)

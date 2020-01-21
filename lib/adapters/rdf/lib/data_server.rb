@@ -3,7 +3,7 @@ module Xplain::RDF
     include Xplain::RDF::RelationMapper
     include Xplain::RDF::ResultSetMapper
     include Xplain::RDF::SessionMapper
-    include Xplain::GraphConverter
+    include Xplain::GraphConverter    
   
     attr_accessor :graph, :url, :items_limit, :content_type, :api_key, :cache, :filter_intepreter, :record_intention_only, :params
   
@@ -15,6 +15,7 @@ module Xplain::RDF
     
     def setup(options)
       @graph = SPARQL::Client.new options[:graph], options
+      @named_graph = options[:named_graph]
       @url = options[:graph]
       @content_type = options[:content_type] || "application/sparql-results+xml"
       @api_key = options[:api_key]
@@ -121,6 +122,14 @@ module Xplain::RDF
     end
        
     def execute(query, options = {})
+      if !@named_graph.to_s.empty?
+        from_clause = " FROM <#{@named_graph}> WHERE"
+        #TODO replace to one call whith OR regex
+        query.gsub!("where", from_clause)
+        query.gsub!("WHERE", from_clause)
+        query.gsub!("Where", from_clause)
+      end
+
       solutions = []
   
       offset = options[:offset] || 0
@@ -132,8 +141,10 @@ module Xplain::RDF
       if(limit > 0)
         limited_query << "limit #{limit} offset #{offset}"
       end
-  
-      # puts limited_query
+
+      puts limited_query
+      puts "----ISSUED ON-----"
+      puts @params.inspect
       rs = @graph.query("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> " << limited_query, options)      
       rs_a = rs.to_a
       
@@ -235,7 +246,11 @@ module Xplain::RDF
       results = Set.new
       parsed_query = interpreter.parse(filter_expr)
       paginate(input_items, @items_limit).each do |page_items|
-        query = "SELECT ?s ?ls where{"
+        query = "SELECT ?s ?ls "
+        if !@named_graph.to_s.empty?
+           query << "FROM <#{@named_graph}>"
+        end
+        query << " where{"
         query << values_clause("?s", page_items)
         query << mount_label_clause("?s", page_items)
         query << parsed_query + "}"
@@ -274,7 +289,82 @@ module Xplain::RDF
     end
     
     def to_ruby
-      DSLParser.new.parse_data_server(self) 
+      DSLParser.new.parse_data_server(self).gsub("\"", '\"')
+    end
+
+    def text
+      @params['title'] || @params['graph']
+    end
+
+    def save()
+      delete_stmt ="DELETE WHERE{<#{@params[:graph]}> ?p ?o.}"
+      
+
+      if !Xplain::exploration_repository.execute_update(delete_stmt, content_type: content_type)
+        puts delete_stmt
+        raise Exception.new("Error on deleting server with url: #{@params[:graph]}")
+      end
+
+
+      insert_stmt = <<-eos
+        INSERT DATA{
+          <#{@params[:graph]}> <#{@rdf_ns.uri}type> <#{@xplain_ns.uri}Server>.
+          <#{@params[:graph]}> <#{@xplain_ns.uri}class> \"#{self.class.name}\".
+          <#{@params[:graph]}> <#{@dcterms.uri}title> \"#{@text}\".
+          <#{@params[:graph]}> <#{@xplain_ns.uri}graph> \"#{@params[:named_graph].to_s}\".
+          <#{@params[:graph]}> <#{@xplain_ns.uri}http_method> \"#{@params[:method]}\".
+          <#{@params[:graph]}> <#{@xplain_ns.uri}limit_per_query> #{@params[:results_limit]}.
+          <#{@params[:graph]}> <#{@xplain_ns.uri}timeout> #{@params[:read_timeout]}.
+          <#{@params[:graph]}> <#{@xplain_ns.uri}ignore_literal_centric_queries> \"#{@params[:ignore_literal_queries]}\".
+          <#{@params[:graph]}> <#{@xplain_ns.uri}items_limit_per_query> #{@params[:items_limit]}.
+          <#{@params[:graph]}> <#{@xplain_ns.uri}ruby_code> \"#{to_ruby}\".
+        }
+      eos
+      
+      if !Xplain::exploration_repository.execute_update(insert_stmt, content_type: content_type)
+        puts insert_stmt
+        raise Exception.new("Error on saving server with url: #{@params[:graph]}")
+
+      end
+    end
+
+    class << self
+      def load_all()
+        @rdf_ns = Xplain::Namespace.new("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+        @dcterms = Xplain::Namespace.new("dcterms", "http://purl.org/dc/terms/")
+        @xplain_ns = Xplain::Namespace.new("xplain", "http://tecweb.inf.puc-rio.br/xplain/")
+        server_list = []
+        query = <<-eos
+          SELECT * WHERE{
+            ?s <#{@rdf_ns.uri}type> <#{@xplain_ns.uri}Server>.
+            OPTIONAL{?s <#{@dcterms.uri}title> ?txt}.
+            OPTIONAL{?s <#{@xplain_ns.uri}graph> ?ngraph}.
+            OPTIONAL{?s <#{@xplain_ns.uri}class> ?class}.
+            OPTIONAL{?s <#{@xplain_ns.uri}http_method> ?m}.
+            OPTIONAL{?s <#{@xplain_ns.uri}limit_per_query> ?lim}.
+            OPTIONAL{?s <#{@xplain_ns.uri}timeout> ?timeout}.
+            OPTIONAL{?s <#{@xplain_ns.uri}ignore_literal_centric_queries> ?ig_lit}.
+            OPTIONAL{?s <#{@xplain_ns.uri}items_limit_per_query> ?ilim}.
+          }
+        eos
+        puts "-----------SERVERS LOAD ALL QUERY-----------"
+        puts query
+        
+
+        Xplain::exploration_repository.graph.query(query).each do |solution|
+          params = {}
+          params[:graph] = solution[:s].to_s
+          params[:named_graph] = solution[:ngraph].to_s
+          params[:results_limit] = solution[:lim].to_s.to_i
+          params[:read_timeout] = solution[:timeout].to_s.to_i
+          params[:ignore_literal_queries] = eval(solution[:ig_lit].to_s)
+          params[:items_limit] = solution[:ilim].to_s.to_i
+          params[:text] = solution[:txt].to_s
+          params[:method] = solution[:m].to_s
+          server_list << eval(solution[:class].to_s).new(params)
+        end
+        server_list
+      end
     end
     
   end

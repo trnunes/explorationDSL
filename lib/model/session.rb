@@ -29,6 +29,15 @@ module Xplain
       
     end
     
+    def clear_cache_by_intention_slice(intention_slice)
+       keys = @result_sets_hash.keys.select{|i| i.include?(intention_slice.gsub(" ", ""))}
+       keys.each{|key| @result_sets_hash.delete(key)}
+    end
+
+    def cache
+      @result_sets_hash
+    end
+
     def <<(result_set)
       @result_sets_hash[result_set.intention.to_ruby_dsl_sum] = result_set
       add_result_set(result_set)

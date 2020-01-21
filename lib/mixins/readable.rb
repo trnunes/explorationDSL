@@ -64,10 +64,47 @@ module Xplain
       all_rs = Xplain::exploration_repository.result_set_load_all(exploration_only: true)
       Xplain::ResultSet.topological_sort all_rs 
     end
-    
-
   end
-  
+
+  module PathRelationReadable
+    def self.included(klass)
+      klass.extend(ClassMethods)
+    end
+    
+    #TODO refactor other readables and writables such this one
+    module ClassMethods
+      def load(id)
+        path_relation = Xplain::memory_cache.path_relation_load(id)
+        if !path_relation
+          path_relation = Xplain::exploration_repository.path_relation_load(id)
+          Xplain::memory_cache.path_relation_save(path_relation)
+        end
+        path_relation
+      end
+
+      def find_all
+
+        path_relations = Xplain::exploration_repository.path_relation_load_all()
+
+        path_relations.each{|p_relation| Xplain::memory_cache.path_relation_save(p_relation)}
+        path_relations
+      end
+
+    end
+  end
+
+  module NamespaceReadable
+    def self.included(klass)
+      klass.extend(ClassMethods)
+    end
+
+    module ClassMethods
+      def load_all()
+        Xplain::exploration_repository.namespace_find_all
+      end
+    end
+  end
+
   module SessionReadable
     def self.included(klass)
       klass.extend(ClassMethods)

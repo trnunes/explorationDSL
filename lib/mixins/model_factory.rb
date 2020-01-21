@@ -23,8 +23,52 @@ module Xplain
   module RelationFactory
     attr_accessor :relation
     
+
     def relation(*relations_specs)
+      relation_list = relations_specs.map{|spec| parse_relation_spec spec}.flatten(1)
+      if relation_list.size == 1
+        @relation = relation_list.first
+      elsif relation_list.size > 1
+        @relation = PathRelation.new(relations: relation_list)
+      end
+      
+      @relation
+    end
+
+    def parse_relation_spec(spec)
+      
+      parsed_relation = 
+      if spec.is_a? String
+        
+        [SchemaRelation.new(id: spec)]
+      elsif spec.is_a? Hash
+        
+        if spec.has_key? :inverse
+          inverse_spec = spec[:inverse]
+          relation_list = parse_relation_spec(inverse_spec)
+          relation_list.map!{|r| r.reverse}
+          relation_list
+        else
+          [SchemaRelation.new(spec)]
+        end         
+      elsif spec.is_a? SchemaRelation
+        [spec]
+      elsif spec.is_a? PathRelation
+        spec.relations
+      else
+        [spec]
+      end      
+      #binding.pry
+      parsed_relation      
+    end
+    
+    def inverse(relation)
+      {:inverse=>relation}
+    end
+=begin
+    def relation2(*relations_specs)
       relation_objects = relations_specs.select{|r| r.is_a? Xplain::Relation}
+      
       if relation_objects.size > 0 && relation_objects.size != relations_specs.size
         raise "Relation specs should be of the same type!"
       else
@@ -38,7 +82,7 @@ module Xplain
       
       @relation
     end
-    
+
     def new_relation(*relations_specs)
       relations = relations_specs.select{|r| !r.to_s.empty? || r.is_a?(Xplain::Relation)}
       if relations.empty?
@@ -70,10 +114,6 @@ module Xplain
         relations.first
       end
     end
-    
-    def inverse(relation)
-      {:inverse=>relation}
-    end
-    
+=end    
   end
 end

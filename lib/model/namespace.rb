@@ -1,16 +1,20 @@
 module Xplain
     
   class Namespace
+    include NamespaceReadable
+    include NamespaceWritable
     @@namespace_map = {}
     attr_accessor :prefix, :uri
     class << self
+
       def each(&block)
         @@namespace_map.values.sort{|ns1, ns2| -(ns1.prefix <=> ns2.prefix)}.each &block
       end
 
       def update(ns_map)
+        delete_all        
         @@namespace_map = {}
-        ns_map.each{|prefix, uri| Xplain::Namespace.new(prefix, uri)}
+        ns_map.each{|prefix, uri| Xplain::Namespace.new(prefix, uri).save}
       end
     
       def expand_uri(uri)
@@ -23,6 +27,7 @@ module Xplain
       end
     
       def colapse_uri(uri)
+        return "" if uri.to_s.empty?
         @@namespace_map.values.each do |namespace|
           
           if(uri.include?(namespace.uri))
@@ -34,6 +39,14 @@ module Xplain
         end
         return uri
       end
+      #TODO move to NamespaceWritable
+      def save_all
+        @@namespace_map.values.each do |namespace|
+          namespace.save
+        end
+      
+      end
+
     end
   
     def initialize(prefix, uri)

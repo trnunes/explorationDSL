@@ -3,6 +3,9 @@ module Xplain
   class PathRelation < Item
     include Xplain::Relation
     include Xplain::GraphConverter
+    include Xplain::PathRelationWritable
+    include Xplain::PathRelationReadable
+
     
     extend Forwardable
     attr_accessor :inverse, :relations, :limit
@@ -10,11 +13,12 @@ module Xplain
   
   
     def initialize(args = {})
-      super(args)
+      super(args)      
       @limit = args[:limit]
       @relations = args[:relations]
       @domain_restriction = args[:domain_restriction] || []
       @image_restriction = args[:image_restriction] || []
+
     end
   
     def reverse
@@ -160,7 +164,10 @@ module Xplain
   
         
     def text
-      @relations.map{|r| r.text}.join("/")
+      if @text.to_s.empty?
+        @text = @relations.map{|r| r.text}.join("/")
+      end
+      @text
     end
   
     def eql?(relation)
@@ -176,5 +183,18 @@ module Xplain
     end
   
     alias == eql?
+
+    def to_s
+      id + ": " + text
+    end
+
+    def intention
+      "Xplain::PathRelation.new(text: \"#{text}\", relations: [#{@relations.map{|relation| parse_schema_relation relation}.join(", ")}])"
+    end
+
+    def parse_schema_relation(schema_relation)
+      "Xplain::SchemaRelation.new(id: '#{schema_relation.id}', inverse: #{schema_relation.inverse})"
+    end
+
   end
 end

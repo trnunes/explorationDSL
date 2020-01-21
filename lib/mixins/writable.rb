@@ -11,6 +11,12 @@ module Xplain
       Xplain::exploration_repository.save_workflow(self)
     end
   end
+
+  module PathRelationWritable
+    def save()
+      Xplain::exploration_repository.path_relation_save(self)
+    end
+  end
   
   module ResultSetWritable
     def save()
@@ -35,6 +41,23 @@ module Xplain
     end
   end
   
+  module NamespaceWritable
+    def self.included(klass)
+      klass.extend(ClassMethods)
+    end
+
+    def save()
+      Xplain::exploration_repository.namespace_save(self)
+    end
+
+    module ClassMethods
+      def delete_all
+        Xplain::exploration_repository.namespace_delete_all
+      end
+    end
+
+  end
+
   module SessionWritable
     def self.included(klass)
       klass.extend(ClassMethods)
