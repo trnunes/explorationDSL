@@ -185,15 +185,15 @@ module SPARQLHelper
     datatype = literal.datatype
     case datatype
       when "http://www.w3.org/2001/XMLSchema#nonPositiveInteger"
-        "xsd:integer"
+        "xsd:nonPositiveInteger"
       when "http://www.w3.org/2001/XMLSchema#negativeInteger"
-        "xsd:integer"
+        "xsd:negativeInteger"
       when "http://www.w3.org/2001/XMLSchema#long"
-        "xsd:integer"
+        "xsd:long"
       when "http://www.w3.org/2001/XMLSchema#int"
-        "xsd:integer"
+        "xsd:int"
       when "http://www.w3.org/2001/XMLSchema#short"
-        "xsd:integer"
+        "xsd:short"
       when "http://www.w3.org/2001/XMLSchema#double"
         "xsd:double"
       when "http://www.w3.org/2001/XMLSchema#float"
@@ -205,7 +205,13 @@ module SPARQLHelper
       when "http://www.w3.org/2001/XMLSchema#datetime"
         "xsd:datetime"
       else
-        "xsd:string"
+        if literal.value.to_i.to_s == literal.value
+          "xsd:int"
+        elsif literal.value.to_f.to_s == literal.value
+          "xsd:float"          
+        else
+          "xsd:string"
+        end
     end
   end
   

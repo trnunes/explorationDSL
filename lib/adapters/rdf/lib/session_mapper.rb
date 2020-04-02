@@ -39,7 +39,7 @@ module Xplain::RDF
         session = Xplain::Session.new(id, title)
         if solution[:server]
           #TODO implement a load method
-          server = self.class.load_all.select{|server| server.params[:graph] == solution[:server].to_s}
+          server = self.class.load_all.select{|server| server.params[:graph] == solution[:server].to_s}.first
           session.server = server
         end
         binding.pry
@@ -56,7 +56,7 @@ module Xplain::RDF
         
         session = Xplain::Session.new(session_id, title)
         if solution[:server]
-          server = eval(solution[:server].to_s)
+          server = self.class.load_all.select{|server| server.params[:graph] == solution[:server].to_s}.first
           session.server = server
         end
         

@@ -14,6 +14,7 @@ class MemoryRepository
     @items_cache_limit = 20000
     @server_cache = {}
     @path_relation_cache = {}
+    @namespaces_hash = {}
   end
   
   def save_node(node)
@@ -55,6 +56,18 @@ class MemoryRepository
     item = nil
     @items_cache[id]
     
+  end
+
+  def namespace_save(ns)
+    @namespaces_hash[ns.uri] = ns
+  end
+  
+  def namespace_find_all
+    @namespaces_hash.values
+  end
+
+  def namespace_delete_all()
+    @namespaces_hash = {}
   end
   
   def load_node(node_id)

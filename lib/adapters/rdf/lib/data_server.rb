@@ -132,24 +132,26 @@ module Xplain::RDF
 
       solutions = []
   
-      offset = options[:offset] || 0
-      limit = options[:limit] || 0
-      rs = [0]
-  
-      limited_query = query #+ "limit #{@limit} offset #{offset}"
-  
-      if(limit > 0)
-        limited_query << "limit #{limit} offset #{offset}"
-      end
-
-      puts limited_query
-      puts "----ISSUED ON-----"
-      puts @params.inspect
-      rs = @graph.query("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> " << limited_query, options)      
-      rs_a = rs.to_a
+      offset = 0
       
-      solutions += rs_a
+      loop do
+        limited_query = query + " limit #{@results_limit} offset #{offset}"
+        # puts "----NEW QUERY-----"
+        # puts limited_query
+        # puts "-----------ISSUED ON-----"
+        # puts @params.inspect
+        rs = @graph.query("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> " << limited_query, options)      
+        
+        
+        solutions += rs.to_a
+        
+        offset += @results_limit
+        break if  (solutions.size < @results_limit || rs.empty?)
+      end
+        
+      print("----------RESULTS SIZE: #{solutions.size}")
       solutions
+
     end
     
     ###
@@ -252,8 +254,8 @@ module Xplain::RDF
         end
         query << " where{"
         query << values_clause("?s", page_items)
-        query << mount_label_clause("?s", page_items)
-        query << parsed_query + "}"
+        query << parsed_query + "."
+        query << mount_label_clause("?s", page_items) + "}"
         results += get_filter_results(query)
       end
       items_h = input_items.map{|i| [i.id, i]}.to_h

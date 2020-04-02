@@ -154,7 +154,8 @@ module Xplain
     
     
     def contain_literals?
-      children.to_a[0].is_a? Xplain::Literal
+      children.to_a[0..50].each{|c| return true if c.item.is_a? Xplain::Literal}
+      return false
     end
     
     def include_node?(node_id)
